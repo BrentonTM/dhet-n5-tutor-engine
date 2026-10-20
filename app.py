@@ -72,7 +72,46 @@ inject_industrial_theme()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_DIR = os.path.join(BASE_DIR, "data", "databases")
 os.makedirs(DATABASE_DIR, exist_ok=True)
+def format_question_with_ai(raw_text):
+    if not raw_text or not raw_text.strip():
+        return ""
+    
+    prompt = f"""
+    You are an expert NATED engineering exam formatter.
+    Reconstruct and clean up the following raw past paper question text into a pristine, readable format.
 
+    CRITICAL INSTRUCTIONS FOR MULTIPLE CHOICE:
+    1. In NATED exam papers, multiple-choice questions often extract with all option letters (A, B, C, D) grouped together and all answer values grouped together. You MUST correctly map options A, B, C, and D to each individual sub-question (1.1, 1.2, 1.3, etc.).
+    2. Format each sub-question clearly like this:
+       * **1.1** $3,316 + 3,38 =$
+         * A) [Value]
+         * B) [Value]
+         * C) [Value]
+         * D) [Value]
+    3. Clean up matching/column tables if present.
+    4. Remove page numbers, document codes, section totals, and headers like "Copyright reserved".
+    5. Return ONLY the finalized Markdown text without any preamble, explanation, or code blocks.
+
+    Raw Text:
+    {raw_text}
+    """
+    try:
+        resp, err = query_gemini_with_fallback(prompt)
+        return resp.strip() if resp else raw_text
+    except Exception:
+        return raw_text
+    """
+    try:
+        resp, err = query_gemini_with_fallback(prompt)
+        return resp.strip() if resp else raw_text
+    except Exception:
+        return raw_text
+    """
+    try:
+        response = query_gemini_with_fallback(prompt)
+        return response if response else raw_text
+    except Exception:
+        return raw_text
 # Helper function to clean corrupted PDF question characters
 # Helper function to clean and structure PDF question text
 def clean_question_text(text):
@@ -634,9 +673,7 @@ with tab_practice:
                         ).fetchone()
                     except sqlite3.OperationalError:
                         row = None
-                    if row:
-                        st.session_state.current_question = {"num": row[0], "topic": row[1], "text": clean_question_text(row[2]), "marking": row[3], "marks": row[4]}
-
+                
         q = st.session_state.current_question
         if q:
             st.info(f"**Question {q['num']} [{q['marks']} Marks]** - *{q['topic']}*\n\n{clean_question_text(q['text'])}")
