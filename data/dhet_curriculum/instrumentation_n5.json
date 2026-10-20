@@ -1,0 +1,67 @@
+{
+  "subject_code": "INST-N5",
+  "subject_name": "Instrumentation N5",
+  "level": "N5",
+  "modules": [
+    {
+      "module_id": 1,
+      "module_name": "Industrial Flow Measurement & Primary Sensing",
+      "weight_percentage": 20,
+      "topics": [
+        "Differential Pressure Meters (Orifice, Venturi, Dall Tube, Pitot Tube)",
+        "Variable Area Meters (Rotameters & Tapered Tubes)",
+        "Electromagnetic, Ultrasonic (Transit Time & Doppler), and Vortex Flowmeters",
+        "Coriolis Mass Flowmeters & Thermal Mass Sensing",
+        "Flow Calculations, Discharge Coefficients & Reynolds Number Corrections"
+      ]
+    },
+    {
+      "module_id": 2,
+      "module_name": "Temperature Measurement & Transducers",
+      "weight_percentage": 20,
+      "topics": [
+        "Resistance Temperature Detectors (RTDs, Pt100) & Wheatstone Bridge Circuits",
+        "Thermocouples (Types J, K, T, S), Cold Junction Compensation & Extension Leads",
+        "Thermistors (NTC/PTC) & Semiconductor Temperature Sensors",
+        "Optical & Radiation Pyrometers (Blackbody Radiation & Emissivity)",
+        "Thermowells, Response Time Constant, and Dynamic Error Compensation"
+      ]
+    },
+    {
+      "module_id": 3,
+      "module_name": "Automatic Process Control & Final Control Elements",
+      "weight_percentage": 20,
+      "topics": [
+        "Proportional (P), Integral (I), and Derivative (D) Control Modes",
+        "Composite Actions (PI, PD, PID) and Offset Elimination",
+        "Control Valve Characteristics (Linear, Equal Percentage, Quick Opening)",
+        "Control Valve Sizing Equations (Cv Value) & Cavitation/Flashing",
+        "Pneumatic Actuators, I/P Converters, and Smart Valve Positioners"
+      ]
+    },
+    {
+      "module_id": 4,
+      "module_name": "Analytical Instrumentation & Gas Analysis",
+      "weight_percentage": 20,
+      "topics": [
+        "pH Measurement (Glass Electrode, Reference Electrode & Nernst Equation)",
+        "Conductivity Measurement & Temperature Compensation",
+        "Gas Chromatography (Carrier Gas, Columns, TCD & FID Detectors)",
+        "Infrared Gas Analyzers (NDIR) & Oxygen Analyzers (Zirconia Cell)",
+        "Viscosity and Density Measurement Techniques"
+      ]
+    },
+    {
+      "module_id": 5,
+      "module_name": "Signal Conditioning, Telemetry & Intrinsic Safety",
+      "weight_percentage": 20,
+      "topics": [
+        "4-20mA Two-Wire Current Loops & Live Zero Advantages",
+        "HART Communication Protocol & Digital Signal Modulation",
+        "Hazardous Area Classifications (Zone 0, 1, 2) & Explosion-Proof Enclosures",
+        "Intrinsic Safety Barriers (Zener Barriers & Galvanic Isolators)",
+        "Analog-to-Digital (A/D) Conversion & Noise Rejection"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "subject_code": "DIGI-N4",
+  "subject_name": "Digital Electronics N4",
+  "modules": [
+    {
+      "module_id": 2,
+      "module_name": "Logic Gates & Boolean Algebra",
+      "topics": [
+        {
+          "topic_name": "Simplification using Karnaugh Maps (K-Maps)",
+          "summary": "Graphical method to simplify Boolean expressions up to 4 variables.",
+          "key_formulas": [
+            "Gray Code Order: 00, 01, 11, 10",
+            "Group size must be powers of 2 (1, 2, 4, 8, 16)"
+          ],
+          "worked_example": "Minimize F(A,B,C) = \\sum m(1, 3, 5, 7).\nGrouping all four ones gives a 2x2 quad covering C=1 across all A and B combinations.\nSimplified Result: F = C."
+        }
+      ]
+    }
+  ]
+}

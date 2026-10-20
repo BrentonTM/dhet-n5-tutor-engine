@@ -1,0 +1,35 @@
+{
+  "subject_code": "MATH-N5",
+  "subject_name": "Mathematics N5",
+  "modules": [
+    {
+      "module_id": 1,
+      "module_name": "Limits and Continuity",
+      "topics": [
+        {
+          "topic_name": "L'H\u00f4pital's Rule & Indeterminate Forms",
+          "summary": "Application of derivatives to evaluate limits yielding 0/0 or \u00b1\u221e/\u221e.",
+          "key_formulas": [
+            "\\lim_{x \\to a} \\frac{f(x)}{g(x)} = \\lim_{x \\to a} \\frac{f'(x)}{g'(x)}"
+          ],
+          "worked_example": "Evaluate \\lim_{x \\to 0} \\frac{\\sin(3x)}{x}.\nSolution: Direct substitution gives 0/0. Differentiate numerator (3\\cos(3x)) and denominator (1). \\lim_{x \\to 0} \\frac{3\\cos(3x)}{1} = 3(1) = 3."
+        }
+      ]
+    },
+    {
+      "module_id": 5,
+      "module_name": "Differential Equations",
+      "topics": [
+        {
+          "topic_name": "Linear Differential Equations & Integrating Factors",
+          "summary": "First-order equations of the form dy/dx + P(x)y = Q(x).",
+          "key_formulas": [
+            "I(x) = e^{\\int P(x) dx}",
+            "y \\cdot I(x) = \\int Q(x) \\cdot I(x) dx + C"
+          ],
+          "worked_example": "Solve dy/dx + 2y = e^{-x}.\nP(x) = 2, so I(x) = e^{\\int 2 dx} = e^{2x}.\nMultiply: e^{2x} \\frac{dy}{dx} + 2e^{2x}y = e^x \\implies \\frac{d}{dx}[y e^{2x}] = e^x.\nIntegrate: y e^{2x} = e^x + C \\implies y = e^{-x} + C e^{-2x}."
+        }
+      ]
+    }
+  ]
+}

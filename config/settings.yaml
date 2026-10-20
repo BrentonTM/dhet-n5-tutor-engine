@@ -1,0 +1,27 @@
+databases:
+  curriculum_db: data/databases/curriculum.db
+  error_db: data/databases/error.db
+  mastery_db: data/databases/mastery.db
+  past_paper_db: data/databases/past_papers.db
+paths:
+  curriculum_dir: data/dhet_curriculum
+  databases_dir: data/databases
+  past_papers_dir: data/past_papers
+  timetables_dir: data/timetables
+planner:
+  default_daily_study_hours: 4.0
+  spaced_repetition_algorithm: SM2
+  start_time: '16:00'
+  session_structure:
+    block_duration_minutes: 50
+    short_break_minutes: 10
+    long_break_minutes: 20
+    total_blocks: 4
+system:
+  app_name: DHET Tutor & Exam Strategy Engine
+  environment: development
+  log_level: INFO
+  version: 1.0.0
+voice:
+  enabled: false
+  engine: pyttsx3
