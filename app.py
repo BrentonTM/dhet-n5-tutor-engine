@@ -625,7 +625,7 @@ with tab_practice:
 
         q = st.session_state.current_question
         if q:
-            st.info(f"**Question {q['num']} [{q['marks']} Marks]** — *{q['topic']}*\n\n{q['text']}")
+            st.info(f"**Question {q['num']} [{q['marks']} Marks]** - *{q['topic']}*\n\n{clean_question_text(q['text'])}")
             typed_sol = st.text_area("Your Working / Answer Attempt:", height=140)
             user_sol = typed_sol if typed_sol.strip() else voice_text
             
