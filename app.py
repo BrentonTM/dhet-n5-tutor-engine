@@ -74,13 +74,27 @@ DATABASE_DIR = os.path.join(BASE_DIR, "data", "databases")
 os.makedirs(DATABASE_DIR, exist_ok=True)
 
 # Helper function to clean corrupted PDF question characters
+# Helper function to clean and structure PDF question text
 def clean_question_text(text):
     if not text:
         return ""
-    cleaned = text.replace("\x00", "")
-    cleaned = re.sub(r'f\s*[\(\[].*?[\)\]]', 'f(A, B, C)', cleaned)
-    cleaned = re.sub(r'\(A,B,C,D\)', '(A, B, C, D)', cleaned)
-    cleaned = re.sub(r'\s+', ' ', cleaned)
+    
+    # 1. Remove PDF header/footer clutter and document codes
+    cleaned = re.sub(r'\(?\d{7,8}\)?', '', text)
+    cleaned = re.sub(r'-\d+-', '', cleaned)
+    cleaned = re.sub(r'Copyright reserved.*', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'Please turn over.*', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'TOTAL SECTION [A-Z]:.*', '', cleaned, flags=re.IGNORECASE)
+    
+    # 2. Remove weird unicode boxes or null bytes
+    cleaned = cleaned.replace('\ufffd', '').replace('\x00', '')
+    
+    # 3. Automatically add line breaks and bold formatting before sub-questions (e.g., 1.1, 1.2)
+    cleaned = re.sub(r'\s+(\d\.\d)\s+', r'\n\n* **\1** ', cleaned)
+    
+    # 4. Normalize spacing
+    cleaned = re.sub(r' +', ' ', cleaned)
+    
     return cleaned.strip()
 
 # Helper function to render Three.js 3D Scenes safely based on FX quality
