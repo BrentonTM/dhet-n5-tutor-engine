@@ -1,11 +1,23 @@
 import os
-import sys
-import time
-import sqlite3
 import re
+import sqlite3
+import time
+
 import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
+from dotenv import load_dotenv
+from openai import OpenAI, OpenAIError  # type: ignore[import-not-found]
+
+load_dotenv()
+
+# Initialize OpenAI client pointing to local OmniRoute proxy endpoint
+client = OpenAI(
+    api_key=os.getenv("OMNIROUTE_API_KEY", "not-needed"),
+    base_url="http://localhost:20128/v1"
+)
+
+# Startup check removed so the app launches cleanly without warning spam
 
 # Import Industrial Futurism Theme Module
 try:
@@ -45,19 +57,6 @@ try:
 except ImportError:
     mic_recorder = None
 
-# 1. Load API key from local .env file
-load_dotenv()
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-
-# 2. Initialize Google GenAI Client
-client = None
-if GEMINI_API_KEY:
-    try:
-        from google import genai
-        client = genai.Client(api_key=GEMINI_API_KEY)
-    except Exception as e:
-        st.error(f"Error configuring Gemini API: {e}")
-
 # Page configuration
 st.set_page_config(
     page_title="Trentox Tutor AI | Industrial Engineering Mastery Engine",
@@ -75,20 +74,20 @@ os.makedirs(DATABASE_DIR, exist_ok=True)
 def format_question_with_ai(raw_text):
     if not raw_text or not raw_text.strip():
         return ""
-    
+
     prompt = f"""
     You are an expert NATED engineering exam formatter.
     Reconstruct and clean up the following raw past paper question text into a pristine, readable format.
 
-    CRITICAL INSTRUCTIONS FOR MULTIPLE CHOICE:
-    1. In NATED exam papers, multiple-choice questions often extract with all option letters (A, B, C, D) grouped together and all answer values grouped together. You MUST correctly map options A, B, C, and D to each individual sub-question (1.1, 1.2, 1.3, etc.).
+    CRITICAL INSTRUCTIONS FOR MULTIPLE CHOICE & TABLES:
+    1. In NATED exam papers, multiple-choice questions often extract with all option letters (A, B, C, D) grouped together and answer values grouped together. You MUST correctly map options A, B, C, and D to each individual sub-question (1.1, 1.2, 1.3, etc.).
     2. Format each sub-question clearly like this:
-       * **1.1** $3,316 + 3,38 =$
+       * **1.1** [Equation or Statement]
          * A) [Value]
          * B) [Value]
          * C) [Value]
          * D) [Value]
-    3. Clean up matching/column tables if present.
+    3. If the text contains matching columns ("COLUMN A" and "COLUMN B"), format them into a clean Markdown table: | COLUMN A | COLUMN B |.
     4. Remove page numbers, document codes, section totals, and headers like "Copyright reserved".
     5. Return ONLY the finalized Markdown text without any preamble, explanation, or code blocks.
 
@@ -100,18 +99,7 @@ def format_question_with_ai(raw_text):
         return resp.strip() if resp else raw_text
     except Exception:
         return raw_text
-    """
-    try:
-        resp, err = query_gemini_with_fallback(prompt)
-        return resp.strip() if resp else raw_text
-    except Exception:
-        return raw_text
-    """
-    try:
-        response = query_gemini_with_fallback(prompt)
-        return response if response else raw_text
-    except Exception:
-        return raw_text
+
 # Helper function to clean corrupted PDF question characters
 # Helper function to clean and structure PDF question text
 def clean_question_text(text):
@@ -181,7 +169,31 @@ def render_topic_diagram(topic_name):
         dial = patches.Circle((0.65, 0.45), 0.2, fill=False, edgecolor="#ffffff", ls="--", lw=1.5)
         ax.add_patch(dial)
         ax.text(0.72, 0.4, "Dial Scale & Pointer", color="#FCA5A5", fontsize=8)
-
+    elif "thyristor" in topic_lower or "phase control" in topic_lower or "scr" in topic_lower or "triac" in topic_lower:
+        ax.set_title("SCR / Thyristor Phase Control Waveforms (IE-N5)", color="white", fontsize=11, fontweight="bold")
+        
+        t = np.linspace(0, 2 * np.pi, 400)
+        v_in = np.sin(t)
+        alpha = np.pi / 3  # Firing angle (60 degrees)
+        
+        # Chopped output voltage based on firing angle alpha
+        v_out = np.where(
+            ((t >= alpha) & (t <= np.pi)) | ((t >= np.pi + alpha) & (t <= 2 * np.pi)), 
+            v_in, 
+            0
+        )
+        
+        ax.plot(t, v_in, color="#22D3EE", lw=2, alpha=0.6, label="Input AC Voltage ($V_{in}$)")
+        ax.plot(t, v_out, color="#FF7A1A", lw=3, label="Chopped Output ($V_{out}$)")
+        
+        # Firing angle markers
+        ax.axvline(alpha, color="yellow", linestyle="--", alpha=0.8, label="Firing Angle $\\alpha$")
+        ax.axvline(np.pi + alpha, color="yellow", linestyle="--", alpha=0.8)
+        
+        ax.set_xlabel(r"Angle ($\omega t$)", color="white")
+        ax.set_ylabel("Voltage", color="white")
+        ax.tick_params(colors='white')
+        ax.legend(loc="upper right", facecolor="#1E1E1E", edgecolor="none", labelcolor="white", fontsize=8)
     elif "flow" in topic_lower or "orifice" in topic_lower or "venturi" in topic_lower or "bernoulli" in topic_lower:
         ax.set_title("Venturi Flow Meter Differential Pressure (INST-N5)", color="white", fontsize=11, fontweight="bold")
         ax.plot([0.05, 0.35, 0.5, 0.65, 0.95], [0.8, 0.8, 0.65, 0.8, 0.8], color="#8B949E", lw=4)
@@ -294,22 +306,27 @@ def extract_text_from_local_files(folder_path):
 def cached_query_gemini(prompt_text, subject_code):
     if not client:
         return None, "Gemini API client is not configured."
-    candidate_models = ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-3.1-pro-preview"]
+    candidate_models = ["gemini-3.8-flash", "gemini-3.1-pro-preview"]
     last_err = None
     for model_name in candidate_models:
         try:
-            res = client.models.generate_content(model=model_name, contents=prompt_text)
-            if res and res.text:
-                return res.text, None
-        except Exception as m_err:
-            last_err = m_err
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt_text}],
+            )
+            ai_reply = response.choices[0].message.content
+            if ai_reply:
+                return ai_reply, None
+        except Exception as model_err:
+            last_err = model_err
             continue
     return None, f"All models currently busy. Details: {last_err}"
+
 
 def query_gemini_with_fallback(prompt):
     if not client:
         return None, "Gemini API client is not configured."
-    candidate_models = ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-3.1-pro-preview"]
+    candidate_models = ["gemini-3.8-flash", "gemini-3.1-pro-preview"]
     last_err = None
     for model_name in candidate_models:
         try:
@@ -539,8 +556,8 @@ with st.sidebar.expander("📐 Official NATED Formula Sheets", expanded=True):
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-if not GEMINI_API_KEY:
-    manual_key = st.sidebar.text_input("Gemini API Key:", type="password")
+if not os.getenv("OMNIROUTE_API_KEY"):
+    manual_key = st.sidebar.text_input("OmniRoute API Key:", type="password")
     if manual_key:
         try:
             from google import genai
@@ -596,8 +613,8 @@ with tab_mastery:
                 paper_bgcolor="rgba(10, 13, 18, 0.8)",
                 font_color="#E6EDF3",
                 font_family="Inter",
-                xaxis=dict(gridcolor="rgba(48, 54, 61, 0.4)", range=[0, 100]),
-                yaxis=dict(gridcolor="rgba(48, 54, 61, 0.4)"),
+                xaxis={"gridcolor": "rgba(48, 54, 61, 0.4)", "range": [0, 100]},
+                yaxis={"gridcolor": "rgba(48, 54, 61, 0.4)"},
                 coloraxis_showscale=False
             )
             st.plotly_chart(fig, use_container_width=True)

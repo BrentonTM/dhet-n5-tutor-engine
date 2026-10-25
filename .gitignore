@@ -1,0 +1,23 @@
+# Secret files and API keys
+.env
+*.env
+.streamlit/secrets.toml
+
+# Python cache & build files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Database / Local SQLite files (if generated dynamically)
+*.db
+*.sqlite3
+
+# IDE and OS specific files
+.vscode/
+.DS_Store
+Thumbs.db

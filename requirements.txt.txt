@@ -4,4 +4,4 @@ plotly
 matplotlib
 pypdf
 python-dotenv
-google-genai
+openai
