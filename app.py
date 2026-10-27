@@ -97,9 +97,10 @@ except ImportError:
 
 # Page configuration
 st.set_page_config(
-    page_title="Trentox Tutor AI | Industrial Engineering Mastery Engine",
+    page_title="Trentox Tutor AI",
     page_icon="⚡",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"  # Forces sidebar visible on load
 )
 
 # Inject Industrial Futurism Theme & FX Controls
