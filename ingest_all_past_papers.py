@@ -2,7 +2,14 @@ import os
 import sqlite3
 import json
 import yaml
+import re
 
+def clean_math_text(text: str) -> str:
+    if not text:
+        return ""
+    cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\ufffd]', '', text)
+    cleaned = cleaned.replace("xa__", " ").replace("xa", " ").replace("__", "")
+    return cleaned
 def load_config():
 	config_path = os.path.join("config", "settings.yaml")
 	with open(config_path, "r", encoding="utf-8") as f:

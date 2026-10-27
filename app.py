@@ -2,26 +2,61 @@ import os
 import re
 import sqlite3
 import time
+import unicodedata
 
 import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
 from dotenv import load_dotenv
-from openai import OpenAI, OpenAIError  # type: ignore[import-not-found]
+from openai import OpenAI  # type: ignore[import-not-found]
 
+
+def clean_math_text(text: str) -> str:
+    """Clean extracted text while preserving mathematical notation."""
+    if not text:
+        return ""
+
+    if not isinstance(text, str):
+        text = str(text)
+
+    # Normalize Unicode first so equivalent characters have consistent forms.
+    cleaned = unicodedata.normalize("NFKC", text)
+
+    # Strip invalid controls and replacement glyphs that often render as boxes.
+    cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\ufffd]', '', cleaned)
+
+    # Repair common PDF extraction artefacts and broken whitespace.
+    cleaned = cleaned.replace("xa__", " ").replace("xa", " ")
+    cleaned = cleaned.replace("\u00a0", " ").replace("\u2028", "\n").replace("\u2029", "\n")
+    cleaned = cleaned.replace("–", "-").replace("—", "-").replace("−", "-")
+    cleaned = cleaned.replace("×", "x")
+    cleaned = cleaned.replace("__", " ")
+
+    # Keep line structure readable while collapsing accidental repeated spaces.
+    cleaned = re.sub(r'[ \t]+', ' ', cleaned)
+    cleaned = re.sub(r' *\n *', '\n', cleaned)
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+    return cleaned.strip()
 load_dotenv()
 
-# Initialize OpenAI client pointing to local OmniRoute proxy endpoint
+# Initialize OpenAI client with fallback for Streamlit Cloud & local OmniRoute
+try:
+    api_key = st.secrets.get("OMNIROUTE_API_KEY") or os.getenv("OMNIROUTE_API_KEY", "not-needed")
+    base_url = st.secrets.get("BASE_URL") or os.getenv("BASE_URL", "http://localhost:20128/v1")
+except (AttributeError, FileNotFoundError, KeyError):
+    api_key = os.getenv("OMNIROUTE_API_KEY", "not-needed")
+    base_url = os.getenv("BASE_URL", "http://localhost:20128/v1")
+
 client = OpenAI(
-    api_key=os.getenv("OMNIROUTE_API_KEY", "not-needed"),
-    base_url="http://localhost:20128/v1"
+    api_key=api_key,
+    base_url=base_url
 )
 
 # Startup check removed so the app launches cleanly without warning spam
 
 # Import Industrial Futurism Theme Module
 try:
-    from ui.theme import inject_industrial_theme
+    from ui.theme import inject_industrial_theme  # type: ignore[import-not-found]
 except ImportError:
     def inject_industrial_theme():
         st.sidebar.warning("ui.theme module not found. Using default style.")
@@ -29,9 +64,10 @@ except ImportError:
 # Configure Matplotlib for headless Streamlit rendering
 try:
     import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    import matplotlib.patches as patches
+    from matplotlib import patches
+    from matplotlib import pyplot as plt
+
+    matplotlib.use("Agg")
 except ImportError:
     plt = None
     patches = None
@@ -48,8 +84,10 @@ except ImportError:
 
 try:
     import pptx
+    from pptx.exc import PackageNotFoundError
 except ImportError:
     pptx = None
+    PackageNotFoundError = ()
 
 # Optional Audio Recorder
 try:
@@ -95,7 +133,7 @@ def format_question_with_ai(raw_text):
     {raw_text}
     """
     try:
-        resp, err = query_gemini_with_fallback(prompt)
+        resp, _err = query_gemini_with_fallback(prompt)
         return resp.strip() if resp else raw_text
     except Exception:
         return raw_text
@@ -105,9 +143,11 @@ def format_question_with_ai(raw_text):
 def clean_question_text(text):
     if not text:
         return ""
-    
+
+    cleaned = clean_math_text(text)
+
     # 1. Remove PDF header/footer clutter and document codes
-    cleaned = re.sub(r'\(?\d{7,8}\)?', '', text)
+    cleaned = re.sub(r'\(?\d{7,8}\)?', '', cleaned)
     cleaned = re.sub(r'-\d+-', '', cleaned)
     cleaned = re.sub(r'Copyright reserved.*', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'Please turn over.*', '', cleaned, flags=re.IGNORECASE)
@@ -160,7 +200,7 @@ def render_topic_diagram(topic_name):
         base = patches.Rectangle((0.28, 0.1), 0.08, 0.2, color="#8B949E")
         ax.add_patch(base)
         ax.annotate("Fluid Pressure Inlet (P)", xy=(0.32, 0.1), xytext=(0.05, 0.05),
-                    arrowprops=dict(arrowstyle="->", color="#FF7A1A", lw=2), color="white", fontsize=9)
+                    arrowprops={"arrowstyle": "->", "color": "#FF7A1A", "lw": 2}, color="white", fontsize=9)
         ax.plot([0.5, 0.65], [0.62, 0.65], color="#FF7A1A", lw=3)
         ax.text(0.52, 0.68, "Sealed Tip & Link", color="#FF7A1A", fontsize=8)
         sector = patches.Wedge((0.65, 0.55), 0.12, 120, 210, color="#8B5CF6")
@@ -264,6 +304,8 @@ def render_topic_diagram(topic_name):
 
 # Local Material Reader Function
 def extract_text_from_local_files(folder_path):
+    import logging
+
     extracted_notes = []
     if not os.path.exists(folder_path):
         return ""
@@ -283,7 +325,8 @@ def extract_text_from_local_files(folder_path):
                             text += extracted + "\n"
                     if text.strip():
                         extracted_notes.append(f"--- SOURCE FILE: {file} ---\n{text[:3000]}")
-                except Exception:
+                except Exception as exc:
+                    logging.warning("Could not read PDF file %s: %s", file_path, exc)
                     continue
 
             elif ext in [".ppt", ".pptx"] and pptx:
@@ -292,11 +335,13 @@ def extract_text_from_local_files(folder_path):
                     text = ""
                     for slide in prs.slides:
                         for shape in slide.shapes:
-                            if hasattr(shape, "text") and shape.text:
-                                text += shape.text + "\n"
+                            shape_text = getattr(shape, "text", "")
+                            if shape_text:
+                                text += shape_text + "\n"
                     if text.strip():
                         extracted_notes.append(f"--- SOURCE FILE: {file} ---\n{text[:3000]}")
-                except Exception:
+                except Exception as exc:
+                    logging.warning("Could not read PowerPoint file %s: %s", file_path, exc)
                     continue
 
     return "\n\n".join(extracted_notes)
@@ -310,7 +355,7 @@ def cached_query_gemini(prompt_text, subject_code):
     last_err = None
     for model_name in candidate_models:
         try:
-            response = client.chat.completions.create(
+            response = client.chat.completions.create(  # type: ignore[attr-defined]
                 model=model_name,
                 messages=[{"role": "user", "content": prompt_text}],
             )
@@ -330,9 +375,13 @@ def query_gemini_with_fallback(prompt):
     last_err = None
     for model_name in candidate_models:
         try:
-            res = client.models.generate_content(model=model_name, contents=prompt)
-            if res and res.text:
-                return res.text, None
+            response = client.chat.completions.create(  # type: ignore[attr-defined]
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            ai_reply = response.choices[0].message.content
+            if ai_reply:
+                return ai_reply, None
         except Exception as m_err:
             last_err = m_err
             continue
@@ -403,6 +452,22 @@ st.sidebar.header("Navigation & Settings")
 active_subject = st.sidebar.selectbox(
     "Select Active Subject:",
     ["INST-N5", "MATH-N5", "IE-N5", "DIGI-N4", "DIGI-N5"]
+)
+
+# Sidebar Font Size & Display Adjuster
+st.sidebar.markdown("---")
+st.sidebar.subheader("🔤 Display & Font Settings")
+font_scale = st.sidebar.slider("Font Scale", min_value=0.8, max_value=1.5, value=1.0, step=0.1)
+
+st.markdown(
+    f"""
+    <style>
+        html, body, [class*="css"] {{
+            font-size: {font_scale * 100}%;
+        }}
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 # Render Live Subject Motif in Sidebar
@@ -580,22 +645,29 @@ tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = st
 with tab_mastery:
     st.subheader(f"Mastery Overview & Analytics: {active_subject}")
     mastery_db = os.path.join(DATABASE_DIR, "mastery.db")
-    
-    data = []
-    if os.path.exists(mastery_db):
-        with sqlite3.connect(mastery_db) as conn:
-            try:
-                data = conn.execute(
-                    "SELECT topic_name, mastery_percentage FROM mastery_scores WHERE subject_code = ?",
-                    (active_subject,)
-                ).fetchall()
-            except sqlite3.OperationalError:
-                data = []
+       
+# TAB 1: Mastery Dashboard
 
+@st.cache_data
+def load_mastery_data(subject, db_path):
+    if not os.path.exists(db_path):
+        return []
+    try:
+        with sqlite3.connect(db_path) as conn:
+            return conn.execute(
+                "SELECT topic_name, mastery_percentage FROM mastery_scores WHERE subject_code = ?",
+                (subject,)
+            ).fetchall()
+    except sqlite3.OperationalError:
+        return []
+
+    st.subheader(f"Mastery Overview & Analytics: {active_subject}")
+    mastery_db = os.path.join(DATABASE_DIR, "mastery.db")
+    
+    data = load_mastery_data(active_subject, mastery_db)
     if data:
         topics = [row[0] for row in data]
         scores = [row[1] for row in data]
-        
         col_chart, col_stats = st.columns([2, 1])
         
         with col_chart:
@@ -681,28 +753,44 @@ with tab_practice:
         if st.button("Fetch Random Exam Question"):
             past_db = os.path.join(DATABASE_DIR, "past_papers.db")
             if os.path.exists(past_db):
-                base_sub = active_subject.split("-")[0]
                 with sqlite3.connect(past_db) as conn:
                     try:
-                        row = conn.execute(
-                            "SELECT question_number, topic_name, question_text, marking_guideline, marks FROM paper_questions WHERE (subject_code LIKE ? OR subject_code LIKE ?) AND LENGTH(question_text) > 30 ORDER BY RANDOM() LIMIT 1",
-                            (f"{active_subject}%", f"{base_sub}%")
-                        ).fetchone()
-                    except sqlite3.OperationalError:
-                        row = None
-                
-        q = st.session_state.current_question
-        if q:
-            st.info(f"**Question {q['num']} [{q['marks']} Marks]** - *{q['topic']}*\n\n{clean_question_text(q['text'])}")
-            typed_sol = st.text_area("Your Working / Answer Attempt:", height=140)
-            user_sol = typed_sol if typed_sol.strip() else voice_text
-            
-            if st.button("Get AI Socratic Guidance"):
+                        cursor = conn.execute(
+                            "SELECT question_number, topic_name, question_text, marking_guideline, marks FROM past_paper_questions WHERE subject_code = ? ORDER BY RANDOM() LIMIT 1",
+                            (active_subject,)
+                        )
+                        row = cursor.fetchone()
+                        if row:
+                            st.session_state.current_question = {
+                                "num": row[0],
+                                "topic": row[1],
+                                "text": row[2],
+                                "guideline": row[3],
+                                "marks": row[4]
+                            }
+                        else:
+                            st.session_state.current_question = None
+                    except sqlite3.OperationalError as e:
+                        st.error(f"Database error: {e}")
+                        st.session_state.current_question = None
+
+    q = st.session_state.current_question
+    if q:
+        st.info(f"**Question {q['num']} ({q['marks']} Marks)** - *{q['topic']}*\n\n{q['text']}")
+        typed_sol = st.text_area("Your Working / Answer Attempt:", height=140)
+        user_sol = typed_sol if typed_sol.strip() else voice_text
+
+        if st.button("Get AI Socratic Guidance"):
+            if not user_sol.strip():
+                st.warning("Type or record your answer first!")
+            else:
                 with st.spinner("Analyzing solution..."):
-                    prompt = f"Socratic guidance for {active_subject}:\nQUESTION: {q['text']}\nMARKING: {q['marking']}\nATTEMPT: {user_sol}"
+                    prompt = f"Socratic guidance for {active_subject}:\nQUESTION: {q['text']}\nMARKING: {q['guideline']}\nATTEMPT: {user_sol}"
                     resp, err = query_gemini_with_fallback(prompt)
                     if resp:
                         st.markdown(resp)
+                    else:
+                        st.error(err)
 
 # TAB 3: Stress-Conditioned Exam Simulator
 with tab_exam:

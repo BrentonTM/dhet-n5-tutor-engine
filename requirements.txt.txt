@@ -1,7 +1,0 @@
-streamlit
-numpy
-plotly
-matplotlib
-pypdf
-python-dotenv
-openai
