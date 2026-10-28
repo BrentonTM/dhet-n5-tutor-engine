@@ -95,7 +95,14 @@ def clean_exam_text(text: str) -> str:
 def render_ai_tutor_chat():
     st.subheader("🤖 Trentox AI Socratic Tutor")
     st.markdown("Ask questions about Power Electronics N5, past exam problems, or circuit theory.")
-
+def format_question_with_ai(raw_text: str) -> str:
+    """Helper function to format question text cleanly."""
+    if not raw_text or not raw_text.strip():
+        return ""
+    try:
+        return raw_text.strip()
+    except Exception:
+        return raw_text
     # Initialize chat history in session state if it doesn't exist.
     if "messages" not in st.session_state:
         st.session_state.messages = [
@@ -268,14 +275,6 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
-    Raw Text:
-    {raw_text}
-    """
-    try:
-        resp, _err = query_gemini_with_fallback(prompt)
-        return resp.strip() if resp else raw_text
-    except Exception:
-        return raw_text
 
 # Helper function to clean corrupted PDF question characters
 # Helper function to clean and structure PDF question text
