@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import sqlite3
@@ -95,6 +96,23 @@ def clean_exam_text(text: str) -> str:
 def render_ai_tutor_chat():
     st.subheader("🤖 Trentox AI Socratic Tutor")
     st.markdown("Ask questions about Power Electronics N5, past exam problems, or circuit theory.")
+def render_3d_scene(scene_file: str, height: int = 180):
+    """Safely renders a 3D scene HTML component with fallback if file is missing."""
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        scene_path = os.path.join(current_dir, "ui", "scenes", scene_file)
+        
+        if os.path.exists(scene_path):
+            with open(scene_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+            st.components.v1.html(html_content, height=height)
+        else:
+            st.info(f"⚡ 3D Visual Scene [{scene_file}] initializing...")
+    except Exception as exc:
+        import logging
+
+        logging.exception("Unable to render 3D scene: %s", scene_file)
+        st.warning(f"⚡ 3D Visual Scene [{scene_file}] could not be loaded.")    
 def format_question_with_ai(raw_text: str) -> str:
     """Clean and normalize extracted exam question text."""
     if not isinstance(raw_text, str):
@@ -548,23 +566,7 @@ st.caption("Industrial Engineering Mastery Engine | Instrumentation N5 | Mathema
 
 # Render 3D Hero Banner Scene
 render_3d_scene("hero_scene.html", height=180)
-def render_3d_scene(scene_file: str, height: int = 180):
-    """Safely renders a 3D scene HTML component with fallback if file is missing."""
-    try:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        scene_path = os.path.join(current_dir, "ui", "scenes", scene_file)
-        
-        if os.path.exists(scene_path):
-            with open(scene_path, "r", encoding="utf-8") as f:
-                html_content = f.read()
-            st.components.v1.html(html_content, height=height)
-        else:
-            st.info(f"⚡ 3D Visual Scene [{scene_file}] initializing...")
-    except Exception as exc:
-        import logging
 
-        logging.exception("Unable to render 3D scene: %s", scene_file)
-        st.warning(f"⚡ 3D Visual Scene [{scene_file}] could not be loaded.")
 # Sidebar navigation & Categorized Formula Reference Expander
 st.sidebar.header("Navigation & Settings")
 active_subject = st.sidebar.selectbox(
