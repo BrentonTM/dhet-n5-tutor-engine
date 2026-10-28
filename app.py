@@ -212,54 +212,62 @@ st.set_page_config(
     initial_sidebar_state="expanded"  # Forces sidebar visible on load
 )
 
-# --- Unified Industrial Theme & Navigation ---
+# --- High-Impact Glowing Top Tab Navigation ---
 try:
     from ui.theme import inject_industrial_theme
     inject_industrial_theme()
 except ImportError:
     pass
 
-# Pristine, unified sidebar navigation control center
-with st.sidebar:
-    st.markdown("""
-        <div style="padding: 10px 0; border-bottom: 1px solid #313244; margin-bottom: 15px;">
-            <h2 style="color: #89b4fa; margin: 0; font-size: 20px; font-weight: 800;">⚡ TRENTOX N5</h2>
-            <p style="color: #a6adc8; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 0 0;">Power Electronics Engine</p>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    selected_tab = st.radio(
-        "Workspace Navigation",
-        ["📊 Mastery", "📝 Practice", "✍️ Exam Prep", "🤖 AI Tutor", "📐 Formulas", "📈 Analytics"],
-        label_visibility="collapsed"
-    )
-    
-    st.markdown("---")
-    st.caption("DHET N5 Curriculum • Secure Core")
-# Paths configuration
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE_DIR = os.path.join(BASE_DIR, "data", "databases")
-os.makedirs(DATABASE_DIR, exist_ok=True)
-def format_question_with_ai(raw_text):
-    if not raw_text or not raw_text.strip():
-        return ""
+# Custom CSS to make the top tabs pop out dramatically
+st.markdown("""
+    <style>
+        /* Base container styling */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 12px;
+            background-color: #11111b;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid #313244;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        }
 
-    prompt = f"""
-    You are an expert NATED engineering exam formatter.
-    Reconstruct and clean up the following raw past paper question text into a pristine, readable format.
+        /* Individual Tab Styling */
+        .stTabs [data-baseweb="tab"] {
+            height: 48px;
+            white-space: pre-wrap;
+            background-color: #1e1e2e;
+            border-radius: 8px;
+            color: #a6adc8;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 0 18px;
+            border: 1px solid #313244;
+            transition: all 0.25s ease-in-out;
+        }
 
-    CRITICAL INSTRUCTIONS FOR MULTIPLE CHOICE & TABLES:
-    1. In NATED exam papers, multiple-choice questions often extract with all option letters (A, B, C, D) grouped together and answer values grouped together. You MUST correctly map options A, B, C, and D to each individual sub-question (1.1, 1.2, 1.3, etc.).
-    2. Format each sub-question clearly like this:
-       * **1.1** [Equation or Statement]
-         * A) [Value]
-         * B) [Value]
-         * C) [Value]
-         * D) [Value]
-    3. If the text contains matching columns ("COLUMN A" and "COLUMN B"), format them into a clean Markdown table: | COLUMN A | COLUMN B |.
-    4. Remove page numbers, document codes, section totals, and headers like "Copyright reserved".
-    5. Return ONLY the finalized Markdown text without any preamble, explanation, or code blocks.
+        /* Hover FX */
+        .stTabs [data-baseweb="tab"]:hover {
+            color: #cba6f7;
+            border-color: #cba6f7;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(203, 166, 247, 0.2);
+        }
 
+        /* Selected Active Tab FX */
+        .stTabs [aria-selected="true"] {
+            background: linear-gradient(135deg, #1e1e2e 0%, #2a2b3d 100%) !important;
+            color: #89b4fa !important;
+            border: 1px solid #89b4fa !important;
+            box-shadow: 0 0 15px rgba(137, 180, 250, 0.35) !important;
+        }
+
+        /* Hide standard accent indicator line */
+        .stTabs [data-baseweb="tab-highlight"] {
+            background-color: transparent !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
     Raw Text:
     {raw_text}
     """
@@ -762,12 +770,12 @@ if not os.getenv("OMNIROUTE_API_KEY"):
         except Exception as e:
             st.sidebar.error(f"Invalid API Key: {e}")
 
-# Main Tabs
+# --- Main App Tabs ---
 tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = st.tabs([
     "📊 Mastery Dashboard",
-    "💡 Practical & Socratic Sandbox",
-    "🎯 Stress-Conditioned Exam Simulator",
-    "📚 AI Tutor Notes & Simulators",
+    "📝 Practical & Socratic Sandbox",
+    "⚡ Stress-Conditioned Exam Simulator",
+    "🤖 AI Tutor Notes & Simulators",
     "📐 Formula & Reference Hub",
     "📈 Cognitive & Psychological Analytics"
 ])
