@@ -13,6 +13,8 @@ from google import genai
 
 # Base path configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE_DIR = os.path.join(BASE_DIR, "data", "databases")
+os.makedirs(DATABASE_DIR, exist_ok=True)
 def render_exam_question_card(question_num: str, title: str, question_text: str, has_diagram: bool = False, given_data: list = None):
     """Renders a clean, structured exam question card with visual separation and diagram notices."""
     
