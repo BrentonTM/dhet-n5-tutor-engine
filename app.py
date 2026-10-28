@@ -8,9 +8,43 @@ import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
 from dotenv import load_dotenv
-from openai import OpenAI  # type: ignore[import-not-found]
+from google import genai
 
+def render_exam_question_card(question_num: str, title: str, question_text: str, has_diagram: bool = False, given_data: list = None):
+    """Renders a clean, structured exam question card with visual separation and diagram notices."""
+    
+    # Use a styled container for visual card separation
+    with st.container():
+        st.markdown(
+            f"""
+            <div style="
+                background-color: #1e1e2e;
+                border: 1px solid #313244;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            ">
+                <h4 style="color: #cba6f7; margin-top: 0; margin-bottom: 10px;">{question_num}: {title}</h4>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        # Display diagram warning banner if the original question requires a diagram
+        if has_diagram:
+            st.warning("⚠️ **Note:** This question originally referenced a circuit diagram or figure from the exam paper. Use your formula sheet and core principles to solve it, or consult your textbook schema.")
 
+        # Clean and display main question text
+        cleaned_text = clean_exam_text(question_text)
+        st.markdown(f"<p style='color: #cdd6f4; font-size: 15px;'>{cleaned_text}</p>", unsafe_allow_html=True)
+
+        # Render given values nicely if available
+        if given_data:
+            st.markdown("<p style='color: #fab387; font-weight: bold; margin-bottom: 5px;'>Given Data / Parameters:</p>", unsafe_allow_html=True)
+            for item in given_data:
+                st.markdown(f"<code style='color: #89b4fa; background: #313244; padding: 2px 6px; border-radius: 4px;'>{item}</code>", unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
 def clean_math_text(text: str) -> str:
     """Clean extracted text while preserving mathematical notation."""
     if not text:
@@ -37,20 +71,81 @@ def clean_math_text(text: str) -> str:
     cleaned = re.sub(r' *\n *', '\n', cleaned)
     cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
     return cleaned.strip()
+
+def clean_exam_text(text: str) -> str:
+    """Cleans messy PDF extraction artifacts, fixes broken spacing, and normalizes layout text."""
+    if not text or not isinstance(text, str):
+        return ""
+    
+    # Normalize whitespace and fix typical PDF line-wrap squishing
+    cleaned = re.sub(r'\s+', ' ', text)
+    
+    # Clean up common formatting breaks for columns or lists
+    cleaned = cleaned.replace("COLUMN ACOLUMN B", "COLUMN A | COLUMN B")
+    
+    return cleaned.strip()
+def render_ai_tutor_chat():
+    st.subheader("🤖 Trentox AI Socratic Tutor")
+    st.markdown("Ask questions about Power Electronics N5, past exam problems, or circuit theory.")
+
+    # Initialize chat history in session state if it doesn't exist.
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {
+                "role": "model",
+                "content": "Hello! I am your N5 Power Electronics tutor. What topic or calculation are we tackling today?"
+            }
+        ]
+
+    # Display prior chat messages.
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Handle user input via chat box.
+    if prompt := st.chat_input("Ask about SCRs, phase control, rectifiers, or formulas..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.chat_message("model"), st.spinner("Analyzing N5 engineering principles..."):
+            try:
+                system_instruction = (
+                    "You are an expert South African DHET NATED N5 Power Electronics and "
+                    "Industrial Electronics tutor. Guide students using first-principles reasoning, "
+                    "clear step-by-step calculations, and Socratic questioning rather than just giving away answers."
+                )
+
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[
+                        {"role": "user", "parts": [{"text": f"System Context: {system_instruction}\n\nUser Question: {prompt}"}]}
+                    ]
+                )
+
+                ai_reply = response.text or "I could not generate a response. Please try again."
+                st.markdown(ai_reply)
+                st.session_state.messages.append({"role": "model", "content": ai_reply})
+
+            except Exception as e:
+                st.error(f"Error communicating with AI tutor: {e}")
+
+
 load_dotenv()
 
-# Initialize OpenAI client with fallback for Streamlit Cloud & local OmniRoute
-try:
-    api_key = st.secrets.get("OMNIROUTE_API_KEY") or os.getenv("OMNIROUTE_API_KEY", "not-needed")
-    base_url = st.secrets.get("BASE_URL") or os.getenv("BASE_URL", "http://localhost:20128/v1")
-except (AttributeError, FileNotFoundError, KeyError):
-    api_key = os.getenv("OMNIROUTE_API_KEY", "not-needed")
-    base_url = os.getenv("BASE_URL", "http://localhost:20128/v1")
+# Initialize the Gemini client from environment variables or Streamlit secrets.
+api_key = os.getenv("OMNIROUTE_API_KEY") or os.getenv("GEMINI_API_KEY")
+if not api_key:
+    try:
+        api_key = st.secrets.get("OMNIROUTE_API_KEY") or st.secrets.get("GEMINI_API_KEY")
+    except (FileNotFoundError, KeyError):
+        api_key = None
 
-client = OpenAI(
-    api_key=api_key,
-    base_url=base_url
-)
+if api_key:
+    client = genai.Client(api_key=api_key)
+else:
+    client = None
+    st.warning("⚠️ Gemini API key not found. Please add it to your local .env file or Streamlit Cloud Secrets.")
 
 # Startup check removed so the app launches cleanly without warning spam
 
@@ -642,11 +737,39 @@ tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = st
     "📈 Cognitive & Psychological Analytics"
 ])
 
+
+with tab_tutor:
+    render_ai_tutor_chat()
 # TAB 1: Mastery Dashboard
 with tab_mastery:
     st.subheader(f"Mastery Overview & Analytics: {active_subject}")
     mastery_db = os.path.join(DATABASE_DIR, "mastery.db")
-       
+
+with tab_practice:
+    st.subheader("📝 Practical & Socratic Sandbox")
+    st.markdown("Practice past exam questions structured for clear problem-solving.")
+    
+    # Render your exam question cleanly using the new card component
+    render_exam_question_card(
+        question_num="QUESTION 3",
+        title="TRANSISTOR AMPLIFIERS",
+        question_text="Briefly explain the function of each of the following components in a common emitter amplifier:",
+        has_diagram=True,  # Automatically displays the missing diagram warning notice
+        given_data=["IC(MAX) = 12 mA", "RE = 150 Ω", "RB1 = 17 kΩ", "RB2 = 3 kΩ"]
+    )
+
+with tab_exam:
+    st.subheader("⚡ Stress-Conditioned Exam Simulator")
+    st.markdown("Simulate timed exam conditions with structured problem cards.")
+    
+    # You can also render exam simulator questions here:
+    render_exam_question_card(
+        question_num="QUESTION 3.3",
+        title="FIXED-BIASED VOLTAGE AMPLIFIER",
+        question_text="Calculate by means of the precise method the current gain Ai:",
+        has_diagram=False,
+        given_data=["hie = 1300 Ω", "hoe = 20 µA/V", "RL = 10 kΩ", "hre = 2 x 10^-4", "hfe = 250", "RC = 240 Ω"]
+    )      
 # TAB 1: Mastery Dashboard
 
 @st.cache_data
