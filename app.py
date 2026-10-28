@@ -11,6 +11,8 @@ import streamlit.components.v1 as components
 from dotenv import load_dotenv
 from google import genai
 
+# Base path configuration
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 def render_exam_question_card(question_num: str, title: str, question_text: str, has_diagram: bool = False, given_data: list = None):
     """Renders a clean, structured exam question card with visual separation and diagram notices."""
     
