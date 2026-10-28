@@ -73,16 +73,25 @@ def clean_math_text(text: str) -> str:
     return cleaned.strip()
 
 def clean_exam_text(text: str) -> str:
-    """Cleans messy PDF extraction artifacts, fixes broken spacing, and normalizes layout text."""
+    """Aggressively cleans corrupted PDF font encodings, garbage symbols, and spacing artifacts."""
     if not text or not isinstance(text, str):
         return ""
     
-    # Normalize whitespace and fix typical PDF line-wrap squishing
-    cleaned = re.sub(r'\s+', ' ', text)
+    # Filter out common PDF font corruption patterns (long strings of weird symbols/punctuation)
+    if text.count('!') > 3 or text.count('#') > 3 or text.count('%') > 3:
+        # If the line is mostly garbage symbol encoding, return a clean fallback notice
+        return "[Content rendered from a secured/encoded PDF section. Please refer to your official N5 textbook or formula sheet for this specific item.]"
+
+    # Normalize Unicode first
+    cleaned = unicodedata.normalize("NFKC", text)
     
-    # Clean up common formatting breaks for columns or lists
-    cleaned = cleaned.replace("COLUMN ACOLUMN B", "COLUMN A | COLUMN B")
+    # Strip unprintable or corrupted placeholder boxes
+    cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\ufffd]', '', cleaned)
     
+    # Fix repeated whitespace
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    
+    return cleaned.strip()
     return cleaned.strip()
 def render_ai_tutor_chat():
     st.subheader("🤖 Trentox AI Socratic Tutor")
