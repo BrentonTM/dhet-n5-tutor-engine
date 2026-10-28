@@ -157,13 +157,19 @@ else:
 
 # Startup check removed so the app launches cleanly without warning spam
 
-# Import Industrial Futurism Theme Module
-try:
-    from ui.theme import inject_industrial_theme  # type: ignore[import-not-found]
-except ImportError:
-    def inject_industrial_theme():
-        st.sidebar.warning("ui.theme module not found. Using default style.")
-
+# --- Stable Sidebar Navigation ---
+with st.sidebar:
+    st.title("⚡ Trentox N5 Tutor")
+    st.markdown("---")
+    
+    # Main Navigation Menu
+    selected_tab = st.radio(
+        "Navigation",
+        ["📊 Mastery", "📝 Practice", "✍️ Exam Prep", "🤖 AI Tutor", "📐 Formulas", "📈 Analytics"]
+    )
+    
+    st.markdown("---")
+    st.caption("DHET N5 Power Electronics Engine")
 # Configure Matplotlib for headless Streamlit rendering
 try:
     import matplotlib
