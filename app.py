@@ -73,25 +73,24 @@ def clean_math_text(text: str) -> str:
     return cleaned.strip()
 
 def clean_exam_text(text: str) -> str:
-    """Aggressively cleans corrupted PDF font encodings, garbage symbols, and spacing artifacts."""
+    """Cleans PDF extraction artifacts and filters out Afrikaans sections to enforce English rendering."""
     if not text or not isinstance(text, str):
         return ""
     
-    # Filter out common PDF font corruption patterns (long strings of weird symbols/punctuation)
-    if text.count('!') > 3 or text.count('#') > 3 or text.count('%') > 3:
-        # If the line is mostly garbage symbol encoding, return a clean fallback notice
-        return "[Content rendered from a secured/encoded PDF section. Please refer to your official N5 textbook or formula sheet for this specific item.]"
+    # Skip or flag Afrikaans boilerplate text commonly found in DHET papers
+    afrikaans_keywords = ["Kopiereg voorbehou", "Blaai om asseblief", "VRAAG", "BEWYS", "AANWYSINGS"]
+    if any(keyword in text for keyword in afrikaans_keywords):
+        # If it's an Afrikaans heading, you can return a clean English toggle or skip it
+        if "VRAAG" in text:
+            text = text.replace("VRAAG", "QUESTION")
+        if "Kopiereg voorbehou" in text:
+            return "" # Skip copyright notice lines
 
-    # Normalize Unicode first
+    # Normalize Unicode and strip junk characters
     cleaned = unicodedata.normalize("NFKC", text)
-    
-    # Strip unprintable or corrupted placeholder boxes
     cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\ufffd]', '', cleaned)
-    
-    # Fix repeated whitespace
     cleaned = re.sub(r'\s+', ' ', cleaned)
     
-    return cleaned.strip()
     return cleaned.strip()
 def render_ai_tutor_chat():
     st.subheader("🤖 Trentox AI Socratic Tutor")
