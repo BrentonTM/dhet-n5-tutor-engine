@@ -96,54 +96,18 @@ def render_ai_tutor_chat():
     st.subheader("🤖 Trentox AI Socratic Tutor")
     st.markdown("Ask questions about Power Electronics N5, past exam problems, or circuit theory.")
 def format_question_with_ai(raw_text: str) -> str:
-    """Helper function to format question text cleanly."""
-    if not raw_text or not raw_text.strip():
+    """Clean and normalize extracted exam question text."""
+    if not isinstance(raw_text, str):
         return ""
-    try:
-        return raw_text.strip()
-    except Exception:
-        return raw_text
-    # Initialize chat history in session state if it doesn't exist.
-    if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {
-                "role": "model",
-                "content": "Hello! I am your N5 Power Electronics tutor. What topic or calculation are we tackling today?"
-            }
-        ]
 
-    # Display prior chat messages.
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    cleaned = clean_exam_text(raw_text)
+    cleaned = clean_math_text(cleaned)
+    cleaned = clean_question_text(cleaned)
 
-    # Handle user input via chat box.
-    if prompt := st.chat_input("Ask about SCRs, phase control, rectifiers, or formulas..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        with st.chat_message("model"), st.spinner("Analyzing N5 engineering principles..."):
-            try:
-                system_instruction = (
-                    "You are an expert South African DHET NATED N5 Power Electronics and "
-                    "Industrial Electronics tutor. Guide students using first-principles reasoning, "
-                    "clear step-by-step calculations, and Socratic questioning rather than just giving away answers."
-                )
-
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=[
-                        {"role": "user", "parts": [{"text": f"System Context: {system_instruction}\n\nUser Question: {prompt}"}]}
-                    ]
-                )
-
-                ai_reply = response.text or "I could not generate a response. Please try again."
-                st.markdown(ai_reply)
-                st.session_state.messages.append({"role": "model", "content": ai_reply})
-
-            except Exception as e:
-                st.error(f"Error communicating with AI tutor: {e}")
+    # Keep numbered sub-questions and equations readable.
+    cleaned = re.sub(r"\s*\n\s*", "\n", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 load_dotenv()
@@ -584,7 +548,21 @@ st.caption("Industrial Engineering Mastery Engine | Instrumentation N5 | Mathema
 
 # Render 3D Hero Banner Scene
 render_3d_scene("hero_scene.html", height=180)
-
+def render_3d_scene(scene_file: str, height: int = 180):
+    """Safely renders a 3D scene HTML component with fallback if file is missing."""
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        scene_path = os.path.join(base_dir, "ui", "scenes", scene_file)
+        
+        if os.path.exists(scene_path):
+            with open(scene_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+            st.components.v1.html(html_content, height=height)
+        else:
+            st.info(f"⚡ 3D Visual Scene [{scene_file}] initializing...")
+    except (OSError, UnicodeError) as exc:
+        # Show a graceful fallback while retaining the error details for debugging.
+        st.warning(f"⚡ Could not load 3D scene [{scene_file}]: {exc}")
 # Sidebar navigation & Categorized Formula Reference Expander
 st.sidebar.header("Navigation & Settings")
 active_subject = st.sidebar.selectbox(
