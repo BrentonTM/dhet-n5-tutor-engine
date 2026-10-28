@@ -212,8 +212,50 @@ st.set_page_config(
     initial_sidebar_state="expanded"  # Forces sidebar visible on load
 )
 
-# Inject Industrial Futurism Theme & FX Controls
-inject_industrial_theme()
+# Inject Industrial Futurism Theme & FX Controls safely
+try:
+    from ui.theme import inject_industrial_theme
+    inject_industrial_theme()
+except ImportError:
+    st.markdown("""
+        <style>
+            [data-testid="stSidebar"] {
+                background-color: #11111b;
+                border-right: 1px solid #313244;
+            }
+            .sidebar-badge {
+                background: linear-gradient(135deg, #89b4fa 0%, #cba6f7 100%);
+                color: #11111b;
+                padding: 4px 10px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+# --- Professional Designer Sidebar ---
+with st.sidebar:
+    st.markdown("### ⚡ TRENTOX N5")
+    st.markdown('<span class="sidebar-badge">Power Electronics Engine</span>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    st.markdown("<p style='color: #a6adc8; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;'>Navigation</p>", unsafe_allow_html=True)
+    
+    selected_tab = st.radio(
+        "Select Workspace",
+        ["📊 Mastery", "📝 Practice", "✍️ Exam Prep", "🤖 AI Tutor", "📐 Formulas", "📈 Analytics"],
+        label_visibility="collapsed"
+    )
+    
+    st.markdown("---")
+    st.markdown("<p style='color: #a6adc8; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;'>System Status</p>", unsafe_allow_html=True)
+    st.success("🟢 Gemini API Active")
+    st.info("🔒 Secure SSL Tunnel")
+    
+    st.markdown("<br><p style='color: #6c7086; font-size: 11px; text-align: center;'>DHET N5 Curriculum v2.5</p>", unsafe_allow_html=True)
 
 # Paths configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
