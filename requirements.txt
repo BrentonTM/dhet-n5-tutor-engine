@@ -1,8 +1,11 @@
+google-genai
 streamlit
 numpy
+pandas
 plotly
 matplotlib
-pypdf
 python-dotenv
 openai
-PyYAML
+pypdf
+python-pptx
+streamlit-mic-recorder

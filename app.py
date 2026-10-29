@@ -9,7 +9,28 @@ import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
 from dotenv import load_dotenv
-from google import genai
+
+logger = logging.getLogger(__name__)
+
+ # Safe GenAI SDK Import
+try:
+    from google import genai
+except ImportError:
+    genai = None
+# Safe OpenAI SDK Import (for OmniRoute gateway)
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+load_dotenv()
+
+# Must be the first Streamlit command executed in the script
+st.set_page_config(
+    page_title="Trentox Tutor AI",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
 # Base path configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -100,6 +121,35 @@ def clean_exam_text(text: str) -> str:
 def render_ai_tutor_chat():
     st.subheader("🤖 Trentox AI Socratic Tutor")
     st.markdown("Ask questions about Power Electronics N5, past exam problems, or circuit theory.")
+
+    if "tutor_chat" not in st.session_state:
+        st.session_state.tutor_chat = []
+
+    for msg in st.session_state.tutor_chat:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    user_msg = st.chat_input("Ask your tutor a question...", key="tutor_chat_input")
+    if user_msg:
+        st.session_state.tutor_chat.append({"role": "user", "content": user_msg})
+        history = "\n".join(
+            f"{m['role'].upper()}: {m['content']}" for m in st.session_state.tutor_chat[-8:]
+        )
+        chat_prompt = (
+            f"You are a Socratic NATED engineering tutor for {active_subject}. "
+            "Guide the student with hints and questions before giving full answers.\n\n"
+            f"{history}\nASSISTANT:"
+        )
+        with st.spinner("Tutor is thinking..."):
+            reply, err = query_gemini_with_fallback(chat_prompt)
+        st.session_state.tutor_chat.append(
+            {"role": "assistant", "content": reply or f"⚠️ {err}"}
+        )
+        st.rerun()
+
+    if st.session_state.tutor_chat and st.button("🗑️ Clear chat", key="tutor_chat_clear"):
+        st.session_state.tutor_chat = []
+        st.rerun()
 def render_3d_scene(scene_file: str, height: int = 180):
     """Safely renders a 3D scene HTML component with fallback if file is missing."""
     try:
@@ -133,33 +183,51 @@ def format_question_with_ai(raw_text: str) -> str:
 
 
 load_dotenv()
-
-# Initialize the Gemini client from environment variables or Streamlit secrets.
+# --- Retrieve API Key from Environment or Streamlit Secrets ---
 api_key = os.getenv("OMNIROUTE_API_KEY") or os.getenv("GEMINI_API_KEY")
+
 if not api_key:
     try:
         api_key = st.secrets.get("OMNIROUTE_API_KEY") or st.secrets.get("GEMINI_API_KEY")
     except (FileNotFoundError, KeyError):
         api_key = None
 
-if api_key:
+# --- Initialize Gemini Client Safely ---
+if api_key and genai is not None:
     client = genai.Client(api_key=api_key)
 else:
     client = None
-    st.warning("⚠️ Gemini API key not found. Please add it to your local .env file or Streamlit Cloud Secrets.")
+    st.warning("⚠️ Gemini API key or module not loaded. Add your API key to .env or Streamlit Cloud Secrets.")
+# --- OmniRoute (OpenAI-compatible gateway) initialization ---
+OMNIROUTE_BASE_URL = os.getenv("OMNIROUTE_BASE_URL", "http://localhost:20128/v1")
+# Comma-separated, tried in order. Run check_models.py (or the sidebar
+# "Test connection" button) to see the exact IDs your OmniRoute exposes.
+OMNIROUTE_MODELS = [
+    m.strip()
+    for m in os.getenv("OMNIROUTE_MODELS", "gemini-3-flash-preview,gemini-3.1-pro-preview").split(",")
+    if m.strip()
+]
 
-# Startup check removed so the app launches cleanly without warning spam
+
+def build_omniroute_client(api_key=None):
+    """Return an OpenAI-compatible client pointed at OmniRoute, or None if unavailable."""
+    key = api_key or os.getenv("OMNIROUTE_API_KEY")
+    if not key or OpenAI is None:
+        return None
+    try:
+        return OpenAI(base_url=OMNIROUTE_BASE_URL, api_key=key, timeout=60.0)
+    except Exception:
+        return None
+
+
+client = build_omniroute_client()
 
 # --- Stable Sidebar Navigation ---
 with st.sidebar:
     st.title("⚡ Trentox N5 Tutor")
     st.markdown("---")
     
-    # Main Navigation Menu
-    selected_tab = st.radio(
-        "Navigation",
-        ["📊 Mastery", "📝 Practice", "✍️ Exam Prep", "🤖 AI Tutor", "📐 Formulas", "📈 Analytics"]
-    )
+    st.caption("Use the tabs at the top of the page to navigate.")
     
     st.markdown("---")
     st.caption("DHET N5 Power Electronics Engine")
@@ -176,7 +244,6 @@ except ImportError:
 
 import plotly.express as px
 import plotly.graph_objects as go
-from dotenv import load_dotenv
 
 # Document parsers
 try:
@@ -197,13 +264,7 @@ try:
 except ImportError:
     mic_recorder = None
 
-# Page configuration
-st.set_page_config(
-    page_title="Trentox Tutor AI",
-    page_icon="⚡",
-    layout="wide",
-    initial_sidebar_state="expanded"  # Forces sidebar visible on load
-)
+# (st.set_page_config now runs at the top of the file)
 
 # --- High-Impact Glowing Top Tab Navigation ---
 try:
@@ -426,7 +487,8 @@ def render_topic_diagram(topic_name):
     ax.axis("off")
     st.pyplot(fig)
 
-# Local Material Reader Function
+# Local Material Reader Function (cached so PDFs/PPTs are not re-read on every click)
+@st.cache_data(show_spinner=False)
 def extract_text_from_local_files(folder_path):
     import logging
 
@@ -470,16 +532,17 @@ def extract_text_from_local_files(folder_path):
 
     return "\n\n".join(extracted_notes)
 
-# Cached Gemini Query Function
-@st.cache_data(show_spinner=False)
-def cached_query_gemini(prompt_text, subject_code):
+# OmniRoute query helpers (models are served through the OpenAI-compatible endpoint)
+def _call_omniroute(prompt_text):
+    """Try each configured model in turn. Returns (reply, None) or (None, error_message)."""
+    if OpenAI is None:
+        return None, "The 'openai' package is not installed. Run: pip install openai"
     if not client:
-        return None, "Gemini API client is not configured."
-    candidate_models = ["gemini-3.8-flash", "gemini-3.1-pro-preview"]
+        return None, "OmniRoute is not configured. Set OMNIROUTE_API_KEY in .env or enter it in the sidebar."
     last_err = None
-    for model_name in candidate_models:
+    for model_name in OMNIROUTE_MODELS:
         try:
-            response = client.chat.completions.create(  # type: ignore[attr-defined]
+            response = client.chat.completions.create(
                 model=model_name,
                 messages=[{"role": "user", "content": prompt_text}],
             )
@@ -489,27 +552,30 @@ def cached_query_gemini(prompt_text, subject_code):
         except Exception as model_err:
             last_err = model_err
             continue
-    return None, f"All models currently busy. Details: {last_err}"
+    return None, (
+        f"OmniRoute request failed at {OMNIROUTE_BASE_URL} for models {OMNIROUTE_MODELS}. "
+        f"Last error: {last_err}"
+    )
+
+
+@st.cache_data(show_spinner=False)
+def _cached_omniroute_success(prompt_text, subject_code):
+    """Raises on failure so st.cache_data only ever stores successful replies."""
+    reply, err = _call_omniroute(prompt_text)
+    if err:
+        raise RuntimeError(err)
+    return reply
+
+
+def cached_query_gemini(prompt_text, subject_code):
+    try:
+        return _cached_omniroute_success(prompt_text, subject_code), None
+    except Exception as exc:
+        return None, str(exc)
 
 
 def query_gemini_with_fallback(prompt):
-    if not client:
-        return None, "Gemini API client is not configured."
-    candidate_models = ["gemini-3.8-flash", "gemini-3.1-pro-preview"]
-    last_err = None
-    for model_name in candidate_models:
-        try:
-            response = client.chat.completions.create(  # type: ignore[attr-defined]
-                model=model_name,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            ai_reply = response.choices[0].message.content
-            if ai_reply:
-                return ai_reply, None
-        except Exception as m_err:
-            last_err = m_err
-            continue
-    return None, f"All models currently busy. Details: {last_err}"
+    return _call_omniroute(prompt)
 
 SUBJECT_MODULES = {
     "INST-N5": [
@@ -748,12 +814,23 @@ with st.sidebar.expander("📐 Official NATED Formula Sheets", expanded=True):
 if not os.getenv("OMNIROUTE_API_KEY"):
     manual_key = st.sidebar.text_input("OmniRoute API Key:", type="password")
     if manual_key:
-        try:
-            from google import genai
-            client = genai.Client(api_key=manual_key)
-            st.sidebar.success("API key loaded successfully!")
-        except Exception as e:
-            st.sidebar.error(f"Invalid API Key: {e}")
+        client = build_omniroute_client(manual_key)
+        if client:
+            st.sidebar.success("OmniRoute key loaded.")
+        else:
+            st.sidebar.error("Could not create the OmniRoute client. Is the 'openai' package installed?")
+
+if client:
+    with st.sidebar.expander("🔌 OmniRoute connection", expanded=False):
+        st.caption(f"Endpoint: {OMNIROUTE_BASE_URL}")
+        st.caption("Models tried: " + ", ".join(OMNIROUTE_MODELS))
+        if st.button("Test connection", key="omniroute_test"):
+            try:
+                available = [m.id for m in client.models.list().data]
+                st.success(f"Connected. {len(available)} models available.")
+                st.code("\n".join(available[:40]))
+            except Exception as exc:
+                st.error(f"Connection failed: {exc}")
 
 # --- Main App Tabs ---
 tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = st.tabs([
@@ -766,38 +843,19 @@ tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = st
 ])
 
 
-with tab_tutor:
-    render_ai_tutor_chat()
-# TAB 1: Mastery Dashboard
-with tab_mastery:
-    st.subheader(f"Mastery Overview & Analytics: {active_subject}")
-    mastery_db = os.path.join(DATABASE_DIR, "mastery.db")
+# Tab bodies follow, one block per tab.
 
 with tab_practice:
     st.subheader("📝 Practical & Socratic Sandbox")
     st.markdown("Practice past exam questions structured for clear problem-solving.")
     
-    # Render your exam question cleanly using the new card component
-    render_exam_question_card(
-        question_num="QUESTION 3",
-        title="TRANSISTOR AMPLIFIERS",
-        question_text="Briefly explain the function of each of the following components in a common emitter amplifier:",
-        has_diagram=True,  # Automatically displays the missing diagram warning notice
-        given_data=["IC(MAX) = 12 mA", "RE = 150 Ω", "RB1 = 17 kΩ", "RB2 = 3 kΩ"]
-    )
+    st.caption("Fetch a past-paper question below, or switch to Fault Diagnosis mode.")
 
 with tab_exam:
     st.subheader("⚡ Stress-Conditioned Exam Simulator")
     st.markdown("Simulate timed exam conditions with structured problem cards.")
     
-    # You can also render exam simulator questions here:
-    render_exam_question_card(
-        question_num="QUESTION 3.3",
-        title="FIXED-BIASED VOLTAGE AMPLIFIER",
-        question_text="Calculate by means of the precise method the current gain Ai:",
-        has_diagram=False,
-        given_data=["hie = 1300 Ω", "hoe = 20 µA/V", "RL = 10 kΩ", "hre = 2 x 10^-4", "hfe = 250", "RC = 240 Ω"]
-    )      
+    st.caption("Configure the mock exam on the left, then press Start.")      
 # TAB 1: Mastery Dashboard
 
 @st.cache_data
@@ -812,6 +870,9 @@ def load_mastery_data(subject, db_path):
             ).fetchall()
     except sqlite3.OperationalError:
         return []
+
+
+with tab_mastery:
 
     st.subheader(f"Mastery Overview & Analytics: {active_subject}")
     mastery_db = os.path.join(DATABASE_DIR, "mastery.db")
@@ -862,6 +923,8 @@ def load_mastery_data(subject, db_path):
 
 # TAB 2: Practical & Socratic Sandbox
 with tab_practice:
+    if "current_question" not in st.session_state:
+        st.session_state.current_question = None
     st.subheader("💡 Practical Engineering Sandbox & Fault-Finding Scenarios")
     mode = st.radio("Select Practice Mode:", ["Exam Past Paper Guidance", "🚨 Plant Fault Diagnosis Scenario"], horizontal=True)
     
@@ -969,6 +1032,9 @@ with tab_exam:
                     st.session_state.exam_answers = {}
                     st.session_state.exam_confidence = {}
                     st.session_state.exam_submitted = False
+                    st.session_state.exam_graded = False
+                    st.session_state.exam_report = None
+                    st.session_state.exam_report_err = None
                     st.session_state.exam_start_time = time.time()
                     st.session_state.exam_duration = effective_time * 60
                     st.rerun()
@@ -1016,22 +1082,32 @@ with tab_exam:
             
             if submit_exam or st.session_state.get("exam_submitted", False):
                 st.session_state.exam_submitted = True
-                with st.spinner("Chief Examiner Grading Attempt..."):
-                    grading_prompt = f"Grade exam for {active_subject}."
-                    for idx, item in enumerate(paper):
-                        grading_prompt += f"\nQ{idx+1}: {item['text']}\nMARKING: {item['marking']}\nANSWER: {st.session_state.exam_answers.get(idx, '')}"
-                    eval_result, err = query_gemini_with_fallback(grading_prompt)
-                    if eval_result:
-                        st.markdown("## 📝 Assessment Report")
-                        st.markdown(eval_result)
+                if not st.session_state.get("exam_graded", False):
+                    with st.spinner("Chief Examiner Grading Attempt..."):
+                        grading_prompt = f"Grade exam for {active_subject}."
+                        for idx, item in enumerate(paper):
+                            grading_prompt += f"\nQ{idx+1}: {item['text']}\nMARKING: {item['marking']}\nANSWER: {st.session_state.exam_answers.get(idx, '')}"
+                        eval_result, err = query_gemini_with_fallback(grading_prompt)
+                    st.session_state.exam_report = eval_result
+                    st.session_state.exam_report_err = err
+                    st.session_state.exam_graded = True
+                if st.session_state.get("exam_report"):
+                    st.markdown("## 📝 Assessment Report")
+                    st.markdown(st.session_state.exam_report)
+                elif st.session_state.get("exam_report_err"):
+                    st.error(st.session_state.exam_report_err)
+                    if st.button("🔁 Retry grading", key="retry_grading"):
+                        st.session_state.exam_graded = False
+                        st.rerun()
 
 # TAB 4: AI Tutor Notes, Simulators & Spaced-Repetition Flashcards
 with tab_tutor:
-    sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs([
+    sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5 = st.tabs([
         "📖 Module Lessons & Notes",
         "🧠 Spaced-Repetition Cards",
         "🎛 Live Parameter Simulators",
-        "📅 14-Day Timetable"
+        "📅 14-Day Timetable",
+        "💬 Ask the Tutor"
     ])
     
     with sub_tab1:
@@ -1041,7 +1117,7 @@ with tab_tutor:
         
         if st.button("📖 Generate Lesson & Explanation"):
             target_topic = custom_query.strip() if custom_query.strip() else selected_module
-            local_material = extract_text_from_local_files(BASE_DIR)
+            local_material = extract_text_from_local_files(os.path.join(BASE_DIR, "Learning material"))
             
             with st.spinner(f"Generating lesson and vector diagram for '{target_topic}'..."):
                 prompt = f"Detailed technical lesson notes for NATED {active_subject}: {target_topic}. Provide clear explanations without inline ASCII box diagrams.\nFiles: {local_material[:2000]}"
@@ -1134,6 +1210,9 @@ with tab_tutor:
             {"Day": "Day 13 - 14", "Focus": "Mock Exam Marathon", "Activities": "Timed exams with confidence vs accuracy debrief"}
         ]
         st.table(timetable_data)
+
+    with sub_tab5:
+        render_ai_tutor_chat()
 
 # TAB 5: Formula & Reference Hub
 with tab_formulas:
