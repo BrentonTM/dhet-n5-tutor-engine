@@ -533,29 +533,30 @@ def extract_text_from_local_files(folder_path):
     return "\n\n".join(extracted_notes)
 
 # OmniRoute query helpers (models are served through the OpenAI-compatible endpoint)
-def _call_omniroute(prompt_text):
-    """Try each configured model in turn. Returns (reply, None) or (None, error_message)."""
-    if OpenAI is None:
-        return None, "The 'openai' package is not installed. Run: pip install openai"
-    if not client:
-        return None, "OmniRoute is not configured. Set OMNIROUTE_API_KEY in .env or enter it in the sidebar."
-    last_err = None
-    for model_name in OMNIROUTE_MODELS:
+def _call_omniroute(prompt):
+    """
+    OmniRoute has been retired in favor of direct Google GenAI SDK calls.
+    This safely redirects any legacy calls to the direct API.
+    """
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
         try:
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=[{"role": "user", "content": prompt_text}],
+            api_key = st.secrets.get("GEMINI_API_KEY")
+        except Exception:
+            api_key = None
+            
+    if api_key and genai is not None:
+        try:
+            client = genai.Client(api_key=api_key)
+            response = client.models.generate_content(
+                model='gemini-3.8-flash',
+                contents=prompt,
             )
-            ai_reply = response.choices[0].message.content
-            if ai_reply:
-                return ai_reply, None
-        except Exception as model_err:
-            last_err = model_err
-            continue
-    return None, (
-        f"OmniRoute request failed at {OMNIROUTE_BASE_URL} for models {OMNIROUTE_MODELS}. "
-        f"Last error: {last_err}"
-    )
+            return response.text, None
+        except Exception as e:
+            return None, f"GenAI SDK Error: {str(e)}"
+            
+    return None, "⚠️ Error: OmniRoute is disabled and GEMINI_API_KEY is not configured."
 
 
 @st.cache_data(show_spinner=False)
