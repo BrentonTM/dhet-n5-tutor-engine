@@ -658,7 +658,6 @@ SUBJECT_MODULES = {
 }
 
 FLASHCARDS_DATA = {
-        FLASHCARDS_DATA = {
     "INST-N5": [
         r"$$Q = \frac{8}{15}\tan\left(\frac{\theta}{2}\right)\sqrt{2g}H^{5/2}$$",
         r"$$\text{pH} = -\log[H+]$$",
@@ -666,8 +665,6 @@ FLASHCARDS_DATA = {
         r"$$V_x = \pi \int_{a}^{b} y^2 \, dx$$"
     ]
 }
-}
-
 # App Header
 st.title("⚡ Trentox Tutor AI")
 st.caption("Industrial Engineering Mastery Engine | Instrumentation N5 | Mathematics N5 | Industrial Electronics N5 | Digital Electronics N4/N5")
