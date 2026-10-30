@@ -596,18 +596,29 @@ def query_gemini_with_fallback(prompt):
         try:
             client = genai.Client(api_key=api_key)
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-3.8-flash',
                 contents=prompt,
             )
             return response.text, None
         except Exception as e:
-            return None, f"Google GenAI SDK Error: {str(e)}"
+            # If 503 high demand occurs, try falling back to another stable model or retry
+            try:
+                client = genai.Client(api_key=api_key)
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',  # Or another available model variant
+                    contents=prompt,
+                )
+                return response.text, None
+            except Exception:
+                return None, f"GenAI SDK Error (Service Busy): {str(e)}"
 
     # 3. Only allow OmniRoute fallback if running locally
     if os.getenv("LOCAL_DEV") == "true" or not os.getenv("STREAMLIT_SHARING_MODE"):
         return _call_omniroute(prompt)
 
     return None, "⚠️ **Configuration Error:** `GEMINI_API_KEY` is missing from your Streamlit Cloud Secrets. Please add it in your app settings."
+
+
 SUBJECT_MODULES = {
     "INST-N5": [
         "Flow Measurement (Orifice, Venturi, Weirs, Bernoulli's Equation)",
