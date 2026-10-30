@@ -576,10 +576,10 @@ def cached_query_gemini(prompt_text, subject_code):
 
 def query_gemini_with_fallback(prompt):
     """
-    Attempts direct Google GenAI SDK call first (for Streamlit Cloud & direct API key),
-    falling back to local OmniRoute proxy if unavailable.
+    Attempts direct Google GenAI SDK call first (for Streamlit Cloud),
+    falling back to local OmniRoute proxy when running on localhost.
     """
-    # 1. Direct Google GenAI SDK (Streamlit Cloud Secrets or .env)
+    # 1. Direct Google GenAI SDK (Streamlit Cloud Secrets or local .env)
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         try:
@@ -593,12 +593,12 @@ def query_gemini_with_fallback(prompt):
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt,
-            ) #
+            )
             return response.text, None
         except Exception as e:
             logger.warning(f"Direct GenAI call failed, falling back to OmniRoute: {e}")
 
-    # 2. Local OmniRoute Gateway Fallback
+    # 2. Local OmniRoute Gateway Fallback (for local dev)
     return _call_omniroute(prompt)
 SUBJECT_MODULES = {
     "INST-N5": [
