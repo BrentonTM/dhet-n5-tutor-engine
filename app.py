@@ -533,11 +533,9 @@ def extract_text_from_local_files(folder_path):
     return "\n\n".join(extracted_notes)
 
 # OmniRoute query helpers (models are served through the OpenAI-compatible endpoint)
+# Resilient GenAI call helper with automatic retry and fallback
 def _call_omniroute(prompt):
-    """
-    OmniRoute has been retired in favor of direct Google GenAI SDK calls.
-    This safely redirects any legacy calls to the direct API.
-    """
+    """Directly queries Google GenAI SDK with automatic multi-model fallback for 503 errors."""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         try:
@@ -545,23 +543,31 @@ def _call_omniroute(prompt):
         except Exception:
             api_key = None
 
-    if api_key and genai is not None:
-        try:
-            client = genai.Client(api_key=api_key)
+    if not api_key or genai is None:
+        return None, "⚠️ API key missing or GenAI SDK not initialized."
 
-            # ⚡ Update the model name here to gemini-3.8-flash
-            response = client.models.generate_content(
-                model='gemini-3.8-flash',
-                contents=prompt,
-            )
-            return response.text, None
+    client = genai.Client(api_key=api_key)
+    models_to_try = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash']
 
-        except Exception as e:
-            return None, f"GenAI SDK Error: {e!s}"
+    for model_name in models_to_try:
+        for attempt in range(2):  # Try each model up to 2 times
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                if response and response.text:
+                    return response.text, None
+            except Exception as e:
+                error_str = str(e)
+                if "503" in error_str or "UNAVAILABLE" in error_str:
+                    time.sleep(1.5)  # Brief backoff before retry
+                    continue
+                else:
+                    break  # Non-503 error, try next model
 
-    return None, "GEMINI_API_KEY is missing or the GenAI SDK is unavailable."
-
-
+    st.warning("⚠️ Google's AI servers are experiencing high traffic congestion. Please try generating again in a moment.")
+    return None, "GenAI SDK Error: 503 UNAVAILABLE (Service Temporarily Busy)"
 @st.cache_data(show_spinner=False)
 def _cached_omniroute_success(prompt_text, subject_code):
     """Raises on failure so st.cache_data only ever stores successful replies."""
