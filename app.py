@@ -574,12 +574,11 @@ def cached_query_gemini(prompt_text, subject_code):
         return None, str(exc)
 
 
-def query_gemini_with_fallback(prompt):
+def handle_tutor_query(prompt):
     """
-    Directly uses Google GenAI SDK if GEMINI_API_KEY is available.
-    Prevents falling back to localhost when running in the cloud.
+    Ensures tutor queries use the direct Google GenAI SDK in production 
+    and prevent invalid requests to localhost models.
     """
-    # 1. Retrieve API key from Environment or Streamlit Secrets
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         try:
@@ -587,7 +586,7 @@ def query_gemini_with_fallback(prompt):
         except Exception:
             api_key = None
 
-    # 2. Execute direct call if key exists
+    # If we have a direct Google key, use the official SDK with a valid cloud model
     if api_key and genai is not None:
         try:
             client = genai.Client(api_key=api_key)
@@ -595,9 +594,12 @@ def query_gemini_with_fallback(prompt):
                 model='gemini-2.5-flash',
                 contents=prompt,
             )
-            return response.text, None
+            return response.text
         except Exception as e:
-            return None, f"Google GenAI SDK Error: {str(e)}"
+            return f"Error connecting to Google AI: {str(e)}"
+
+    # Local development fallback only
+    return _call_omniroute(prompt)
 
     # 3. Only allow OmniRoute fallback if running locally
     if os.getenv("LOCAL_DEV") == "true" or not os.getenv("STREAMLIT_SHARING_MODE"):
