@@ -544,19 +544,22 @@ def _call_omniroute(prompt):
             api_key = st.secrets.get("GEMINI_API_KEY")
         except Exception:
             api_key = None
-            
+
     if api_key and genai is not None:
         try:
             client = genai.Client(api_key=api_key)
+
+            # ⚡ Update the model name here to gemini-3.8-flash
             response = client.models.generate_content(
                 model='gemini-3.8-flash',
                 contents=prompt,
             )
             return response.text, None
+
         except Exception as e:
-            return None, f"GenAI SDK Error: {str(e)}"
-            
-    return None, "⚠️ Error: OmniRoute is disabled and GEMINI_API_KEY is not configured."
+            return None, f"GenAI SDK Error: {e!s}"
+
+    return None, "GEMINI_API_KEY is missing or the GenAI SDK is unavailable."
 
 
 @st.cache_data(show_spinner=False)
@@ -603,19 +606,7 @@ def query_gemini_with_fallback(prompt):
     # 3. Only allow OmniRoute fallback if running locally
     if os.getenv("LOCAL_DEV") == "true" or not os.getenv("STREAMLIT_SHARING_MODE"):
         return _call_omniroute(prompt)
-    
-    return None, "⚠️ **Configuration Error:** `GEMINI_API_KEY` is missing from your Streamlit Cloud Secrets."
-    # 3. Only attempt local proxy if running on local machine
-    if os.getenv("LOCAL_DEV") == "true" or not os.getenv("STREAMLIT_SHARING_MODE"):
-        return _call_omniroute(prompt)
 
-    return None, "GEMINI_API_KEY is missing from Streamlit Cloud Secrets."
-
-    # 3. If local environment, allow OmniRoute fallback. Otherwise, throw clear cloud error.
-    # Check if we are running locally by testing if localhost proxy is reachable or via env flag
-    if os.getenv("LOCAL_DEV") == "true" or not os.getenv("STREAMLIT_SHARING_MODE"):
-        return _call_omniroute(prompt)
-    
     return None, "⚠️ **Configuration Error:** `GEMINI_API_KEY` is missing from your Streamlit Cloud Secrets. Please add it in your app settings."
 SUBJECT_MODULES = {
     "INST-N5": [
