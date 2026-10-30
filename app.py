@@ -576,17 +576,18 @@ def cached_query_gemini(prompt_text, subject_code):
 
 def query_gemini_with_fallback(prompt):
     """
-    Directly hits Google GenAI SDK if GEMINI_API_KEY is present in Streamlit Secrets
-    or environment variables. Falls back to local OmniRoute only if direct key is missing.
+    Directly uses Google GenAI SDK if GEMINI_API_KEY is available.
+    Prevents falling back to localhost when running in the cloud.
     """
-    # 1. Attempt direct Google GenAI SDK call (Streamlit Cloud & production)
+    # 1. Retrieve API key from Environment or Streamlit Secrets
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         try:
             api_key = st.secrets.get("GEMINI_API_KEY")
-        except (AttributeError, FileNotFoundError, KeyError):
+        except Exception:
             api_key = None
 
+    # 2. Execute direct call if key exists
     if api_key and genai is not None:
         try:
             client = genai.Client(api_key=api_key)
@@ -596,10 +597,14 @@ def query_gemini_with_fallback(prompt):
             )
             return response.text, None
         except Exception as e:
-            logger.warning(f"Direct GenAI API call failed: {e}")
+            return None, f"Google GenAI SDK Error: {str(e)}"
 
-    # 2. Fallback to local OmniRoute proxy (for local development only)
-    return _call_omniroute(prompt)
+    # 3. If local environment, allow OmniRoute fallback. Otherwise, throw clear cloud error.
+    # Check if we are running locally by testing if localhost proxy is reachable or via env flag
+    if os.getenv("LOCAL_DEV") == "true" or not os.getenv("STREAMLIT_SHARING_MODE"):
+        return _call_omniroute(prompt)
+    
+    return None, "⚠️ **Configuration Error:** `GEMINI_API_KEY` is missing from your Streamlit Cloud Secrets. Please add it in your app settings."
 SUBJECT_MODULES = {
     "INST-N5": [
         "Flow Measurement (Orifice, Venturi, Weirs, Bernoulli's Equation)",
