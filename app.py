@@ -659,10 +659,22 @@ SUBJECT_MODULES = {
 
 FLASHCARDS_DATA = {
     "INST-N5": [
-        r"$$Q = \frac{8}{15}\tan\left(\frac{\theta}{2}\right)\sqrt{2g}H^{5/2}$$",
-        r"$$\text{pH} = -\log[H+]$$",
-        r"$$\frac{dy}{dx} = u \frac{dv}{dx} + v \frac{du}{dx}$$",
-        r"$$V_x = \pi \int_{a}^{b} y^2 \, dx$$"
+        {
+            "q": "What is the discharge formula for a V-notch (triangular) weir?",
+            "a": r"$$Q = \frac{8}{15}\tan\left(\frac{\theta}{2}\right)\sqrt{2g}H^{5/2}$$"
+        },
+        {
+            "q": "What is the standard formula for pH?",
+            "a": r"$$\text{pH} = -\log[H+]$$"
+        },
+        {
+            "q": "State the product rule for differentiation.",
+            "a": r"$$\frac{dy}{dx} = u \frac{dv}{dx} + v \frac{du}{dx}$$"
+        },
+        {
+            "q": "What is the formula for volume of revolution around the x-axis?",
+            "a": r"$$V_x = \pi \int_{a}^{b} y^2 \, dx$$"
+        }
     ]
 }
 # App Header
