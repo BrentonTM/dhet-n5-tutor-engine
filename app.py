@@ -1181,7 +1181,7 @@ with tab_tutor:
             st.session_state.show_answer = not st.session_state.show_answer
             
         if st.session_state.show_answer:
-            st.success(f"**💡 Official Solution / Definition:**\n\n{current_card['a']}")
+            st.success(f"**💡 Official Solution / Definition:**\n\n{current_card}")
             col_a, col_b = st.columns(2)
             if col_a.button("✅ Got It Right (+1 Score)"):
                 st.session_state.card_idx += 1
