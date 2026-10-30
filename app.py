@@ -575,8 +575,31 @@ def cached_query_gemini(prompt_text, subject_code):
 
 
 def query_gemini_with_fallback(prompt):
-    return _call_omniroute(prompt)
+    """
+    Attempts direct Google GenAI SDK call first (for Streamlit Cloud & direct API key),
+    falling back to local OmniRoute proxy if unavailable.
+    """
+    # 1. Direct Google GenAI SDK (Streamlit Cloud Secrets or .env)
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        try:
+            api_key = st.secrets.get("GEMINI_API_KEY")
+        except (AttributeError, FileNotFoundError, KeyError):
+            api_key = None
 
+    if api_key and genai is not None:
+        try:
+            client = genai.Client(api_key=api_key)
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+            ) #
+            return response.text, None
+        except Exception as e:
+            logger.warning(f"Direct GenAI call failed, falling back to OmniRoute: {e}")
+
+    # 2. Local OmniRoute Gateway Fallback
+    return _call_omniroute(prompt)
 SUBJECT_MODULES = {
     "INST-N5": [
         "Flow Measurement (Orifice, Venturi, Weirs, Bernoulli's Equation)",
