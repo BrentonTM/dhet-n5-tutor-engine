@@ -204,7 +204,7 @@ OMNIROUTE_BASE_URL = os.getenv("OMNIROUTE_BASE_URL", "http://localhost:20128/v1"
 # "Test connection" button) to see the exact IDs your OmniRoute exposes.
 OMNIROUTE_MODELS = [
     m.strip()
-    for m in os.getenv("OMNIROUTE_MODELS", "gemini-3-flash-preview,gemini-3.1-pro-preview").split(",")
+    for m in os.getenv("OMNIROUTE_MODELS", "gemini-3.8-flash").split(",")
     if m.strip()
 ]
 
@@ -574,11 +574,12 @@ def cached_query_gemini(prompt_text, subject_code):
         return None, str(exc)
 
 
-def handle_tutor_query(prompt):
+def query_gemini_with_fallback(prompt):
     """
-    Ensures tutor queries use the direct Google GenAI SDK in production 
-    and prevent invalid requests to localhost models.
+    Directly uses Google GenAI SDK if GEMINI_API_KEY is available.
+    Prevents falling back to localhost when running in the cloud.
     """
+    # 1. Retrieve API key from Environment or Streamlit Secrets
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         try:
@@ -586,7 +587,7 @@ def handle_tutor_query(prompt):
         except Exception:
             api_key = None
 
-    # If we have a direct Google key, use the official SDK with a valid cloud model
+    # 2. Execute direct call if key exists
     if api_key and genai is not None:
         try:
             client = genai.Client(api_key=api_key)
@@ -594,41 +595,9 @@ def handle_tutor_query(prompt):
                 model='gemini-2.5-flash',
                 contents=prompt,
             )
-            return response.text
+            return response.text, None
         except Exception as e:
-            return f"Error connecting to Google AI: {str(e)}"
-def _call_omniroute(prompt):
-    """
-    Local OmniRoute proxy wrapper. Automatically blocked in cloud environments
-    to prevent localhost connection errors.
-    """
-    # 🛑 Hard block for cloud environments
-    if os.getenv("STREAMLIT_SHARING_MODE") or not (os.getenv("LOCAL_DEV") == "true" or "localhost" in os.getenv("HOST", "") ):
-        # If we are on the cloud and have a GEMINI_API_KEY, route directly instead of failing
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            try:
-                api_key = st.secrets.get("GEMINI_API_KEY")
-            except Exception:
-                api_key = None
-                
-        if api_key and genai is not None:
-            try:
-                client = genai.Client(api_key=api_key)
-                response = client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=prompt,
-                )
-                return response.text, None
-            except Exception as e:
-                return None, f"Cloud GenAI Fallback Error: {str(e)}"
-                
-        return None, "⚠️ Connection Error: App is running in the cloud, but `GEMINI_API_KEY` is not set in Secrets, and local OmniRoute (`localhost:20128`) is unreachable."
-
-    # Original local OmniRoute execution code below...
-    # (Keep your existing proxy request logic here for your local PC)
-    # Local development fallback only
-    return _call_omniroute(prompt)
+            return None, f"Google GenAI SDK Error: {str(e)}"
 
     # 3. Only allow OmniRoute fallback if running locally
     if os.getenv("LOCAL_DEV") == "true" or not os.getenv("STREAMLIT_SHARING_MODE"):
