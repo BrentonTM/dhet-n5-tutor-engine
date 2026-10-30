@@ -658,18 +658,14 @@ SUBJECT_MODULES = {
 }
 
 FLASHCARDS_DATA = {
+        FLASHCARDS_DATA = {
     "INST-N5": [
-        {"q": "What is the formula for calculating flow rate over a V-notch (triangular) weir?", "a": r"$$Q = \frac{8}{15}\tan\left(\frac{\theta}{2}\right)\sqrt{2g}H^{5/2}$$"},
-        {"q": "How is pH calculated in industrial process instrumentation?", "a": r"$$\text{pH} = -\log[\text{H}^+]$$"}
-    ],
-    "MATH-N5": [
-        {"q": "State the formula for the Product Rule in differentiation.", "a": r"$$\frac{dy}{dx} = u\frac{dv}{dx} + v\frac{du}{dx}$$"},
-        {"q": "What is the formula for calculating volume of revolution around the x-axis ($V_x$)?", "a": r"$$V_x = \pi \int_{a}^{b} y^2 \, dx$$"}
-    ],
-    "IE-N5": [
-        {"q": "What is the voltage gain formula for an inverting Op-Amp circuit?", "a": r"$$A_v = -\frac{R_f}{R_1}$$"},
-        {"q": "What component is used to turn off an SCR in a DC circuit?", "a": "A forced commutation circuit (such as a reverse-biasing capacitor or transistor switch) that drops the current below the holding current (I_H)."}
+        r"$$Q = \frac{8}{15}\tan\left(\frac{\theta}{2}\right)\sqrt{2g}H^{5/2}$$",
+        r"$$\text{pH} = -\log[H+]$$",
+        r"$$\frac{dy}{dx} = u \frac{dv}{dx} + v \frac{du}{dx}$$",
+        r"$$V_x = \pi \int_{a}^{b} y^2 \, dx$$"
     ]
+}
 }
 
 # App Header
