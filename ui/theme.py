@@ -211,8 +211,8 @@ def inject_industrial_theme():
             align-items: center;
             justify-content: center;
             gap: .02em;
-            width: 156px;
-            height: 94px;
+            width: 92px;
+            height: 58px;
             perspective: 520px;
             transform-style: preserve-3d;
             filter: drop-shadow(0 10px 11px rgba(0, 0, 0, .62));
@@ -220,8 +220,8 @@ def inject_industrial_theme():
             pointer-events: none;
         }
         .tx-monogram svg {
-            width: 154px;
-            height: 88px;
+            width: 90px;
+            height: 52px;
             overflow: visible;
             transform: translateZ(12px) rotateX(4deg) rotateY(-7deg);
             transform-style: preserve-3d;
@@ -323,8 +323,8 @@ def inject_industrial_theme():
             [data-testid="stMainBlockContainer"] { padding: 1rem .8rem 2rem; }
             [data-testid="stTabs"] [role="tab"] { padding: .48rem .65rem; font-size: .82rem; }
             .tx-course-bar { align-items: flex-start; flex-direction: column; gap: .45rem; }
-            .tx-monogram { right: 8px; bottom: 72px; width: 118px; height: 76px; }
-            .tx-monogram svg { width: 116px; height: 68px; }
+            .tx-monogram { right: 8px; bottom: 72px; width: 76px; height: 48px; }
+            .tx-monogram svg { width: 74px; height: 43px; }
             .tx-extrusion path,
             .tx-face-t,
             .tx-face-x { stroke-width: 2; }

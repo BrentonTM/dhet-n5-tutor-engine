@@ -2081,11 +2081,6 @@ with tab_tutor:
                 st.caption("N4 lab scope includes logic gates, full adders and K-maps. Memory Systems are excluded from your confirmed N4 scope.")
 
             if lab_subject == "Industrial Electronics N5":
-                st.markdown("#### 🧰 Build a circuit on the 3D workbench")
-                st.caption("Add a resistor and LED, drag them across the breadboard centre gap, then click two holes or pins to connect a wire. The Arduino Uno, breadboard rails and connected hole groups are built in; Start simulation pulses D13 and lights a complete resistor–LED–GND path.")
-                from ui.circuit_lab import render_circuit_lab
-                render_circuit_lab(height=790)
-                st.divider()
                 st.markdown("#### Guided 3D engineering diagrams")
 
             diagram_ids = lab_profiles[lab_subject]
@@ -2124,6 +2119,13 @@ with tab_tutor:
                 render_diagram3d(diagram_spec, height=680)
             else:
                 st.error("This model could not be loaded. Check the diagram registry and its source module.")
+
+            if lab_subject == "Industrial Electronics N5":
+                st.divider()
+                st.markdown("#### 🧰 Build and simulate this topic")
+                st.caption(f"Use the interactive {title_of(diagram_id)} model above, then build a matching circuit below. Add components, connect breadboard holes and Arduino pins, run the built-in Blink sketch or load a supported .ino sketch, and compare your predicted values with the DC meter.")
+                from ui.circuit_lab import render_circuit_lab
+                render_circuit_lab(height=1030, focus_topic=title_of(diagram_id))
 
 # TAB 5: Formula & Reference Hub
 with tab_formulas:
