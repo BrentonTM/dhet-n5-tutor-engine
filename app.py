@@ -703,6 +703,135 @@ def query_gemini_with_fallback(prompt):
     return None, "⚠️ **Configuration Error:** `GEMINI_API_KEY` is missing from your Streamlit Cloud Secrets. Please add it in your app settings."
 
 
+def parse_topic_quiz_response(response_text):
+    """Extract and validate a short multiple-choice quiz returned as JSON."""
+    if not isinstance(response_text, str) or not response_text.strip():
+        return None, "The quiz generator returned an empty response."
+
+    decoder = json.JSONDecoder()
+    payload = None
+    for match in re.finditer(r"\{", response_text):
+        try:
+            payload, _ = decoder.raw_decode(response_text[match.start():])
+            break
+        except json.JSONDecodeError:
+            continue
+
+    questions = payload.get("questions") if isinstance(payload, dict) else None
+    if not isinstance(questions, list) or not 3 <= len(questions) <= 5:
+        return None, "The generated quiz did not contain 3–5 usable questions. Please retry it."
+
+    validated = []
+    for item in questions:
+        if not isinstance(item, dict):
+            return None, "A quiz question was incomplete. Please retry it."
+        options = item.get("options")
+        answer_index = item.get("answer_index")
+        if (
+            not isinstance(options, list)
+            or len(options) != 4
+            or not all(isinstance(option, str) and option.strip() for option in options)
+            or isinstance(answer_index, bool)
+            or not isinstance(answer_index, int)
+            or not 0 <= answer_index < len(options)
+        ):
+            return None, "A quiz question was not formatted correctly. Please retry it."
+
+        validated.append(
+            {
+                "concept": str(item.get("concept", "Key idea")).strip(),
+                "question": str(item.get("question", "")).strip(),
+                "options": [option.strip() for option in options],
+                "answer_index": answer_index,
+                "explanation": str(item.get("explanation", "Review the lesson and compare your reasoning.")).strip(),
+                "gap": str(item.get("gap", item.get("concept", "Key idea"))).strip(),
+            }
+        )
+        if not validated[-1]["question"]:
+            return None, "A quiz question was missing its prompt. Please retry it."
+
+    return validated, None
+
+
+def request_topic_quiz(subject_code, topic_name, lesson_notes):
+    """Generate a gentle, topic-specific retrieval quiz grounded in the lesson."""
+    prompt = f"""Create a low-stakes knowledge check for a NATED engineering learner.
+Subject: {subject_code}
+Topic: {topic_name}
+
+Use only facts and methods supported by the lesson below. Create exactly 5 concise multiple-choice questions, each with four plausible options. Mix recall, interpreting a diagram/process, and a short application. Avoid trick wording and ambiguous answers. Include one correct option index (zero-based), a short teaching explanation, and the specific concept to revisit if missed. Do not repeat the same fact across questions.
+
+Return only valid JSON in this exact shape:
+{{"questions":[{{"concept":"...","question":"...","options":["...","...","...","..."],"answer_index":0,"explanation":"...","gap":"..."}}]}}
+
+Lesson:
+{lesson_notes[:9000]}"""
+    raw_quiz, error = cached_query_gemini(prompt, subject_code)
+    if error:
+        return None, error
+    return parse_topic_quiz_response(raw_quiz)
+
+
+def render_topic_quiz(quiz, subject_code, topic_name):
+    """Show a short self-check, then name the exact ideas that need another look."""
+    st.markdown("### 🧠 Quick topic check")
+    st.caption("A friendly practice check, not a grade. Your answers reveal what to revisit next.")
+    quiz_id = re.sub(r"[^A-Za-z0-9_-]+", "_", f"{subject_code}_{topic_name}")[:90]
+    attempt_key = f"topic_quiz_attempt_{quiz_id}"
+    result_key = f"topic_quiz_result_{quiz_id}"
+    attempt_number = st.session_state.get(attempt_key, 0)
+    radio_keys = [f"topic_quiz_answer_{quiz_id}_{attempt_number}_{index}" for index in range(len(quiz))]
+
+    with st.form(f"topic_quiz_form_{quiz_id}_{attempt_number}"):
+        for index, question in enumerate(quiz):
+            st.radio(
+                f"{index + 1}. {question['question']}",
+                question["options"],
+                index=None,
+                key=radio_keys[index],
+            )
+        submitted = st.form_submit_button("Check my understanding", use_container_width=True)
+
+    if submitted:
+        responses = [st.session_state.get(key) for key in radio_keys]
+        if any(answer is None for answer in responses):
+            st.info("Take your time. Answer each question before checking the set.")
+        else:
+            correct_indices = [question["options"][question["answer_index"]] for question in quiz]
+            score = sum(answer == correct for answer, correct in zip(responses, correct_indices))
+            st.session_state[result_key] = {"score": score, "responses": responses}
+
+    result = st.session_state.get(result_key)
+    if result:
+        score = result["score"]
+        st.metric("Your topic check", f"{score} / {len(quiz)}")
+        if score == len(quiz):
+            st.success("Excellent recall. You have this topic in good shape.")
+        elif score >= len(quiz) - 2:
+            st.success("Nice work. A quick review of the marked ideas will strengthen this topic.")
+        else:
+            st.info("Good start. Use the notes below as a map for your next short review, then try again.")
+
+        missed_concepts = []
+        for index, (question, response) in enumerate(zip(quiz, result["responses"])):
+            correct = question["options"][question["answer_index"]]
+            if response == correct:
+                st.success(f"{index + 1}. Correct — {question['explanation']}")
+            else:
+                missed_concepts.append(question["gap"] or question["concept"])
+                st.warning(
+                    f"{index + 1}. Revisit **{question['gap'] or question['concept']}**. "
+                    f"{question['explanation']}"
+                )
+        if missed_concepts:
+            st.markdown("**Ideas to revisit:** " + " · ".join(dict.fromkeys(missed_concepts)))
+            st.caption("Try recalling them again in a later study session, then revisit after a few days.")
+        if st.button("Try this topic check again", key=f"topic_quiz_retry_{quiz_id}_{attempt_number}"):
+            st.session_state[attempt_key] = attempt_number + 1
+            st.session_state.pop(result_key, None)
+            st.rerun()
+
+
 SUBJECT_MODULES = {
     "INST-N5": [
         "General Instrumentation Concepts and Terminology",
@@ -794,15 +923,42 @@ st.markdown(
     'and prepare for your exams.</p>',
     unsafe_allow_html=True,
 )
-st.markdown(
-    '<div class="tx-hero-chip-row">'
-    '<span class="tx-chip"><span class="tx-chip-dot"></span>Course-aware learning</span>'
-    '<span class="tx-chip">3D engineering lab</span>'
-    '<span class="tx-chip">Exam practice</span>'
-    '</div>',
-    unsafe_allow_html=True,
-)
-st.markdown('<div class="tx-gold-monogram" aria-hidden="true"><span>TX</span></div>', unsafe_allow_html=True)
+st.markdown('<div class="tx-hero-chip-row-label">CHOOSE YOUR NEXT STEP</div>', unsafe_allow_html=True)
+
+
+def open_learning_workspace(workspace: str, tutor_section: str = None):
+    """Select a learning tab from the home-page shortcuts."""
+    st.session_state["learning_workspace"] = workspace
+    if tutor_section:
+        st.session_state["tutor_section"] = tutor_section
+
+
+shortcut_columns = st.columns(3, gap="small")
+with shortcut_columns[0]:
+    st.button(
+        "✦  Course-aware learning",
+        key="hero_course_button",
+        use_container_width=True,
+        on_click=open_learning_workspace,
+        args=("🤖 Tutor & lab", "📖 Lessons"),
+    )
+with shortcut_columns[1]:
+    st.button(
+        "◈  3D engineering lab",
+        key="hero_lab_button",
+        use_container_width=True,
+        on_click=open_learning_workspace,
+        args=("🤖 Tutor & lab", "🧊 3D lab"),
+    )
+with shortcut_columns[2]:
+    st.button(
+        "⌁  Exam practice",
+        key="hero_exam_button",
+        use_container_width=True,
+        on_click=open_learning_workspace,
+        args=("⏱ Mock exam",),
+    )
+st.markdown('<div class="tx-monogram" aria-label="Trentox TX monogram"><span class="tx-monogram-letter tx-letter-t">T</span><span class="tx-monogram-letter tx-letter-x">X</span></div>', unsafe_allow_html=True)
 
 # Sidebar learning path and reference navigation
 st.sidebar.header("Study path")
@@ -1092,7 +1248,7 @@ tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = st
     "🤖 Tutor & lab",
     "📐 Formula hub",
     "📈 Analytics"
-])
+], key="learning_workspace", on_change="rerun")
 
 
 # Tab bodies follow, one block per tab.
@@ -1361,7 +1517,7 @@ with tab_tutor:
         "📅 Study plan",
         "💬 Ask tutor",
         "🧊 3D lab",
-    ], on_change="rerun")
+    ], key="tutor_section", on_change="rerun")
     
     with sub_tab1:
         if active_subject == "MATH-N5":
@@ -1373,25 +1529,84 @@ with tab_tutor:
         elif active_subject == "DIGI-N4":
             st.caption("This is your confirmed N4 study scope: K-maps included; Memory Systems excluded. Module weights are not official.")
         modules = SUBJECT_MODULES.get(active_subject, ["General Module Overview"])
+        focus_minutes = st.select_slider(
+            "Focus block",
+            options=[15, 20, 25],
+            value=20,
+            format_func=lambda minutes: f"{minutes} minutes",
+            key=f"lesson_focus_block_{active_subject}",
+            help="A flexible starting point, not a fixed attention-span rule. Choose a shorter or longer block to suit you.",
+        )
+        quiz_minutes = max(4, round(focus_minutes * 0.25))
+        worked_minutes = max(3, round(focus_minutes * 0.25))
+        concept_minutes = focus_minutes - quiz_minutes - worked_minutes
+        st.info(
+            f"**A gentle {focus_minutes}-minute topic cycle:** {concept_minutes} min to understand the idea · "
+            f"{worked_minutes} min for a worked example or model · {quiz_minutes} min for the topic check. "
+            "Then take a 5-minute reset before starting another topic. Revisit missed ideas in later sessions."
+        )
         selected_module = st.selectbox("Select Topic:", modules)
         custom_query = st.text_input("Or enter specific concept/formula:", placeholder="e.g., Op-amp summing amplifier derivation")
-        
+        target_topic = custom_query.strip() if custom_query.strip() else selected_module
         if st.button("📖 Generate Lesson & Explanation"):
-            target_topic = custom_query.strip() if custom_query.strip() else selected_module
             local_material = extract_text_from_local_files(os.path.join(BASE_DIR, "Learning material"))
-            
-            with st.spinner(f"Generating lesson and vector diagram for '{target_topic}'..."):
-                prompt = f"Detailed technical lesson notes for NATED {active_subject}: {target_topic}. Provide clear explanations without inline ASCII box diagrams.\nFiles: {local_material[:2000]}"
+
+            lesson_minutes = focus_minutes - quiz_minutes
+            prompt = (
+                f"Write a focused, learner-friendly NATED {active_subject} lesson on {target_topic}. "
+                f"Structure it for about {lesson_minutes} minutes of study, with 3–4 short sections, "
+                "a plain-language explanation, one worked engineering example, one brief learner try-it prompt, "
+                "and a short recap. Keep each section easy to finish before moving on. Avoid a textbook-length dump "
+                "and do not use inline ASCII box diagrams. Use this course material where relevant:\n"
+                f"{local_material[:2000]}"
+            )
+            with st.spinner(f"Building a focused lesson and topic check for '{target_topic}'..."):
                 notes, err = cached_query_gemini(prompt, active_subject)
-                
+                if notes:
+                    quiz, quiz_err = request_topic_quiz(active_subject, target_topic, notes)
+                    st.session_state["active_topic_lesson"] = {
+                        "subject": active_subject,
+                        "topic": target_topic,
+                        "notes": notes,
+                        "quiz": quiz,
+                        "quiz_error": quiz_err,
+                    }
+                else:
+                    st.session_state["active_topic_lesson"] = {
+                        "subject": active_subject,
+                        "topic": target_topic,
+                        "notes": None,
+                        "quiz": None,
+                        "quiz_error": None,
+                        "lesson_error": err,
+                    }
+
+        lesson_state = st.session_state.get("active_topic_lesson", {})
+        if lesson_state.get("subject") == active_subject and lesson_state.get("topic") == target_topic:
+            if lesson_state.get("notes"):
                 st.markdown("### 🎨 Engineering Vector Schematic")
                 render_topic_diagram(target_topic)
                 st.divider()
-                
-                if notes:
-                    st.markdown(notes)
+                st.markdown(lesson_state["notes"])
+                st.divider()
+                if lesson_state.get("quiz"):
+                    render_topic_quiz(lesson_state["quiz"], active_subject, target_topic)
                 else:
-                    st.error(err)
+                    st.markdown("### 🧠 Quick topic check")
+                    st.info("Your lesson is ready. The quiz needs one more generation step before it can be checked.")
+                    quiz_button_id = re.sub(r"[^A-Za-z0-9]+", "_", target_topic)[:40]
+                    if st.button("Generate this topic's quiz", key=f"generate_topic_quiz_{active_subject}_{quiz_button_id}"):
+                        with st.spinner("Creating five gentle questions from this lesson..."):
+                            quiz, quiz_err = request_topic_quiz(active_subject, target_topic, lesson_state["notes"])
+                        if quiz:
+                            lesson_state["quiz"] = quiz
+                            lesson_state["quiz_error"] = None
+                            st.session_state["active_topic_lesson"] = lesson_state
+                            st.rerun()
+                        else:
+                            st.error(quiz_err or "The quiz could not be created. Please try again.")
+            else:
+                st.error(lesson_state.get("lesson_error", "The lesson could not be generated. Please try again."))
 
     with sub_tab2:
         st.markdown("### 🧠 Active Recall Flashcard Deck")
@@ -1467,12 +1682,13 @@ with tab_tutor:
 
     with sub_tab4:
         timetable_data = [
-            {"Day": "Day 1 - 3", "Focus": "Instrumentation N5", "Activities": "Transducers, Flow/Pressure ΔP Calculations, PID Tuning"},
-            {"Day": "Day 4 - 6", "Focus": "Mathematics N5", "Activities": "Derivatives, Integrals, & First/Second Order Differential Equations"},
-            {"Day": "Day 7 - 9", "Focus": "Industrial Electronics N5", "Activities": "Op-Amp Derivations, SCR/TRIAC Thyristors, & Closed Loop Control"},
-            {"Day": "Day 10 - 12", "Focus": "Digital Electronics N4/N5", "Activities": "Boolean Simplification, K-Maps, Counters, DAC/ADC Converters"},
-            {"Day": "Day 13 - 14", "Focus": "Mock Exam Marathon", "Activities": "Timed exams with confidence vs accuracy debrief"}
+            {"When": "Today", "Focus": f"One {active_subject} topic", "Activities": "Start with one flexible 15–25 minute focus cycle; finish with its short topic check."},
+            {"When": "Next study day", "Focus": "Retrieve, then continue", "Activities": "Spend 5 minutes recalling yesterday's key idea without notes, then start one new topic."},
+            {"When": "About 3 days later", "Focus": "Close a knowledge gap", "Activities": "Retry the quiz for any missed concept, then apply it in a worked example or model."},
+            {"When": "About 1 week later", "Focus": "Mix and connect", "Activities": "Use a short cumulative check across earlier topics before choosing the next lesson."},
+            {"When": "Before an assessment", "Focus": "Build confidence", "Activities": "Practise a small set of exam-style questions, review feedback, and schedule another light retrieval pass."}
         ]
+        st.caption("Suggested spacing, not a rigid timetable. Retrieval practice and returning to material over time support durable learning; move the review points to fit your course and exam date.")
         st.table(timetable_data)
 
     with sub_tab5:
