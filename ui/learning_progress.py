@@ -179,7 +179,8 @@ def build_adaptive_study_plan(
         row for row in (lab_history or [])
         if row.get("subject") == subject and row.get("topic") in module_list
     ]
-    lab_misses = Counter(row["topic"] for row in matching_lab if row.get("matched") is False)
+    recent_matching_lab = matching_lab[-12:]
+    lab_misses = Counter(row["topic"] for row in recent_matching_lab if row.get("matched") is False)
 
     priorities = []
     for index, topic in enumerate(module_list):
@@ -217,7 +218,7 @@ def build_adaptive_study_plan(
             score += min(30, 12 * repeated_gap)
             reason = "The same missed concept has appeared in more than one check."
         if lab_miss_count:
-            score += min(36, 18 * lab_miss_count)
+            score += min(80, 40 * lab_miss_count)
             reason = "A recent 3D lab reflection marked this topic for another look."
         priorities.append((score, -index, topic, reason, record, latest_accuracy, due))
 
@@ -237,7 +238,7 @@ def build_adaptive_study_plan(
         and row["score"] / row["total"] < 0.60
     ]
     high_confidence_lab_misses = [
-        row for row in matching_lab
+        row for row in recent_matching_lab
         if row.get("confidence") == 3 and row.get("matched") is False
     ]
     low_confidence_strength = [
