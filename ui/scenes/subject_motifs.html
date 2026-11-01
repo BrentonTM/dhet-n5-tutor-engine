@@ -40,7 +40,6 @@
   const code = panel.dataset.code;
   const graphic = document.getElementById("graphic");
   const controls = document.getElementById("controls");
-  const value = document.getElementById("value");
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const installSlider = (label, min, max, initial, suffix, onChange) => {
     controls.innerHTML = '<span class="hint">' + label + '</span><input aria-label="' + esc(label) + '" type="range" min="' + min + '" max="' + max + '" value="' + initial + '"><span class="value"></span>';
@@ -82,7 +81,7 @@
           <circle cx="202" cy="59" r="10" fill="${y ? '#50f0b0' : '#283746'}" stroke="${y ? '#91ffd2' : '#7890a0'}" stroke-width="2"/>
           <text x="197" y="63" class="svg-title">${y}</text><text x="188" y="86" class="svg-small">Y OUTPUT</text>
         </svg>`;
-      value.textContent = "Y = " + y;
+      controls.querySelector(".value").textContent = "Y = " + y;
     };
     controls.innerHTML = '<span class="gate-controls"><button data-in="a">A: 0</button><button data-in="b">B: 1</button><button data-gate="AND">AND</button><button data-gate="OR">OR</button><button class="active" data-gate="XOR">XOR</button></span><span class="value"></span>';
     controls.querySelectorAll("[data-in]").forEach(btn => btn.addEventListener("click", () => { if(btn.dataset.in==="a") a=1-a; else b=1-b; btn.textContent=btn.dataset.in.toUpperCase()+": "+(btn.dataset.in==="a"?a:b); draw(); }));
