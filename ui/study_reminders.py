@@ -155,7 +155,7 @@ def render_study_reminders():
         now = datetime.now(SOUTH_AFRICA)
         today = now.date().isoformat()
         target = time.fromisoformat(config.get("time", "18:00"))
-        due = now.time().replace(second=0, microsecond=0) >= target
+        due = (now.hour * 60 + now.minute) >= (target.hour * 60 + target.minute)
         weekday_ok = config.get("repeat") != "Weekdays" or now.weekday() < 5
         if due and weekday_ok and st.session_state.get("study_reminder_last_sent") != today:
             st.session_state["study_reminder_last_sent"] = today
