@@ -102,7 +102,7 @@ def topic_status(record: dict[str, Any] | None, today: date | None = None) -> st
         return "Check again"
     if review_due <= today:
         return "Review due"
-    if accuracy < 0.60:
+    if accuracy < 0.80:
         return "Review soon"
     return "On track"
 
