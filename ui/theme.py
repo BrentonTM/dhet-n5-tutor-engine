@@ -204,15 +204,15 @@ def inject_industrial_theme():
         }
         .tx-monogram {
             position: fixed;
-            right: 22px;
-            bottom: 82px;
+            right: 18px;
+            bottom: 78px;
             z-index: 99999;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: .02em;
-            width: 92px;
-            height: 58px;
+            width: 72px;
+            height: 46px;
             perspective: 520px;
             transform-style: preserve-3d;
             filter: drop-shadow(0 10px 11px rgba(0, 0, 0, .62));
@@ -220,8 +220,8 @@ def inject_industrial_theme():
             pointer-events: none;
         }
         .tx-monogram svg {
-            width: 90px;
-            height: 52px;
+            width: 70px;
+            height: 42px;
             overflow: visible;
             transform: translateZ(12px) rotateX(4deg) rotateY(-7deg);
             transform-style: preserve-3d;
@@ -323,8 +323,8 @@ def inject_industrial_theme():
             [data-testid="stMainBlockContainer"] { padding: 1rem .8rem 2rem; }
             [data-testid="stTabs"] [role="tab"] { padding: .48rem .65rem; font-size: .82rem; }
             .tx-course-bar { align-items: flex-start; flex-direction: column; gap: .45rem; }
-            .tx-monogram { right: 8px; bottom: 72px; width: 76px; height: 48px; }
-            .tx-monogram svg { width: 74px; height: 43px; }
+            .tx-monogram { right: 6px; bottom: 66px; width: 58px; height: 38px; }
+            .tx-monogram svg { width: 56px; height: 35px; }
             .tx-extrusion path,
             .tx-face-t,
             .tx-face-x { stroke-width: 2; }
