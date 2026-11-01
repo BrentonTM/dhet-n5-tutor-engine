@@ -43,6 +43,7 @@ if BASE_DIR not in sys.path:
 DATABASE_DIR = os.path.join(BASE_DIR, "data", "databases")
 os.makedirs(DATABASE_DIR, exist_ok=True)
 from ui.learning_progress import (
+    build_adaptive_study_plan,
     export_progress,
     import_progress,
     latest_by_topic,
@@ -1025,6 +1026,7 @@ def render_topic_quiz(quiz, subject_code, topic_name):
     attempt_key = f"topic_quiz_attempt_{quiz_id}"
     result_key = f"topic_quiz_result_{quiz_id}"
     attempt_number = st.session_state.get(attempt_key, 0)
+    confidence_key = f"topic_quiz_confidence_{quiz_id}_{attempt_number}"
     radio_keys = [f"topic_quiz_answer_{quiz_id}_{attempt_number}_{index}" for index in range(len(quiz))]
 
     with st.form(f"topic_quiz_form_{quiz_id}_{attempt_number}"):
@@ -1035,6 +1037,14 @@ def render_topic_quiz(quiz, subject_code, topic_name):
                 index=None,
                 key=radio_keys[index],
             )
+        confidence_label = st.radio(
+            "Optional: how confident are you in your answers?",
+            ["Mostly guessing", "Somewhat sure", "Very sure"],
+            index=None,
+            horizontal=True,
+            key=confidence_key,
+        )
+        confidence_value = {"Mostly guessing": 1, "Somewhat sure": 2, "Very sure": 3}.get(confidence_label)
         submitted = st.form_submit_button("Check my understanding", use_container_width=True)
 
     if submitted:
@@ -1051,14 +1061,23 @@ def render_topic_quiz(quiz, subject_code, topic_name):
             ]
             history = st.session_state.get("topic_quiz_history", [])
             st.session_state["topic_quiz_history"] = record_quiz_attempt(
-                history, subject_code, topic_name, score, len(quiz), gaps
+                history, subject_code, topic_name, score, len(quiz), gaps,
+                confidence=confidence_value,
             )
-            st.session_state[result_key] = {"score": score, "responses": responses}
+            st.session_state[result_key] = {
+                "score": score, "responses": responses, "confidence": confidence_value
+            }
 
     result = st.session_state.get(result_key)
     if result:
         score = result["score"]
         st.metric("Your topic check", f"{score} / {len(quiz)}")
+        confidence = result.get("confidence")
+        accuracy = score / len(quiz) if quiz else 0
+        if confidence == 3 and accuracy < 0.60:
+            st.info("Your confidence was high while this check was difficult. Use the worked steps to spot where your reasoning needs a second look.")
+        elif confidence == 1 and accuracy >= 0.80:
+            st.success("You scored well even though you felt unsure. Try retrieving the idea once more without notes to build confidence.")
         if score == len(quiz):
             st.success("Excellent recall. You have this topic in good shape.")
         elif score >= len(quiz) - 2:
@@ -1145,6 +1164,58 @@ SUBJECT_MODULES = {
         "M13: Contact Bounce Elimination and Data/Storage Interfaces",
         "M14: Input/Output Devices"
     ]
+}
+
+
+LAB_SUBJECT_CODES = {
+    "Mathematics N5": "MATH-N5",
+    "Digital Electronics N4": "DIGI-N4",
+    "Digital Electronics N5 — visualization preview": "DIGI-N5",
+    "Industrial Electronics N5": "IE-N5",
+    "Industrial Instruments N5": "INST-N5",
+}
+LAB_TOPIC_BY_DIAGRAM = {
+    "derivative": "Differentiation",
+    "riemann": "The definite integral",
+    "revolve": "Areas and volumes",
+    "second_moment": "Second moment of area and moment of inertia",
+    "ode_decay": "Differential equations",
+    "unit_circle": "Integration techniques",
+    "pascal": "Applications of differentiation",
+    "logic_gate_board": "Logic Gates, Boolean Algebra and K-Maps",
+    "kmap4": "Logic Gates, Boolean Algebra and K-Maps",
+    "full_adder_3d": "Combinational Circuits",
+    "weighted_dac_3d": "M1: Digital-to-Analog and Analog-to-Digital Converters",
+    "flash_adc_3d": "M1: Digital-to-Analog and Analog-to-Digital Converters",
+    "phasor": "Alternating Current Theory",
+    "rc_response": "Alternating Current Theory",
+    "bridge_rectifier_3d": "Power Supplies",
+    "rectifier": "Power Supplies",
+    "bjt_structure": "Amplifiers",
+    "load_line": "Amplifiers",
+    "opamp_inv": "Amplifiers",
+    "opamp_noninv": "Amplifiers",
+    "timer555": "Oscillators",
+    "wheatstone": "Measuring Instruments",
+    "lvdt": "Integrated Circuits and Transducers",
+    "scr_structure": "Electronic Phase Control",
+    "scr_waveform": "Electronic Phase Control",
+    "cro": "Measuring Instruments",
+    "lc_tank": "Oscillators",
+    "lcd_cell": "Liquid Crystal Display",
+    "rotameter": "Flow Measurement",
+    "venturi": "Flow Measurement",
+    "orifice": "Flow Measurement",
+    "weir": "Flow Measurement",
+    "target_flow": "Flow Measurement",
+    "manometer": "Flow Measurement",
+    "bourdon": "General Instrumentation Concepts and Terminology",
+    "strain_gauge": "General Instrumentation Concepts and Terminology",
+    "rtd_tc": "General Instrumentation Concepts and Terminology",
+    "tank_level": "Flow Measurement",
+    "ph_probe": "pH and Conductivity Measurement",
+    "pid_loop": "Automatic Control",
+    "step_response": "Automatic Control",
 }
 
 FLASHCARDS_DATA = {
@@ -1871,12 +1942,48 @@ with tab_tutor:
         elif active_subject == "DIGI-N5":
             st.caption("This topic map follows the 14 modules visible in your school textbook photos. The detailed DHET N5 syllabus and official weighting still need verification.")
         modules = SUBJECT_MODULES.get(active_subject, ["General Module Overview"])
+        history = st.session_state.get("topic_quiz_history", [])
+        lab_history = st.session_state.get("lab_prediction_history", [])
+        adaptive_plan = build_adaptive_study_plan(
+            history, active_subject, modules, lab_history=lab_history
+        )
+        default_topic = adaptive_plan["topic"] if adaptive_plan["topic"] in modules else modules[0]
+        topic_widget_key = f"lesson_topic_{active_subject}"
+        focus_widget_key = f"lesson_focus_block_{active_subject}"
+
+        st.markdown("#### 🎯 Your tailored study session")
+        st.caption(
+            "ASK TX uses your recent topic checks, review dates, recurring missed concepts, "
+            "optional confidence ratings and 3D lab reflections. It does not assign a fixed learning style."
+        )
+        st.markdown(
+            f"**Next topic:** {adaptive_plan['topic'] or default_topic}  \n"
+            f"**Why:** {adaptive_plan['reason']}  \n"
+            f"**Pattern noticed:** {adaptive_plan['pattern']}  \n"
+            f"**Approach:** {adaptive_plan['method']}  \n"
+            f"**Suggested focus block:** {adaptive_plan['focus_minutes']} minutes"
+        )
+        with st.expander("See the suggested session steps", expanded=False):
+            for step in adaptive_plan["steps"]:
+                st.markdown(f"- **{step['minutes']} min** · {step['activity']}")
+            st.caption("Take a short reset after the block. You can change the focus length below.")
+        if st.button(
+            "▶ Start my tailored session",
+            key=f"start_adaptive_session_{active_subject}",
+            use_container_width=True,
+        ):
+            st.session_state[topic_widget_key] = default_topic
+            st.session_state[focus_widget_key] = adaptive_plan["focus_minutes"]
+            st.session_state[f"custom_topic_{active_subject}"] = ""
+            st.session_state["adaptive_start_lesson_subject"] = active_subject
+            st.rerun()
+
         focus_minutes = st.select_slider(
             "Focus block",
             options=[15, 20, 25],
-            value=20,
+            value=adaptive_plan["focus_minutes"],
             format_func=lambda minutes: f"{minutes} minutes",
-            key=f"lesson_focus_block_{active_subject}",
+            key=focus_widget_key,
             help="A flexible starting point, not a fixed attention-span rule. Choose a shorter or longer block to suit you.",
         )
         quiz_minutes = max(4, round(focus_minutes * 0.25))
@@ -1887,7 +1994,9 @@ with tab_tutor:
             f"{worked_minutes} min for a worked example or model · {quiz_minutes} min for the topic check. "
             "Then take a 5-minute reset before starting another topic. Revisit missed ideas in later sessions."
         )
-        selected_module = st.selectbox("Select Topic:", modules)
+        selected_module = st.selectbox(
+            "Select Topic:", modules, index=modules.index(default_topic), key=topic_widget_key
+        )
         with st.expander("📚 Course map and self-check status", expanded=False):
             latest_for_map = latest_by_topic(
                 st.session_state.get("topic_quiz_history", []), active_subject
@@ -1914,9 +2023,14 @@ with tab_tutor:
                 "The course map reflects the source notes shown above; it is not a claim that every map "
                 "has been independently verified against the current DHET syllabus."
             )
-        custom_query = st.text_input("Or enter specific concept/formula:", placeholder="e.g., Op-amp summing amplifier derivation")
+        custom_query = st.text_input(
+            "Or enter specific concept/formula:",
+            placeholder="e.g., Op-amp summing amplifier derivation",
+            key=f"custom_topic_{active_subject}",
+        )
         target_topic = custom_query.strip() if custom_query.strip() else selected_module
-        if st.button("📖 Generate Lesson & Explanation"):
+        adaptive_start = st.session_state.pop("adaptive_start_lesson_subject", None) == active_subject
+        if st.button("📖 Generate Lesson & Explanation") or adaptive_start:
             local_material = extract_text_from_local_files(os.path.join(BASE_DIR, "Learning material"))
             material_context = select_course_material(local_material, active_subject, target_topic)
             if not material_context:
@@ -1929,8 +2043,12 @@ with tab_tutor:
             lesson_minutes = focus_minutes - quiz_minutes
             prompt = (
                 f"Write a focused, learner-friendly NATED {active_subject} lesson on {target_topic}. "
-                f"Structure it for about {lesson_minutes} minutes of study, with 3–4 short sections, "
-                "a plain-language explanation, one worked engineering example, one brief learner try-it prompt, "
+                f"Structure it for about {lesson_minutes} minutes of study, with 3–4 short sections. "
+                f"Recent practice pattern: {adaptive_plan['pattern']}. Suggested teaching move: {adaptive_plan['method']} "
+                "Use this evidence to tune the scaffolding: show explicit steps when recent checks reveal gaps, "
+                "and use retrieval without notes when accuracy is good but the learner reports uncertainty. "
+                "Do not label the learner with a fixed learning style or imply a diagnosis. "
+                "Include a plain-language explanation, one worked engineering example, one brief learner try-it prompt, "
                 "and a short recap. Keep each section easy to finish before moving on. Avoid a textbook-length dump "
                 "and do not use inline ASCII box diagrams. Use only the selected course source below where relevant. "
                 "Distinguish sourced facts from general explanation and never claim an official syllabus match unless the source states it.\n"
@@ -2193,15 +2311,90 @@ with tab_tutor:
                 "rtd_tc": "Change process temperature. Compare how the RTD resistance and thermocouple EMF are represented.",
                 "pid_loop": "Change the error and controller gains. Observe how P, I and D terms contribute to the control-valve output.",
             }
-            st.info("**Try this:** " + lab_challenges.get(
+            lab_challenge = lab_challenges.get(
                 diagram_id,
                 "Rotate the model, hover each labelled part, then change one control at a time and explain the updated readouts.",
-            ))
-            diagram_spec = get_spec(diagram_id)
-            if diagram_spec:
-                render_diagram3d(diagram_spec, height=680)
+            )
+            lab_code = LAB_SUBJECT_CODES.get(lab_subject)
+            lab_topic = LAB_TOPIC_BY_DIAGRAM.get(diagram_id)
+            prediction_key = "lab_prediction_" + re.sub(r"[^A-Za-z0-9_-]+", "_", f"{lab_subject}_{diagram_id}")
+            locked_key = f"{prediction_key}_locked"
+            saved_key = f"{prediction_key}_saved"
+            locked_prediction = bool(st.session_state.get(locked_key, False))
+
+            st.markdown("#### 🧠 Predict → explore → explain")
+            if not locked_prediction:
+                st.info("Make a brief prediction before opening the model. Then change one control and compare what happens.")
+                st.caption("**Topic challenge:** " + lab_challenge)
+                prediction_text = st.text_area(
+                    "What do you expect the model to show?",
+                    key=f"{prediction_key}_text",
+                    max_chars=600,
+                    height=90,
+                    placeholder="State the direction of change, expected output, or component behaviour.",
+                )
+                prediction_confidence = st.radio(
+                    "How sure are you?",
+                    ["Unsure", "Somewhat sure", "Very sure"],
+                    index=1,
+                    horizontal=True,
+                    key=f"{prediction_key}_confidence",
+                )
+                if st.button("Lock prediction and open the model", key=f"{prediction_key}_lock_button"):
+                    if not prediction_text.strip():
+                        st.warning("Write a short prediction first. One sentence is enough.")
+                    else:
+                        st.session_state[locked_key] = True
+                        st.session_state[f"{prediction_key}_confidence_value"] = {
+                            "Unsure": 1, "Somewhat sure": 2, "Very sure": 3
+                        }[prediction_confidence]
+                        st.rerun()
             else:
-                st.error("This model could not be loaded. Check the diagram registry and its source module.")
+                st.success("Prediction locked. Now inspect the model, change one control, and compare the result.")
+                st.caption("**Topic challenge:** " + lab_challenge)
+                if st.button("Start a new prediction", key=f"{prediction_key}_reset_button"):
+                    for state_key in (
+                        locked_key, saved_key, f"{prediction_key}_text",
+                        f"{prediction_key}_confidence", f"{prediction_key}_confidence_value",
+                        f"{prediction_key}_reflection",
+                    ):
+                        st.session_state.pop(state_key, None)
+                    st.rerun()
+                diagram_spec = get_spec(diagram_id)
+                if diagram_spec:
+                    render_diagram3d(diagram_spec, height=680)
+                else:
+                    st.error("This model could not be loaded. Check the diagram registry and its source module.")
+
+                st.caption("After you adjust a control, compare the readout with your prediction.")
+                reflection = st.radio(
+                    "How did the result compare?",
+                    ["It matched", "It partly matched", "It was different"],
+                    index=None,
+                    horizontal=True,
+                    key=f"{prediction_key}_reflection",
+                )
+                if not st.session_state.get(saved_key):
+                    if st.button("Save this lab reflection", key=f"{prediction_key}_save_button"):
+                        if reflection is None:
+                            st.info("Choose the reflection that best describes what you observed.")
+                        elif lab_code and lab_topic:
+                            lab_records = st.session_state.get("lab_prediction_history", [])
+                            lab_records.append({
+                                "subject": lab_code,
+                                "topic": lab_topic,
+                                "matched": reflection == "It matched",
+                                "confidence": st.session_state.get(f"{prediction_key}_confidence_value", 2),
+                                "attempted_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                            })
+                            st.session_state["lab_prediction_history"] = lab_records[-300:]
+                            st.session_state[saved_key] = True
+                            st.success("Reflection saved for this browser session. It can guide your next study suggestion.")
+                        else:
+                            st.session_state[saved_key] = True
+                            st.success("Reflection saved for this browser session.")
+                elif st.session_state.get(saved_key):
+                    st.success("Saved. Your lab reflection stays in this browser session and is not included in the progress export.")
 
             if lab_subject == "Industrial Electronics N5":
                 st.divider()
@@ -2251,9 +2444,18 @@ with tab_analytics:
     mapped_checked = sum((active_subject, module) in latest for module in modules)
     avg = summary["average_latest_percent"]
 
+    adaptive_plan = build_adaptive_study_plan(
+        history, active_subject, modules,
+        lab_history=st.session_state.get("lab_prediction_history", []),
+    )
     st.caption(
-        "These insights are calculated from your own topic-quiz results in this browser session. "
-        "They describe practice evidence only; they do not estimate exam results."
+        "These suggestions use your own topic-check results and optional lab reflections from this browser session. "
+        "They describe practice evidence only; they do not diagnose learning style or estimate exam results."
+    )
+    st.info(
+        f"**Suggested next:** {adaptive_plan['topic'] or 'Choose a topic'} · "
+        f"{adaptive_plan['focus_minutes']} minutes. {adaptive_plan['reason']} "
+        f"Pattern: {adaptive_plan['pattern']}."
     )
     metric_cols = st.columns(4)
     metric_cols[0].metric("Topics checked", f"{mapped_checked} / {len(modules)}")
@@ -2303,8 +2505,8 @@ with tab_analytics:
     with st.expander("Save or move progress to another session", expanded=False):
         st.caption(
             "Progress is session-only. Export a small JSON file to keep a copy or move it to another browser. "
-            "It contains subject, topic, score, review date and missed-concept labels; it excludes answers, "
-            "uploaded work and tutor conversations."
+            "It contains subject, topic, score, review date, missed-concept labels and your optional confidence rating; "
+            "it excludes answers, uploaded work, tutor conversations and lab prediction text/reflections."
         )
         st.download_button(
             "⬇️ Export my progress (.json)",
