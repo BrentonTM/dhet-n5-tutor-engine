@@ -775,7 +775,7 @@ def select_course_material(material_text, subject_code, target_topic, limit=6000
         word.casefold() for word in re.findall(r"[A-Za-z0-9]{3,}", str(target_topic))
     ]
     source_pattern = re.compile(
-        r"(?ms)^--- SOURCE FILE: ([^\n]+) ---\n(.*?)(?=^--- SOURCE FILE: |$)"
+        r"(?ms)^--- SOURCE FILE: ([^\n]+) ---\n(.*?)(?=^--- SOURCE FILE: |\Z)"
     )
     candidates = []
     for source_path, source_text in source_pattern.findall(material_text):
