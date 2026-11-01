@@ -143,91 +143,154 @@ def clean_exam_text(text: str) -> str:
     cleaned = re.sub(r'\s+', ' ', cleaned)
     
     return cleaned.strip()
-def render_ai_tutor_chat():
-    st.subheader("🤖 Trentox AI Socratic Tutor")
-    st.markdown("Ask about the selected subject, its topics, or an exam question. The tutor will guide your reasoning with prompts and hints before showing a full explanation.")
-
-    with st.expander("📄 Upload an answer for feedback", expanded=False):
-        st.caption("Upload a PDF, Word document, text file, or clear answer image. The configured AI service will read it and return strengths, corrections, and a next-step question.")
-        answer_file = st.file_uploader(
-            "Your worked answer",
-            type=["pdf", "docx", "txt", "png", "jpg", "jpeg", "webp"],
-            key=f"answer_upload_{active_subject}",
-            help="Maximum 12 MB. For a scan or handwriting, use a clear PDF or image.",
-        )
-        answer_context = st.text_area(
-            "Question or marking guide (optional)",
-            placeholder="Paste the question, given values, or marking guide so feedback can be more precise.",
-            key=f"answer_context_{active_subject}",
-            height=90,
-        )
-        if st.button("Review my answer", key=f"review_answer_{active_subject}", disabled=answer_file is None):
-            answer_bytes = answer_file.getvalue()
-            if len(answer_bytes) > 12 * 1024 * 1024:
-                st.error("That file is over 12 MB. Export only the relevant pages or compress the image and try again.")
-            else:
-                with st.spinner("Reading your work and preparing Socratic feedback..."):
-                    feedback, review_error = review_uploaded_answer(
-                        answer_file.name,
-                        answer_bytes,
-                        answer_context,
-                        active_subject,
-                    )
-                st.session_state["answer_review"] = {
-                    "subject": active_subject,
-                    "filename": answer_file.name,
-                    "feedback": feedback,
-                    "error": review_error,
-                }
-
-        saved_review = st.session_state.get("answer_review", {})
-        if saved_review.get("subject") == active_subject and answer_file and saved_review.get("filename") == answer_file.name:
-            if saved_review.get("feedback"):
-                st.markdown("#### Feedback on your work")
-                st.markdown(saved_review["feedback"])
-            elif saved_review.get("error"):
-                st.error(saved_review["error"])
-
-    if "tutor_chat" not in st.session_state:
+def _ensure_tutor_chat():
+    if "tutor_chat" not in st.session_state or not isinstance(st.session_state.tutor_chat, list):
         st.session_state.tutor_chat = []
     if st.session_state.get("tutor_chat_subject") != active_subject:
         st.session_state.tutor_chat = []
         st.session_state.tutor_chat_subject = active_subject
 
-    for msg in st.session_state.tutor_chat:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
 
-    user_msg = st.chat_input("Ask your tutor a question...", key="tutor_chat_input")
-    if user_msg:
-        st.session_state.tutor_chat.append({"role": "user", "content": user_msg})
-        history = "\n".join(
-            f"{m['role'].upper()}: {m['content']}" for m in st.session_state.tutor_chat[-8:]
-        )
-        current_lesson = st.session_state.get("active_topic_lesson", {})
-        topic_context = (
-            f"Current lesson topic: {current_lesson['topic']}\n"
-            if current_lesson.get("subject") == active_subject and current_lesson.get("topic")
-            else ""
-        )
-        chat_prompt = (
-            f"You are a Socratic NATED engineering tutor for {active_subject}. "
-            "Help the learner understand, not just copy an answer. Ask one focused question at a time; give a small hint first; "
-            "check their reasoning; correct misconceptions kindly; and show a complete worked explanation when they ask or remain stuck. "
-            "Use SI units and distinguish assumptions from facts.\n"
-            f"{topic_context}\n{history}\nASSISTANT:"
-        )
-        with st.spinner("Tutor is thinking..."):
-            reply, err = query_gemini_with_fallback(chat_prompt)
-        st.session_state.tutor_chat.append(
-            {"role": "assistant", "content": reply or f"⚠️ {err}"}
-        )
-        st.rerun()
+def _submit_tutor_message(user_msg: str):
+    user_msg = str(user_msg or "").strip()
+    if not user_msg:
+        return
+    _ensure_tutor_chat()
+    st.session_state.tutor_chat.append({"role": "user", "content": user_msg})
+    history = "\n".join(
+        f"{message['role'].upper()}: {message['content']}"
+        for message in st.session_state.tutor_chat[-8:]
+    )
+    current_lesson = st.session_state.get("active_topic_lesson", {})
+    topic_context = (
+        f"Current lesson topic: {current_lesson['topic']}\n"
+        if current_lesson.get("subject") == active_subject and current_lesson.get("topic")
+        else ""
+    )
+    chat_prompt = (
+        f"You are ASK TX, a Socratic NATED engineering tutor for {active_subject}. "
+        "Help the learner understand, not just copy an answer. Ask one focused question at a time; give a small hint first; "
+        "check their reasoning; correct misconceptions kindly; and show a complete worked explanation when they ask or remain stuck. "
+        "Use SI units and distinguish assumptions from facts.\n"
+        f"{topic_context}\n{history}\nASSISTANT:"
+    )
+    with st.spinner("ASK TX is thinking..."):
+        reply, err = query_gemini_with_fallback(chat_prompt)
+    st.session_state.tutor_chat.append(
+        {"role": "assistant", "content": reply or f"⚠️ {err}"}
+    )
+    st.rerun()
 
-    if st.session_state.tutor_chat and st.button("🗑️ Clear chat", key="tutor_chat_clear"):
+
+def render_ai_tutor_chat(
+    widget_prefix: str = "tutor_tab",
+    compact: bool = False,
+    use_form: bool = False,
+    include_upload: bool = True,
+):
+    _ensure_tutor_chat()
+    if compact:
+        st.markdown("### 💬 ASK TX · Socratic tutor")
+        st.caption(f"Ask about {active_subject}, request a hint, or upload your worked answer for feedback.")
+    else:
+        st.subheader("🤖 ASK TX Socratic Tutor")
+        st.markdown(
+            "Ask about the selected subject, its topics, or an exam question. "
+            "ASK TX guides your reasoning with prompts and hints before showing a full explanation."
+        )
+
+    if include_upload:
+        with st.expander("📄 Upload an answer for feedback", expanded=False):
+            st.caption(
+                "Upload a PDF, Word document, text file, or clear answer image. "
+                "ASK TX will identify strengths, corrections, and a useful next step."
+            )
+            answer_file = st.file_uploader(
+                "Your worked answer",
+                type=["pdf", "docx", "txt", "png", "jpg", "jpeg", "webp"],
+                key=f"{widget_prefix}_answer_upload_{active_subject}",
+                help="Maximum 12 MB. For a scan or handwriting, use a clear PDF or image.",
+            )
+            answer_context = st.text_area(
+                "Question or marking guide (optional)",
+                placeholder="Paste the question, given values, or marking guide so feedback can be more precise.",
+                key=f"{widget_prefix}_answer_context_{active_subject}",
+                height=90,
+            )
+            if st.button(
+                "Review my answer",
+                key=f"{widget_prefix}_review_answer_{active_subject}",
+                disabled=answer_file is None,
+                use_container_width=True,
+            ):
+                answer_bytes = answer_file.getvalue()
+                if len(answer_bytes) > 12 * 1024 * 1024:
+                    st.error(
+                        "That file is over 12 MB. Export only the relevant pages or compress the image and try again."
+                    )
+                else:
+                    with st.spinner("Reading your work and preparing Socratic feedback..."):
+                        feedback, review_error = review_uploaded_answer(
+                            answer_file.name,
+                            answer_bytes,
+                            answer_context,
+                            active_subject,
+                        )
+                    st.session_state["answer_review"] = {
+                        "subject": active_subject,
+                        "filename": answer_file.name,
+                        "feedback": feedback,
+                        "error": review_error,
+                    }
+
+            saved_review = st.session_state.get("answer_review", {})
+            if (
+                saved_review.get("subject") == active_subject
+                and answer_file
+                and saved_review.get("filename") == answer_file.name
+            ):
+                if saved_review.get("feedback"):
+                    st.markdown("#### Feedback on your work")
+                    st.markdown(saved_review["feedback"])
+                elif saved_review.get("error"):
+                    st.error(saved_review["error"])
+
+    if st.session_state.tutor_chat:
+        for message in st.session_state.tutor_chat[-12:]:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+    elif compact:
+        st.info("Start with one question. ASK TX will guide you step by step.")
+
+    if use_form:
+        with st.form(f"{widget_prefix}_message_form", clear_on_submit=True):
+            user_msg = st.text_area(
+                "Ask ASK TX",
+                placeholder="Type a question or explain where you got stuck...",
+                key=f"{widget_prefix}_message_text",
+                height=76,
+                max_chars=3000,
+            )
+            submitted = st.form_submit_button("Send to ASK TX", use_container_width=True)
+        if submitted:
+            if user_msg.strip():
+                _submit_tutor_message(user_msg)
+            else:
+                st.info("Type a question first.")
+    else:
+        user_msg = st.chat_input(
+            "Ask ASK TX a question...",
+            key=f"{widget_prefix}_chat_input",
+        )
+        if user_msg:
+            _submit_tutor_message(user_msg)
+
+    if st.session_state.tutor_chat and st.button(
+        "🗑️ Clear chat",
+        key=f"{widget_prefix}_chat_clear",
+    ):
         st.session_state.tutor_chat = []
         st.rerun()
-
 
 def _extract_answer_text(filename, file_bytes):
     extension = os.path.splitext(filename)[1].lower()
@@ -1265,6 +1328,8 @@ def open_learning_workspace(workspace: str, tutor_section: str = None):
     st.session_state["learning_workspace"] = workspace
     if tutor_section:
         st.session_state["tutor_section"] = tutor_section
+        if tutor_section == "💬 Ask tutor":
+            st.session_state["ask_tx_launcher"] = True
 
 
 shortcut_columns = st.columns(2, gap="small")
@@ -1306,33 +1371,6 @@ st.button(
     key="hero_calendar_button",
     use_container_width=True,
     on_click=open_exam_calendar_workspace,
-)
-st.markdown(
-    '''<div class="tx-monogram" aria-label="Golden 3D TX monogram">
-    <svg viewBox="0 0 248 140" role="img" aria-labelledby="tx-monogram-title">
-      <title id="tx-monogram-title">TX monogram: separate T and X solid forms</title>
-      <defs>
-        <linearGradient id="tx-gold-t" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#fff5c0"/><stop offset=".28" stop-color="#f7d86c"/>
-          <stop offset=".58" stop-color="#c68b18"/><stop offset=".78" stop-color="#ffe998"/>
-          <stop offset="1" stop-color="#a36c0c"/>
-        </linearGradient>
-        <linearGradient id="tx-gold-x" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stop-color="#9b690f"/><stop offset=".38" stop-color="#e8bd48"/>
-          <stop offset=".68" stop-color="#fff1a6"/><stop offset="1" stop-color="#bd8213"/>
-        </linearGradient>
-        <linearGradient id="tx-gold-side" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#6d4908"/><stop offset=".55" stop-color="#9e6c13"/><stop offset="1" stop-color="#4f3508"/>
-        </linearGradient>
-      </defs>
-      <g class="tx-extrusion" aria-hidden="true" transform="translate(7 8)">
-        <path d="M16 16 H102 V44 H72 V120 H46 V44 H16 Z"/>
-        <path d="M130 16 H160 L181 45 L202 16 H232 L196 66 L232 120 H202 L181 87 L160 120 H130 L166 66 Z"/>
-      </g>
-      <path class="tx-face-t" d="M16 16 H102 V44 H72 V120 H46 V44 H16 Z"/>
-      <path class="tx-face-x" d="M130 16 H160 L181 45 L202 16 H232 L196 66 L232 120 H202 L181 87 L160 120 H130 L166 66 Z"/>
-    </svg></div>''',
-    unsafe_allow_html=True,
 )
 
 # Sidebar learning path and reference navigation
@@ -1409,6 +1447,23 @@ if not active_subject:
         "but its curriculum map has not been integrated yet. The roadmap tracks the source review and build work."
     )
     st.stop()
+
+ask_tx_popover = st.popover(
+    "ASK TX",
+    icon="💬",
+    key="ask_tx_launcher",
+    on_change="rerun",
+    help="Open your Socratic AI tutor and upload work for feedback.",
+    width="content",
+)
+with ask_tx_popover:
+    if ask_tx_popover.open:
+        render_ai_tutor_chat(
+            widget_prefix="ask_tx",
+            compact=True,
+            use_form=True,
+            include_upload=True,
+        )
 
 active_route = " · ".join(
     [selected_programme_name, selected_level, selected_subject["subject_name"]]
@@ -2162,7 +2217,7 @@ with tab_tutor:
         st.table(timetable_data)
 
     with sub_tab5:
-        render_ai_tutor_chat()
+        render_ai_tutor_chat(widget_prefix="tutor_tab")
 
     with sub_tab6:
         if sub_tab6.open:
