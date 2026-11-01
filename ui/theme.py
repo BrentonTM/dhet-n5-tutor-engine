@@ -211,8 +211,8 @@ def inject_industrial_theme():
             align-items: center;
             justify-content: center;
             gap: .02em;
-            width: 102px;
-            height: 80px;
+            width: 132px;
+            height: 86px;
             perspective: 520px;
             transform-style: preserve-3d;
             filter: drop-shadow(0 10px 11px rgba(0, 0, 0, .62));
@@ -220,29 +220,37 @@ def inject_industrial_theme():
             pointer-events: none;
         }
         .tx-monogram svg {
-            width: 106px;
+            width: 132px;
             height: 90px;
             overflow: visible;
             transform: translateZ(12px) rotateX(4deg) rotateY(-7deg);
             transform-style: preserve-3d;
         }
-        .tx-extrusion path {
+        .tx-extrusion text {
             fill: #67470d;
             stroke: #3d2b0b;
-            stroke-width: 2.2;
-            stroke-linejoin: bevel;
+            stroke-width: 1.4;
+            stroke-linejoin: round;
+            font-family: "Arial Black", "Segoe UI Black", sans-serif;
+            font-size: 82px;
+            font-weight: 900;
+            letter-spacing: -5px;
+        }
+        .tx-face-t,
+        .tx-face-x {
+            stroke: #fff0a1;
+            stroke-width: 1.2;
+            stroke-linejoin: round;
+            font-family: "Arial Black", "Segoe UI Black", sans-serif;
+            font-size: 82px;
+            font-weight: 900;
+            letter-spacing: -5px;
         }
         .tx-face-t {
             fill: url(#tx-gold-t);
-            stroke: #fff0a1;
-            stroke-width: 1.5;
-            stroke-linejoin: bevel;
         }
         .tx-face-x {
             fill: url(#tx-gold-x);
-            stroke: #f9df7b;
-            stroke-width: 1.3;
-            stroke-linejoin: bevel;
         }
         @keyframes tx-monogram-rotate {
             0% { transform: rotateY(-12deg) rotateX(6deg) rotateZ(-1deg); }
@@ -326,8 +334,11 @@ def inject_industrial_theme():
             [data-testid="stMainBlockContainer"] { padding: 1rem .8rem 2rem; }
             [data-testid="stTabs"] [role="tab"] { padding: .48rem .65rem; font-size: .82rem; }
             .tx-course-bar { align-items: flex-start; flex-direction: column; gap: .45rem; }
-            .tx-monogram { right: 8px; bottom: 72px; width: 76px; height: 60px; }
-            .tx-monogram svg { width: 78px; height: 66px; }
+            .tx-monogram { right: 8px; bottom: 72px; width: 98px; height: 62px; }
+            .tx-monogram svg { width: 98px; height: 66px; }
+            .tx-extrusion text,
+            .tx-face-t,
+            .tx-face-x { font-size: 82px; }
         }
         @media (prefers-reduced-motion: reduce) {
             .tx-monogram { animation: none; }

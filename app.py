@@ -1199,9 +1199,9 @@ with shortcut_columns[3]:
         args=("⏱ Mock exam",),
     )
 st.markdown(
-    '''<div class="tx-monogram" aria-label="Golden geometric Trentox TX monogram">
-    <svg viewBox="0 0 120 102" role="img" aria-labelledby="tx-monogram-title">
-      <title id="tx-monogram-title">Trentox Tutor AI TX</title>
+    '''<div class="tx-monogram" aria-label="Golden 3D TX monogram">
+    <svg viewBox="0 0 150 100" role="img" aria-labelledby="tx-monogram-title">
+      <title id="tx-monogram-title">TX monogram: T and X</title>
       <defs>
         <linearGradient id="tx-gold-t" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="#fff5c0"/><stop offset=".28" stop-color="#f7d86c"/>
@@ -1214,11 +1214,11 @@ st.markdown(
         </linearGradient>
       </defs>
       <g class="tx-extrusion" aria-hidden="true">
-        <path d="M18 10h84v16H68v62H52V26H18z" transform="translate(4 5)"/>
-        <path d="M30 27 41 16l19 19 19-19 11 11-19 19 19 19-11 11-19-19-19 19-11-11 19-19z" transform="translate(4 5)"/>
+        <text x="8" y="80" transform="translate(4 5)">T</text>
+        <text x="78" y="80" transform="translate(4 5)">X</text>
       </g>
-      <path class="tx-face-t" d="M18 10h84v16H68v62H52V26H18z"/>
-      <path class="tx-face-x" d="M30 27 41 16l19 19 19-19 11 11-19 19 19 19-11 11-19-19-19 19-11-11 19-19z"/>
+      <text class="tx-face-t" x="8" y="80">T</text>
+      <text class="tx-face-x" x="78" y="80">X</text>
     </svg></div>''',
     unsafe_allow_html=True,
 )
