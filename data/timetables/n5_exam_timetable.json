@@ -2,6 +2,9 @@
   "examination_body": "DHET NATED",
   "trimester": "T3-2026",
   "level": "N5",
+  "source_status": "unverified",
+  "source_url": null,
+  "source_note": "These dates are present in project data but have not been verified against a published DHET timetable. Confirm them with DHET or your exam centre before relying on or importing them.",
   "exams": [
     {
       "subject_code": "INST-N5",
@@ -33,3 +36,4 @@
     }
   ]
 }
+
