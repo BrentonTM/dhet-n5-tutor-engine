@@ -1,60 +1,130 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <style>
-        body,
-        html {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-            background: transparent;
-        }
-
-        #motif-container {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; color: #e8f4ff; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .panel { height: 100%; min-height: 166px; padding: 9px 11px 8px; border: 1px solid #24455c; border-radius: 15px; background: radial-gradient(ellipse at 65% 20%, #123047 0%, #0a1a28 58%, #08131e 100%); box-shadow: inset 0 1px 0 #ffffff0d; display: grid; grid-template-rows: 22px minmax(74px, 1fr) 27px; gap: 3px; }
+  .heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; font-size: 10px; }
+  .heading strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #f4f8fc; font-size: 10px; letter-spacing: .015em; }
+  .code { flex: none; color: #52dded; font-size: 9px; letter-spacing: .08em; }
+  .graphic { min-height: 74px; position: relative; overflow: hidden; border-radius: 10px; background: linear-gradient(135deg,#0b2233,#0b1825 68%,#10283a); }
+  svg { display:block; width:100%; height:100%; }
+  .svg-label { fill:#b8d0e2; font: 8px system-ui,sans-serif; }
+  .svg-small { fill:#87a8bd; font: 7px system-ui,sans-serif; }
+  .svg-title { fill:#e9f6ff; font: bold 9px system-ui,sans-serif; }
+  .controls { display:flex; align-items:center; justify-content:space-between; gap:7px; min-width:0; color:#a9c1d3; font-size:9px; }
+  .controls .hint { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  input[type=range] { accent-color:#28d1e5; width: min(46%, 115px); height: 18px; margin:0; }
+  .gate-controls { display:flex; gap:3px; }
+  button { border:1px solid #2f6378; border-radius:6px; color:#d8edf5; background:#102b3c; padding:3px 6px; font-size:9px; cursor:pointer; }
+  button:hover, button.active { border-color:#38d8e9; color:#62edf5; background:#153c50; }
+  .value { color:#54e3ef; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .fallback { display:flex; align-items:center; justify-content:center; height:100%; gap:10px; color:#91b6cb; font-size:10px; }
+  .fallback-orb { width:32px; height:32px; border:2px solid #38d5e5; border-radius:9px; transform:rotate(45deg); box-shadow:0 0 20px #16c8e566,inset 0 0 12px #16c8e544; }
+</style>
 </head>
-
 <body>
-    <div id="motif-container"></div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        const container = document.getElementById('motif-container');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
-        camera.position.z = 5;
-
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        container.appendChild(renderer.domElement);
-
-        scene.add(new THREE.AmbientLight(0xffffff, 1));
-        const light = new THREE.PointLight(0x22D3EE, 2, 20);
-        light.position.set(3, 3, 3);
-        scene.add(light);
-
-        const geometry = new THREE.IcosahedronGeometry(1.2, 1);
-        const material = new THREE.MeshStandardMaterial({ color: 0xFF7A1A, wireframe: true, emissive: 0x22D3EE, emissiveIntensity: 0.2 });
-        const motifMesh = new THREE.Mesh(geometry, material);
-        scene.add(motifMesh);
-
-        function animate() {
-            requestAnimationFrame(animate);
-            motifMesh.rotation.x += 0.005;
-            motifMesh.rotation.y += 0.008;
-            renderer.render(scene, camera);
-        }
-        animate();
-    </script>
+<div class="panel" data-code="__SUBJECT_CODE__" data-name="__SUBJECT_NAME__">
+  <div class="heading"><strong id="subject-name">__SUBJECT_NAME__</strong><span class="code" id="subject-code">__SUBJECT_CODE__</span></div>
+  <div class="graphic" id="graphic">
+    <div class="fallback"><span class="fallback-orb"></span><span>Interactive subject visual</span></div>
+  </div>
+  <div class="controls" id="controls"><span class="hint">Choose a subject to load its visual</span><span class="value" id="value"></span></div>
+</div>
+<script>
+(() => {
+  const panel = document.querySelector(".panel");
+  const code = panel.dataset.code;
+  const graphic = document.getElementById("graphic");
+  const controls = document.getElementById("controls");
+  const value = document.getElementById("value");
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const installSlider = (label, min, max, initial, suffix, onChange) => {
+    controls.innerHTML = '<span class="hint">' + label + '</span><input aria-label="' + esc(label) + '" type="range" min="' + min + '" max="' + max + '" value="' + initial + '"><span class="value"></span>';
+    const input = controls.querySelector("input");
+    const output = controls.querySelector(".value");
+    const update = () => { output.textContent = input.value + suffix; onChange(Number(input.value)); };
+    input.addEventListener("input", update);
+    update();
+  };
+  const instrument = () => {
+    graphic.innerHTML = `
+      <svg viewBox="0 0 240 110" role="img" aria-label="Interactive rotameter, float rises as flow increases">
+        <defs><linearGradient id="glass" x1="0" x2="1"><stop stop-color="#42d6e8" stop-opacity=".42"/><stop offset=".5" stop-color="#d9fbff" stop-opacity=".12"/><stop offset="1" stop-color="#42d6e8" stop-opacity=".35"/></linearGradient><linearGradient id="float" x1="0" x2="1"><stop stop-color="#ffd981"/><stop offset=".5" stop-color="#b77b1b"/><stop offset="1" stop-color="#ffe49c"/></linearGradient></defs>
+        <text x="11" y="15" class="svg-title">ROTAMETER · VARIABLE AREA FLOW</text>
+        <path d="M81 27 L97 94 L139 94 L155 27 Z" fill="url(#glass)" stroke="#54d9e7" stroke-width="2"/>
+        <path d="M102 83 L118 83 M99 69 L121 69 M96 55 L124 55 M92 41 L128 41" stroke="#a6d4df" stroke-width="1" opacity=".72"/>
+        <g id="float"><path d="M102 0 L110 -5 L126 -5 L134 0 L126 5 L110 5 Z" fill="url(#float)" stroke="#fff0b1" stroke-width="1"/></g>
+        <path d="M64 83 V38 M64 38 l-4 8 M64 38 l4 8" stroke="#3de4e9" stroke-width="2"/>
+        <text x="24" y="58" class="svg-small">FLOW</text><text x="24" y="68" class="svg-small">↑</text>
+        <text x="164" y="39" class="svg-small">100%</text><text x="164" y="59" class="svg-small">50%</text><text x="164" y="88" class="svg-small">0%</text>
+        <text x="83" y="105" class="svg-small">TAPERED TUBE</text>
+      </svg>`;
+    installSlider("Adjust flow · float rises", 0, 100, 42, "%", n => {
+      document.getElementById("float").setAttribute("transform", "translate(0 " + (88 - n * .53) + ")");
+    });
+  };
+  const digital = () => {
+    let a=0,b=1,gate="XOR";
+    const draw = () => {
+      const y = gate==="AND" ? (a&b) : gate==="OR" ? (a|b) : (a^b);
+      graphic.innerHTML = `
+        <svg viewBox="0 0 240 110" role="img" aria-label="Interactive logic gate with A and B inputs">
+          <text x="11" y="15" class="svg-title">LOGIC GATE · INPUTS → OUTPUT</text>
+          <text x="22" y="47" class="svg-label">A = ${a}</text><text x="22" y="79" class="svg-label">B = ${b}</text>
+          <path d="M73 34 H103 A29 25 0 0 1 103 84 H73 Z" fill="#103c50" stroke="#3ed6e8" stroke-width="2"/>
+          ${gate==="XOR" ? '<path d="M66 34 Q82 59 66 84" fill="none" stroke="#3ed6e8" stroke-width="2"/>' : ''}
+          <text x="84" y="63" class="svg-title">${gate}</text>
+          <path d="M45 44 H73 M45 76 H73 M132 59 H191" stroke="#52dded" stroke-width="2"/>
+          <circle cx="202" cy="59" r="10" fill="${y ? '#50f0b0' : '#283746'}" stroke="${y ? '#91ffd2' : '#7890a0'}" stroke-width="2"/>
+          <text x="197" y="63" class="svg-title">${y}</text><text x="188" y="86" class="svg-small">Y OUTPUT</text>
+        </svg>`;
+      value.textContent = "Y = " + y;
+    };
+    controls.innerHTML = '<span class="gate-controls"><button data-in="a">A: 0</button><button data-in="b">B: 1</button><button data-gate="AND">AND</button><button data-gate="OR">OR</button><button class="active" data-gate="XOR">XOR</button></span><span class="value"></span>';
+    controls.querySelectorAll("[data-in]").forEach(btn => btn.addEventListener("click", () => { if(btn.dataset.in==="a") a=1-a; else b=1-b; btn.textContent=btn.dataset.in.toUpperCase()+": "+(btn.dataset.in==="a"?a:b); draw(); }));
+    controls.querySelectorAll("[data-gate]").forEach(btn => btn.addEventListener("click", () => { gate=btn.dataset.gate; controls.querySelectorAll("[data-gate]").forEach(x=>x.classList.toggle("active",x===btn)); draw(); }));
+    draw();
+  };
+  const circuit = () => {
+    let volts=12, resistance=470;
+    graphic.innerHTML = `
+      <svg viewBox="0 0 240 110" role="img" aria-label="Interactive DC series circuit with supply, resistor and LED">
+        <defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        <text x="11" y="15" class="svg-title">DC SERIES CIRCUIT · V = IR</text>
+        <path d="M46 35 V52 M46 76 V91 H196 V35 H46" fill="none" stroke="#3bd9e7" stroke-width="2"/>
+        <path d="M38 57 H54 M41 64 H51" stroke="#f2c45c" stroke-width="2"/>
+        <text x="19" y="103" class="svg-small">SUPPLY</text>
+        <path d="M98 35 l5 -7 l8 14 l8 -14 l8 14 l8 -7" fill="none" stroke="#ffc968" stroke-width="3"/>
+        <text x="97" y="24" class="svg-small">R = <tspan id="res-label">${resistance}</tspan> Ω</text>
+        <circle cx="196" cy="35" r="8" fill="${volts>1.8?'#ff536b':'#482d39'}" stroke="#ff9eaa" filter="${volts>1.8?'url(#glow)':'none'}"/>
+        <text x="183" y="59" class="svg-small">LED</text>
+        <text x="86" y="78" class="svg-label">I = <tspan id="amps-label"></tspan> mA</text>
+      </svg>`;
+    controls.innerHTML = '<span class="hint">Supply voltage</span><input aria-label="Supply voltage" type="range" min="0" max="24" value="12"><span class="value"></span>';
+    const input=controls.querySelector("input"), output=controls.querySelector(".value");
+    input.addEventListener("input",()=>{ volts=Number(input.value); refresh(); });
+    const refresh=()=>{ const current=volts/resistance*1000; output.textContent=volts+" V · "+current.toFixed(1)+" mA"; const t=graphic.querySelector("#amps-label"); if(t)t.textContent=current.toFixed(1); const led=graphic.querySelector("circle"); if(led){led.setAttribute("fill",volts>1.8?"#ff536b":"#482d39");led.setAttribute("filter",volts>1.8?"url(#glow)":"none");} };
+    controls.insertAdjacentHTML("beforeend", '<span class="hint" style="display:none"></span>');
+    refresh();
+  };
+  const mathematics = () => {
+    const points = (gain) => Array.from({length:31},(_,i)=>{ const x=12+i*7.2, y=55-Math.sin(i/30*Math.PI*2)*gain*16; return x.toFixed(1)+","+y.toFixed(1); }).join(" ");
+    graphic.innerHTML = '<svg viewBox="0 0 240 110" role="img" aria-label="Interactive sine wave graph"><text x="11" y="15" class="svg-title">FUNCTION SHAPE · AMPLITUDE</text><path d="M12 55 H228 M120 24 V91" stroke="#526d7d" stroke-width="1"/><polyline id="curve" points="" fill="none" stroke="#44ddec" stroke-width="3"/><text x="190" y="101" class="svg-small">ANGLE →</text><text x="10" y="34" class="svg-small">y</text></svg>';
+    installSlider("Adjust amplitude", 5, 20, 12, "", n => { const line=graphic.querySelector("#curve"); if(line)line.setAttribute("points",points(n/10)); });
+  };
+  if (code.startsWith("INST")) instrument();
+  else if (code.startsWith("DIGI")) digital();
+  else if (code.startsWith("IE")) circuit();
+  else if (code.startsWith("MATH")) mathematics();
+  else {
+    graphic.innerHTML = '<div class="fallback"><span class="fallback-orb"></span><span>Interactive engineering visual</span></div>';
+    controls.innerHTML = '<span class="hint">Visual for ' + esc(panel.dataset.name) + '</span><span class="value">Ready</span>';
+  }
+})();
+</script>
 </body>
-
 </html>
