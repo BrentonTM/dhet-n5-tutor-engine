@@ -377,8 +377,13 @@ _DEVICE_SUPPORT_HTML = r"""
   function buildStudyCalendar() {
     const timeText = timeInput.value || "18:00";
     const parts = timeText.split(":");
-    const start = new Date();
-    start.setHours(Number(parts[0]) || 18, Number(parts[1]) || 0, 0, 0);
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+      Number(parts[0]) || 18, Number(parts[1]) || 0, 0, 0);
+    while (start.getTime() <= now.getTime() ||
+      (frequencyInput.value === "weekdays" && (start.getDay() === 0 || start.getDay() === 6))) {
+      start.setDate(start.getDate() + 1);
+    }
     const end = new Date(start.getTime() + 20 * 60 * 1000);
     function stamp(date) {
       return date.getFullYear() + pad(date.getMonth() + 1) + pad(date.getDate()) + "T" +
@@ -404,7 +409,7 @@ _DEVICE_SUPPORT_HTML = r"""
       rule,
       "BEGIN:VALARM",
       "ACTION:DISPLAY",
-      "TRIGGER:-PT0S",
+      "TRIGGER:PT0S",
       "DESCRIPTION:Your Trentox study session is starting.",
       "END:VALARM",
       "END:VEVENT",
