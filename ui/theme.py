@@ -202,44 +202,52 @@ def inject_industrial_theme():
             font-size: 1.04rem;
             line-height: 1.6;
         }
-        .tx-gold-monogram {
+        .tx-monogram {
             position: fixed;
-            right: 24px;
-            bottom: 86px;
+            right: 22px;
+            bottom: 82px;
             z-index: 99999;
-            display: grid;
-            width: 72px;
-            height: 72px;
-            place-items: center;
-            border: 1px solid rgba(255, 220, 132, .88);
-            border-radius: 50%;
-            background: radial-gradient(circle at 32% 25%, #fff0b4 0%, #dba93d 22%, #75521b 58%, #17140d 100%);
-            box-shadow: 0 0 0 4px rgba(228, 179, 68, .12), 0 8px 24px rgba(0, 0, 0, .58), inset 0 2px 6px rgba(255, 244, 192, .58), inset 0 -7px 12px rgba(28, 19, 4, .72);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .02em;
+            width: 102px;
+            height: 80px;
+            perspective: 520px;
             transform-style: preserve-3d;
-            animation: tx-monogram-rotate 8s linear infinite;
+            filter: drop-shadow(0 10px 11px rgba(0, 0, 0, .62));
+            animation: tx-monogram-rotate 14s linear infinite;
             pointer-events: none;
         }
-        .tx-gold-monogram::before {
-            position: absolute;
-            inset: 6px;
-            border: 1px solid rgba(255, 235, 174, .72);
-            border-radius: 50%;
-            box-shadow: inset 0 0 8px rgba(255, 224, 132, .45), 0 0 8px rgba(255, 207, 85, .28);
-            content: "";
-            transform: translateZ(5px);
-        }
-        .tx-gold-monogram span {
-            color: #fff0bd;
+        .tx-monogram-letter {
+            display: inline-block;
+            color: #f5c84b;
             font-family: "Segoe UI", Inter, system-ui, sans-serif;
-            font-size: 1.4rem;
-            font-weight: 900;
-            letter-spacing: -.09em;
-            text-shadow: 0 1px 0 #b88628, 0 2px 0 #684713, 0 5px 9px rgba(0, 0, 0, .8);
-            transform: translateZ(8px);
+            font-size: 3.35rem;
+            font-weight: 1000;
+            letter-spacing: -.08em;
+            line-height: 1;
+            -webkit-text-stroke: .7px #fff0a1;
+            text-shadow: 1px 1px 0 #b87f12, 2px 2px 0 #9d6a0a, 3px 3px 0 #805307, 4px 4px 0 #624006, 6px 7px 10px rgba(0, 0, 0, .78);
+            transform: translateZ(9px) rotateX(5deg) rotateY(-9deg);
+        }
+        .tx-letter-t {
+            background: linear-gradient(145deg, #fff7cd 0%, #f8d968 24%, #d39a21 52%, #fff0a2 68%, #8a5c09 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .tx-letter-x {
+            margin-left: -.04em;
+            background: linear-gradient(145deg, #fff8d6 0%, #f4cf5e 27%, #bd8517 54%, #ffe98f 72%, #704909 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transform: translateZ(11px) rotateX(5deg) rotateY(-5deg);
         }
         @keyframes tx-monogram-rotate {
-            0% { transform: perspective(600px) rotateY(0deg) rotateX(8deg); }
-            100% { transform: perspective(600px) rotateY(360deg) rotateX(8deg); }
+            0% { transform: rotateY(-12deg) rotateX(6deg); }
+            100% { transform: rotateY(348deg) rotateX(6deg); }
         }
         .tx-hero-copy {
             padding: .5rem 0 .75rem;
@@ -257,12 +265,17 @@ def inject_industrial_theme():
             letter-spacing: .13em;
             text-transform: uppercase;
         }
-        .tx-hero-chip-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: .5rem;
-            margin-top: 1rem;
+        .tx-hero-chip-row-label { margin: .8rem 0 .3rem; color: var(--tx-muted); font-size: .65rem; font-weight: 750; letter-spacing: .13em; }
+        .st-key-hero_course_button button,
+        .st-key-hero_lab_button button,
+        .st-key-hero_exam_button button {
+            min-height: 40px;
+            border-color: rgba(107, 172, 198, .24);
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(16, 42, 60, .96), rgba(13, 32, 47, .96));
+            font-size: .78rem;
         }
+        .st-key-hero_course_button button { border-color: rgba(111, 221, 178, .36); }
         .tx-chip {
             display: inline-flex;
             align-items: center;
@@ -311,11 +324,11 @@ def inject_industrial_theme():
             [data-testid="stMainBlockContainer"] { padding: 1rem .8rem 2rem; }
             [data-testid="stTabs"] [role="tab"] { padding: .48rem .65rem; font-size: .82rem; }
             .tx-course-bar { align-items: flex-start; flex-direction: column; gap: .45rem; }
-            .tx-gold-monogram { right: 12px; bottom: 76px; width: 60px; height: 60px; }
-            .tx-gold-monogram span { font-size: 1.15rem; }
+            .tx-monogram { right: 8px; bottom: 72px; width: 76px; height: 60px; }
+            .tx-monogram-letter { font-size: 2.55rem; }
         }
         @media (prefers-reduced-motion: reduce) {
-            .tx-gold-monogram { animation: none; }
+            .tx-monogram { animation: none; }
         }
         </style>
         """,
