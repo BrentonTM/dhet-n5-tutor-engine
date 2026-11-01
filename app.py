@@ -1,5 +1,6 @@
 import logging
 import json
+import html
 import os
 import re
 import sqlite3
@@ -228,13 +229,9 @@ client = build_omniroute_client()
 
 # --- Stable Sidebar Navigation ---
 with st.sidebar:
-    st.title("⚡ Trentox Tutor AI")
+    st.markdown("### ⚙️ Trentox Tutor AI")
+    st.caption("Engineering Studies learning workspace")
     st.markdown("---")
-    
-    st.caption("Use the tabs at the top of the page to navigate.")
-    
-    st.markdown("---")
-    st.caption("Engineering Studies tutor")
 # Configure Matplotlib for headless Streamlit rendering
 try:
     import matplotlib
@@ -276,56 +273,6 @@ try:
     inject_industrial_theme()
 except ImportError:
     pass
-
-# Custom CSS to make the top tabs pop out dramatically
-st.markdown("""
-    <style>
-        /* Base container styling */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 12px;
-            background-color: #11111b;
-            padding: 10px 14px;
-            border-radius: 12px;
-            border: 1px solid #313244;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
-        }
-
-        /* Individual Tab Styling */
-        .stTabs [data-baseweb="tab"] {
-            height: 48px;
-            white-space: pre-wrap;
-            background-color: #1e1e2e;
-            border-radius: 8px;
-            color: #a6adc8;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 0 18px;
-            border: 1px solid #313244;
-            transition: all 0.25s ease-in-out;
-        }
-
-        /* Hover FX */
-        .stTabs [data-baseweb="tab"]:hover {
-            color: #cba6f7;
-            border-color: #cba6f7;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(203, 166, 247, 0.2);
-        }
-
-        /* Selected Active Tab FX */
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(135deg, #1e1e2e 0%, #2a2b3d 100%) !important;
-            color: #89b4fa !important;
-            border: 1px solid #89b4fa !important;
-            box-shadow: 0 0 15px rgba(137, 180, 250, 0.35) !important;
-        }
-
-        /* Hide standard accent indicator line */
-        .stTabs [data-baseweb="tab-highlight"] {
-            background-color: transparent !important;
-        }
-    </style>
-""", unsafe_allow_html=True)
 
 # Helper function to clean corrupted PDF question characters
 # Helper function to clean and structure PDF question text
@@ -709,15 +656,30 @@ FLASHCARDS_DATA = {
         }
     ]
 }
-# App Header
-st.title("⚡ Trentox Tutor AI")
-st.caption("Report 191 Engineering Studies tutor | Choose a programme, N-level and subject")
+# Home page hero
+hero_copy, hero_visual = st.columns([1.25, 0.75], gap="large")
+with hero_copy:
+    st.markdown('<div class="tx-eyebrow">ENGINEERING STUDIES  ·  DHET REPORT 191</div>', unsafe_allow_html=True)
+    st.title("Engineering, made interactive.")
+    st.markdown(
+        "Learn the theory, test your understanding, and explore how real engineering systems behave. "
+        "Your lessons, practice and simulations follow the course selected in the study path."
+    )
+    st.markdown(
+        '<div class="tx-hero-chip-row">'
+        '<span class="tx-chip"><span class="tx-chip-dot"></span>Course-aware learning</span>'
+        '<span class="tx-chip">3D engineering lab</span>'
+        '<span class="tx-chip">Exam practice</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+with hero_visual:
+    st.markdown('<div class="tx-visual-label">Live engineering model · drag to inspect</div>', unsafe_allow_html=True)
+    render_3d_scene("hero_scene.html", height=220)
 
-# Render 3D Hero Banner Scene
-render_3d_scene("hero_scene.html", height=180)
-
-# Sidebar navigation & Categorized Formula Reference Expander
-st.sidebar.header("Navigation & Settings")
+# Sidebar learning path and reference navigation
+st.sidebar.header("Study path")
+st.sidebar.caption("Choose a programme, level and subject to tailor the workspace.")
 catalog_path = os.path.join(BASE_DIR, "config", "programme_catalog.json")
 try:
     with open(catalog_path, "r", encoding="utf-8") as catalog_file:
@@ -781,15 +743,26 @@ if not active_subject:
     )
     st.stop()
 
+active_route = " · ".join(
+    [selected_programme_name, selected_level, selected_subject["subject_name"]]
+)
+st.markdown(
+    '<div class="tx-course-bar">'
+    '<div><div class="tx-course-label">Active learning path</div>'
+    f'<div class="tx-course-name">{html.escape(active_route)}</div></div>'
+    '<span class="tx-course-state">Course map available</span>'
+    '</div>',
+    unsafe_allow_html=True,
+)
+
 if selected_programme["programme_id"] != "electrical_instrumentation":
     st.sidebar.caption(
         "A subject map is available by title and level. Confirm this programme's subject code and syllabus version before marking its route verified."
     )
 
-# Sidebar Font Size & Display Adjuster
-st.sidebar.markdown("---")
-st.sidebar.subheader("🔤 Display & Font Settings")
-font_scale = st.sidebar.slider("Font Scale", min_value=0.8, max_value=1.5, value=1.0, step=0.1)
+# Sidebar text size control
+with st.sidebar.expander("Text size", expanded=False):
+    font_scale = st.slider("Font scale", min_value=0.8, max_value=1.5, value=1.0, step=0.1)
 
 st.markdown(
     f"""
@@ -803,11 +776,11 @@ st.markdown(
 )
 
 # Render Live Subject Motif in Sidebar
-st.sidebar.markdown("### 🌐 Subject Motif")
-render_3d_scene("subject_motifs.html", height=130)
+with st.sidebar.expander("Subject visual", expanded=False):
+    render_3d_scene("subject_motifs.html", height=130)
 
 # Official NATED Categorized Formula Reference Sheets in Sidebar (Complete Exam Sheets Integration)
-with st.sidebar.expander("📐 Official NATED Formula Sheets", expanded=True):
+with st.sidebar.expander("📐 Official NATED Formula Sheets", expanded=False):
     st.markdown('<div style="max-height: 480px; overflow-y: auto; padding-right: 6px;">', unsafe_allow_html=True)
     
     if active_subject == "IE-N5":
@@ -975,13 +948,15 @@ if client:
                 st.error(f"Connection failed: {exc}")
 
 # --- Main App Tabs ---
+st.markdown('<div class="tx-eyebrow">LEARNING WORKSPACE</div>', unsafe_allow_html=True)
+st.caption("Choose a workspace to study a topic, practise a problem, run an interactive model or review your progress.")
 tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = st.tabs([
-    "📊 Mastery Dashboard",
-    "📝 Practical & Socratic Sandbox",
-    "⚡ Stress-Conditioned Exam Simulator",
-    "🤖 AI Tutor Notes & Simulators",
-    "📐 Formula & Reference Hub",
-    "📈 Cognitive & Psychological Analytics"
+    "📊 Progress",
+    "📝 Practice",
+    "⏱ Mock exam",
+    "🤖 Tutor & lab",
+    "📐 Formula hub",
+    "📈 Analytics"
 ])
 
 
@@ -1245,12 +1220,12 @@ with tab_exam:
 # TAB 4: AI Tutor Notes, Simulators & Spaced-Repetition Flashcards
 with tab_tutor:
     sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5, sub_tab6 = st.tabs([
-        "📖 Module Lessons & Notes",
-        "🧠 Spaced-Repetition Cards",
-        "🎛 Live Parameter Simulators",
-        "📅 14-Day Timetable",
-        "💬 Ask the Tutor",
-        "🧊 Interactive 3D Lab",
+        "📖 Lessons",
+        "🧠 Flashcards",
+        "🎛 Simulators",
+        "📅 Study plan",
+        "💬 Ask tutor",
+        "🧊 3D lab",
     ], on_change="rerun")
     
     with sub_tab1:
