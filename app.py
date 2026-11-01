@@ -565,7 +565,7 @@ def render_topic_diagram(topic_name):
     ax.axis("off")
     st.pyplot(fig)
 
-# Local Material Reader Function (cached so PDFs/PPTs are not re-read on every click)
+# Local Material Reader Function (cached so source files are not re-read on every click)
 @st.cache_data(show_spinner=False)
 def extract_text_from_local_files(folder_path):
     import logging
@@ -579,7 +579,21 @@ def extract_text_from_local_files(folder_path):
             file_path = os.path.join(root, file)
             ext = os.path.splitext(file)[1].lower()
 
-            if ext == ".pdf" and pypdf:
+            if file.lower() == "index.md":
+                continue
+
+            if ext in {".md", ".txt"}:
+                try:
+                    with open(file_path, "r", encoding="utf-8", errors="replace") as source_file:
+                        text = source_file.read().strip()
+                    if text:
+                        relative_file = os.path.relpath(file_path, folder_path)
+                        extracted_notes.append(f"--- SOURCE FILE: {relative_file} ---\n{text[:3000]}")
+                except Exception as exc:
+                    logging.warning("Could not read text file %s: %s", file_path, exc)
+                    continue
+
+            elif ext == ".pdf" and pypdf:
                 try:
                     reader = pypdf.PdfReader(file_path)
                     text = ""
