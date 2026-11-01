@@ -20,13 +20,17 @@
             position: absolute;
             top: 0;
             left: 0;
-            pointer-events: none;
+            cursor: grab;
+            touch-action: none;
         }
+        #canvas-container.dragging { cursor: grabbing; }
+        #controls { position:absolute; left:8px; bottom:7px; z-index:2; padding:4px 7px; border:1px solid rgba(61,116,141,.55); border-radius:7px; background:rgba(7,18,29,.72); color:#c3d7e2; font:10px/1.2 "Segoe UI",sans-serif; pointer-events:none; }
     </style>
 </head>
 
 <body>
     <div id="canvas-container"></div>
+    <div id="controls">Drag to rotate · scroll to zoom</div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         const container = document.getElementById('canvas-container');
@@ -58,19 +62,34 @@
         const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
         scene.add(particlesMesh);
 
-        let mouseX = 0, mouseY = 0;
-        document.addEventListener('mousemove', (event) => {
-            mouseX = (event.clientX / window.innerWidth) - 0.5;
-            mouseY = (event.clientY / window.innerHeight) - 0.5;
+        let dragging = false, lastX = 0, lastY = 0;
+        container.addEventListener('pointerdown', (event) => {
+            dragging = true; lastX = event.clientX; lastY = event.clientY;
+            container.classList.add('dragging'); container.setPointerCapture(event.pointerId);
+        });
+        container.addEventListener('pointermove', (event) => {
+            if (!dragging) return;
+            gear.rotation.y += (event.clientX - lastX) * 0.009;
+            gear.rotation.x += (event.clientY - lastY) * 0.009;
+            lastX = event.clientX; lastY = event.clientY;
+        });
+        function stopDrag() { dragging = false; container.classList.remove('dragging'); }
+        container.addEventListener('pointerup', stopDrag);
+        container.addEventListener('pointercancel', stopDrag);
+        container.addEventListener('wheel', (event) => {
+            event.preventDefault();
+            camera.position.z = Math.max(4.2, Math.min(12, camera.position.z + event.deltaY * 0.008));
+        }, { passive: false });
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
         function animate() {
             requestAnimationFrame(animate);
-            gear.rotation.x += 0.003;
-            gear.rotation.y += 0.005;
+            if (!dragging) { gear.rotation.x += 0.0012; gear.rotation.y += 0.0018; }
             particlesMesh.rotation.y -= 0.001;
-            camera.position.x += (mouseX * 1.5 - camera.position.x) * 0.05;
-            camera.position.y += (-mouseY * 1.5 - camera.position.y) * 0.05;
             camera.lookAt(scene.position);
             renderer.render(scene, camera);
         }
@@ -79,3 +98,4 @@
 </body>
 
 </html>
+
