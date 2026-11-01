@@ -23,7 +23,7 @@ This index catalogues the learner-provided files in this folder. The original fi
 - `Industrial Electronics/N5/03 Amplifiers/Chapter 03 TRANSISTOR TUT 01.pdf` — transistor-amplifier practice; text extraction is very limited.
 - `Industrial Electronics/N5/04 Integrated Circuits and Transducers/Module 04 integrated circuits and transducers.pdf` — ICs, ESD protection and handling, and transducer concepts.
 - `Industrial Electronics/N5/04 Integrated Circuits and Transducers/integratd circuits.pdf` — CMOS handling and protection notes, labelled Chapter 05 in the document.
-- `Learning material Archive/Duplicates/Industrial Electronics N5/Module 03 Amplifiers (1).pdf` is an exact duplicate of the active Module 03 PDF. It is archived for preservation and excluded from the tutor’s learning-material scan.
+- The exact duplicate of the active Module 03 PDF is kept at repository path `Learning material Archive/Duplicates/Industrial Electronics N5/Module 03 Amplifiers (1).pdf`. It is preserved outside the tutor’s scan folder.
 
 ### Industrial Instruments
 
