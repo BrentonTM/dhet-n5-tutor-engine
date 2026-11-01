@@ -2353,7 +2353,11 @@ with tab_tutor:
                 st.success("Prediction locked. Now inspect the model, change one control, and compare the result.")
                 st.caption("**Topic challenge:** " + lab_challenge)
                 if st.button("Start a new prediction", key=f"{prediction_key}_reset_button"):
-                    for state_key in (locked_key, saved_key, f"{prediction_key}_text", f"{prediction_key}_confidence_value"):
+                    for state_key in (
+                        locked_key, saved_key, f"{prediction_key}_text",
+                        f"{prediction_key}_confidence", f"{prediction_key}_confidence_value",
+                        f"{prediction_key}_reflection",
+                    ):
                         st.session_state.pop(state_key, None)
                     st.rerun()
                 diagram_spec = get_spec(diagram_id)
