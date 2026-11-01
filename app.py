@@ -47,6 +47,16 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 DATABASE_DIR = os.path.join(BASE_DIR, "data", "databases")
 os.makedirs(DATABASE_DIR, exist_ok=True)
+from ui.learning_progress import (
+    export_progress,
+    import_progress,
+    latest_by_topic,
+    merge_progress,
+    record_quiz_attempt,
+    study_streak,
+    summarize_progress,
+    topic_status,
+)
 def render_exam_question_card(question_num: str, title: str, question_text: str, has_diagram: bool = False, given_data: list = None):
     """Renders a clean, structured exam question card with visual separation and diagram notices."""
     
@@ -940,7 +950,7 @@ Lesson:
 
 
 def render_topic_quiz(quiz, subject_code, topic_name):
-    """Show a short self-check, then name the exact ideas that need another look."""
+    """Show a short self-check, record only the score and gaps, and schedule retrieval."""
     st.markdown("### 🧠 Quick topic check")
     st.caption("A friendly practice check, not a grade. Your answers reveal what to revisit next.")
     quiz_id = re.sub(r"[^A-Za-z0-9_-]+", "_", f"{subject_code}_{topic_name}")[:90]
@@ -966,6 +976,15 @@ def render_topic_quiz(quiz, subject_code, topic_name):
         else:
             correct_indices = [question["options"][question["answer_index"]] for question in quiz]
             score = sum(answer == correct for answer, correct in zip(responses, correct_indices))
+            gaps = [
+                question.get("gap") or question.get("concept") or question["question"]
+                for question, response, correct in zip(quiz, responses, correct_indices)
+                if response != correct
+            ]
+            history = st.session_state.get("topic_quiz_history", [])
+            st.session_state["topic_quiz_history"] = record_quiz_attempt(
+                history, subject_code, topic_name, score, len(quiz), gaps
+            )
             st.session_state[result_key] = {"score": score, "responses": responses}
 
     result = st.session_state.get(result_key)
@@ -982,17 +1001,23 @@ def render_topic_quiz(quiz, subject_code, topic_name):
         missed_concepts = []
         for index, (question, response) in enumerate(zip(quiz, result["responses"])):
             correct = question["options"][question["answer_index"]]
+            concept = question.get("gap") or question.get("concept") or question["question"]
             if response == correct:
                 st.success(f"{index + 1}. Correct — {question['explanation']}")
             else:
-                missed_concepts.append(question["gap"] or question["concept"])
-                st.warning(
-                    f"{index + 1}. Revisit **{question['gap'] or question['concept']}**. "
-                    f"{question['explanation']}"
-                )
+                missed_concepts.append(concept)
+                st.warning(f"{index + 1}. Revisit **{concept}**. {question['explanation']}")
+        latest_result = latest_by_topic(
+            st.session_state.get("topic_quiz_history", []), subject_code
+        ).get((subject_code, topic_name))
+        if latest_result:
+            st.info(
+                f"Next retrieval review: **{latest_result['review_due']}**. "
+                f"Current topic status: **{topic_status(latest_result)}**."
+            )
         if missed_concepts:
             st.markdown("**Ideas to revisit:** " + " · ".join(dict.fromkeys(missed_concepts)))
-            st.caption("Try recalling them again in a later study session, then revisit after a few days.")
+            st.caption("Recall these ideas again after a short break, then revisit them on the suggested review date.")
         if st.button("Try this topic check again", key=f"topic_quiz_retry_{quiz_id}_{attempt_number}"):
             st.session_state[attempt_key] = attempt_number + 1
             st.session_state.pop(result_key, None)
@@ -1029,7 +1054,7 @@ SUBJECT_MODULES = {
     ],
     "DIGI-N4": [
         "Number Systems and Codes",
-        "Logic Gates and Boolean Algebra",
+        "Logic Gates, Boolean Algebra and K-Maps",
         "Logic-Device Characteristics",
         "Combinational Circuits",
         "Flip-Flops and Latches",
@@ -1165,7 +1190,7 @@ def open_learning_workspace(workspace: str, tutor_section: str = None):
         st.session_state["tutor_section"] = tutor_section
 
 
-shortcut_columns = st.columns(4, gap="small")
+shortcut_columns = st.columns(2, gap="small")
 with shortcut_columns[0]:
     st.button(
         "✦  Course-aware learning",
@@ -1182,7 +1207,8 @@ with shortcut_columns[1]:
         on_click=open_learning_workspace,
         args=("🤖 Tutor & lab", "💬 Ask tutor"),
     )
-with shortcut_columns[2]:
+shortcut_row_two = st.columns(2, gap="small")
+with shortcut_row_two[0]:
     st.button(
         "◈  3D engineering lab",
         key="hero_lab_button",
@@ -1190,7 +1216,7 @@ with shortcut_columns[2]:
         on_click=open_learning_workspace,
         args=("🤖 Tutor & lab", "🧊 3D lab"),
     )
-with shortcut_columns[3]:
+with shortcut_row_two[1]:
     st.button(
         "⌁  Exam practice",
         key="hero_exam_button",
@@ -1547,70 +1573,55 @@ with tab_exam:
     st.markdown("Simulate timed exam conditions with structured problem cards.")
     
     st.caption("Configure the mock exam on the left, then press Start.")      
-# TAB 1: Mastery Dashboard
-
-@st.cache_data
-def load_mastery_data(subject, db_path):
-    if not os.path.exists(db_path):
-        return []
-    try:
-        with sqlite3.connect(db_path) as conn:
-            return conn.execute(
-                "SELECT topic_name, mastery_score FROM topic_mastery WHERE subject_code = ?",
-                (subject,)
-            ).fetchall()
-    except sqlite3.OperationalError:
-        return []
-
-
+# TAB 1: Learner Progress Dashboard
 with tab_mastery:
+    st.subheader(f"Your learning progress: {active_subject}")
+    st.caption(
+        "Progress below comes from topic checks in this browser session. It is a study guide, "
+        "not a grade or an exam-pass prediction."
+    )
+    history = st.session_state.get("topic_quiz_history", [])
+    summary = summarize_progress(history, active_subject)
+    modules = SUBJECT_MODULES.get(active_subject, [])
+    latest = summary["latest_by_topic"]
+    mapped_checked = sum((active_subject, module) in latest for module in modules)
+    avg = summary["average_latest_percent"]
 
-    st.subheader(f"Mastery Overview & Analytics: {active_subject}")
-    mastery_db = os.path.join(DATABASE_DIR, "mastery.db")
-    
-    data = load_mastery_data(active_subject, mastery_db)
-    if data:
-        topics = [row[0] for row in data]
-        scores = [row[1] for row in data]
-        col_chart, col_stats = st.columns([2, 1])
-        
-        with col_chart:
-            fig = px.bar(
-                x=scores,
-                y=topics,
-                orientation="h",
-                labels={"x": "Mastery Level (%)", "y": "Topic Module"},
-                title=f"Cognitive Topic Proficiency ({active_subject})",
-                color=scores,
-                color_continuous_scale=["#EF4444", "#FF7A1A", "#22D3EE", "#10B981"]
+    metric_cols = st.columns(4)
+    metric_cols[0].metric("Topics checked", f"{mapped_checked} / {len(modules)}")
+    metric_cols[1].metric("Average latest check", f"{avg:.0f}%" if avg is not None else "—")
+    metric_cols[2].metric("Reviews due", len(summary["due_reviews"]))
+    metric_cols[3].metric("Study streak", f"{study_streak(history)} days")
+
+    if modules:
+        progress_rows = []
+        for module in modules:
+            record = latest.get((active_subject, module))
+            percent = (record["score"] / record["total"] * 100) if record else None
+            progress_rows.append({
+                "Course topic": module,
+                "Latest check": f"{record['score']}/{record['total']} ({percent:.0f}%)" if record else "—",
+                "Next review": record["review_due"] if record else "—",
+                "Study status": topic_status(record),
+            })
+        st.dataframe(progress_rows, hide_index=True, use_container_width=True)
+
+    if summary["due_reviews"]:
+        st.markdown("### 🔁 Ready for a short review")
+        for review in summary["due_reviews"][:6]:
+            st.markdown(
+                f"- **{review['topic']}** · {review['score']}/{review['total']} last check · "
+                f"review due {review['review_due']}"
             )
-            fig.update_layout(
-                plot_bgcolor="rgba(10, 13, 18, 0.8)",
-                paper_bgcolor="rgba(10, 13, 18, 0.8)",
-                font_color="#E6EDF3",
-                font_family="Inter",
-                xaxis={"gridcolor": "rgba(48, 54, 61, 0.4)", "range": [0, 100]},
-                yaxis={"gridcolor": "rgba(48, 54, 61, 0.4)"},
-                coloraxis_showscale=False
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-        with col_stats:
-            avg_score = np.mean(scores) if scores else 0
-            st.metric("Subject Mastery Level", f"{avg_score:.1f}%")
-            st.metric("Modules Tested", f"{len(scores)} / {len(SUBJECT_MODULES.get(active_subject, []))}")
-            st.markdown('<span style="color:#10B981; font-weight:bold;">⚡ Active Learning Streak: 4 Days</span>', unsafe_allow_html=True)
-
+    elif not history:
+        st.info("Your topic map is ready. Generate a short lesson and complete its quiz to start tracking progress.")
     else:
-        st.markdown("""
-        <div style="background: rgba(22, 27, 34, 0.7); border: 1px solid rgba(48, 54, 61, 0.6); border-radius: 16px; padding: 24px; text-align: center; backdrop-filter: blur(12px);">
-            <h3 style="margin-bottom: 0px; color: #22D3EE;">Mastery Core Offline</h3>
-            <p style="color: #8B949E; font-size: 0.9rem;">No practice telemetry recorded for this subject yet.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        render_3d_scene("mastery_core.html", height=220)
-        st.info("💡 **Call to Action:** Head over to **Tab 2 (Practical Sandbox)** or **Tab 3 (Exam Simulator)** to complete your first evaluation and power up your Mastery Core!")
+        st.success("No topic reviews are due today. Continue with a new topic or return to a recent one.")
+
+    st.caption(
+        "Your session keeps topic, score, review date and missed-concept labels. "
+        "It does not save your submitted answer text in the progress history."
+    )
 
 # TAB 2: Practical & Socratic Sandbox
 with tab_practice:
@@ -1831,6 +1842,32 @@ with tab_tutor:
             "Then take a 5-minute reset before starting another topic. Revisit missed ideas in later sessions."
         )
         selected_module = st.selectbox("Select Topic:", modules)
+        with st.expander("📚 Course map and self-check status", expanded=False):
+            latest_for_map = latest_by_topic(
+                st.session_state.get("topic_quiz_history", []), active_subject
+            )
+            map_rows = [
+                {
+                    "Mapped topic": module,
+                    "Latest self-check": (
+                        f"{latest_for_map[(active_subject, module)]['score']}/"
+                        f"{latest_for_map[(active_subject, module)]['total']}"
+                        if (active_subject, module) in latest_for_map else "Not checked"
+                    ),
+                    "Status": topic_status(latest_for_map.get((active_subject, module))),
+                    "Review date": (
+                        latest_for_map[(active_subject, module)]["review_due"]
+                        if (active_subject, module) in latest_for_map else "—"
+                    ),
+                }
+                for module in modules
+            ]
+            st.dataframe(map_rows, hide_index=True, use_container_width=True)
+            st.caption(
+                "Status is based on your latest generated topic quiz and a gentle retrieval schedule. "
+                "The course map reflects the source notes shown above; it is not a claim that every map "
+                "has been independently verified against the current DHET syllabus."
+            )
         custom_query = st.text_input("Or enter specific concept/formula:", placeholder="e.g., Op-amp summing amplifier derivation")
         target_topic = custom_query.strip() if custom_query.strip() else selected_module
         if st.button("📖 Generate Lesson & Explanation"):
@@ -2155,65 +2192,132 @@ with tab_formulas:
         st.latex(r"f_{max} = \frac{1}{n \cdot t_{pd}}")
         st.markdown("**Core Principles:** Boolean algebraic laws, Karnaugh map minimization, asynchronous ripple counters, and synchronous state machines.")
 
-# TAB 6: Analytics & Offline Report Exporter
+# TAB 6: Measured Learning Analytics and Portable Progress
 with tab_analytics:
-    st.subheader("📈 Exam Readiness, Cognitive & Psychological Analytics")
-    avg_mastery = 71.0
-    c1, c2 = st.columns([1, 1])
-    
-    with c1:
-        st.markdown("### 🎯 Exam Pass Probability Index")
-        fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=avg_mastery,
-            title={'text': "Calculated Readiness Index (%)"},
-            gauge={
-                'axis': {'range': [0, 100]},
-                'bar': {'color': "#FF7A1A"},
-                'steps': [
-                    {'range': [0, 50], 'color': "rgba(239, 68, 68, 0.2)"},
-                    {'range': [50, 75], 'color': "rgba(255, 122, 26, 0.2)"},
-                    {'range': [75, 100], 'color': "rgba(16, 185, 129, 0.2)"}
-                ]
-            }
-        ))
-        fig_gauge.update_layout(paper_bgcolor="#0A0D12", font_color="#E6EDF3")
-        st.plotly_chart(fig_gauge, use_container_width=True)
+    st.subheader(f"Learning insights: {active_subject}")
+    import_message = st.session_state.pop("progress_import_message", None)
+    if import_message:
+        st.success(import_message)
+    history = st.session_state.get("topic_quiz_history", [])
+    summary = summarize_progress(history, active_subject)
+    modules = SUBJECT_MODULES.get(active_subject, [])
+    latest = summary["latest_by_topic"]
+    mapped_checked = sum((active_subject, module) in latest for module in modules)
+    avg = summary["average_latest_percent"]
 
-    with c2:
-        st.markdown("### 🧠 Cognitive Error Distribution")
-        error_data = {"Category": ["Calculation / Unit Slips", "Conceptual Misunderstandings", "Misread NATED Question Text"], "Count": [52, 28, 20]}
-        fig_pie = px.pie(error_data, values="Count", names="Category", title="Root Cause of Lost Exam Marks", color_discrete_sequence=["#FF7A1A", "#22D3EE", "#8B5CF6"])
-        fig_pie.update_layout(paper_bgcolor="#0A0D12", font_color="#E6EDF3")
-        st.plotly_chart(fig_pie, use_container_width=True)
-        
-    st.divider()
-    st.markdown("### 📄 Export Offline Readiness & Study Plan Report")
-    report_text = f"""=======================================================
-TRENTOX TUTOR AI - READINESS REPORT
-Subject Code: {active_subject}
-Calculated Readiness Index: {avg_mastery}%
-=======================================================
-
-1. WEAK TOPIC RED ALERTS (<50% Proficiency):
-   - PID Controller Tuning & Frequency Response (35%)
-   - Second-Order Differential Equations (42%)
-   - Op-Amp Summing Amplifiers (48%)
-
-2. COGNITIVE ERROR ANALYSIS:
-   - Calculation/Unit Slips: 52%
-   - Conceptual Misunderstandings: 28%
-   - Misread Question Text: 20%
-
-3. RECOMMENDED 14-DAY ACTION PLAN:
-   - Focus next 3 sessions on Tab 4 (AI Lessons) for target topics.
-   - Run 10-question timed exam in Tab 3 every 48 hours.
-=======================================================
-"""
-    st.download_button(
-        label="📥 Download Readiness Report (.txt)",
-        data=report_text,
-        file_name=f"Trentox_Readiness_Report_{active_subject}.txt",
-        mime="text/plain"
+    st.caption(
+        "These insights are calculated from your own topic-quiz results in this browser session. "
+        "They describe practice evidence only; they do not estimate exam results."
     )
+    metric_cols = st.columns(4)
+    metric_cols[0].metric("Topics checked", f"{mapped_checked} / {len(modules)}")
+    metric_cols[1].metric("Average latest check", f"{avg:.0f}%" if avg is not None else "—")
+    metric_cols[2].metric("Review queue", len(summary["due_reviews"]))
+    metric_cols[3].metric("Study streak", f"{study_streak(history)} days")
 
+    st.markdown("### 📍 Topic map")
+    if modules:
+        topic_rows = []
+        for module in modules:
+            record = latest.get((active_subject, module))
+            topic_rows.append({
+                "Topic": module,
+                "Latest result": (
+                    f"{record['score']}/{record['total']} ({record['score'] / record['total'] * 100:.0f}%)"
+                    if record else "Not checked"
+                ),
+                "Status": topic_status(record),
+                "Review due": record["review_due"] if record else "—",
+            })
+        st.dataframe(topic_rows, hide_index=True, use_container_width=True)
+    else:
+        st.info("A topic map has not been added for this subject yet.")
+
+    if summary["due_reviews"]:
+        st.markdown("### 🔁 Review next")
+        for review in summary["due_reviews"][:8]:
+            st.markdown(
+                f"- **{review['topic']}** · last check {review['score']}/{review['total']} · "
+                f"due {review['review_due']}"
+            )
+    else:
+        st.info("No spaced reviews are due today. Keep learning at a pace that feels manageable.")
+
+    if summary["gap_counts"]:
+        st.markdown("### 🧩 Concepts to revisit most often")
+        gap_rows = [
+            {"Missed concept": concept, "Quiz attempts flagging it": count}
+            for concept, count in summary["gap_counts"].most_common(8)
+        ]
+        st.dataframe(gap_rows, hide_index=True, use_container_width=True)
+    else:
+        st.caption("After a quiz, missed concept labels will appear here as a practical review guide.")
+
+    st.divider()
+    with st.expander("Save or move progress to another session", expanded=False):
+        st.caption(
+            "Progress is session-only. Export a small JSON file to keep a copy or move it to another browser. "
+            "It contains subject, topic, score, review date and missed-concept labels; it excludes answers, "
+            "uploaded work and tutor conversations."
+        )
+        st.download_button(
+            "⬇️ Export my progress (.json)",
+            data=export_progress(history),
+            file_name="trentox-tutor-progress.json",
+            mime="application/json",
+            key="export_topic_progress",
+            use_container_width=True,
+        )
+        progress_file = st.file_uploader(
+            "Import a Trentox Tutor AI progress file",
+            type=["json"],
+            key="import_topic_progress_file",
+            help="Only progress JSON exported by Trentox Tutor AI is accepted.",
+        )
+        if st.button(
+            "Import and merge progress",
+            key="import_topic_progress_button",
+            disabled=progress_file is None,
+            use_container_width=True,
+        ):
+            try:
+                raw_progress = progress_file.getvalue()
+                if len(raw_progress) > 1_000_000:
+                    raise ValueError("Progress files must be smaller than 1 MB.")
+                imported_history = import_progress(raw_progress.decode("utf-8-sig"))
+                before = len(history)
+                merged_history = merge_progress(history, imported_history)
+                added_count = max(0, len(merged_history) - before)
+                st.session_state["topic_quiz_history"] = merged_history
+                st.session_state["progress_import_message"] = (
+                    f"Progress merged. {added_count} new quiz record(s) added."
+                )
+                st.rerun()
+            except (UnicodeDecodeError, ValueError) as exc:
+                st.error(str(exc))
+
+    report_lines = [
+        "TRENTOX TUTOR AI — LEARNING PROGRESS",
+        f"Subject: {active_subject}",
+        f"Created: {datetime.now().astimezone().strftime('%Y-%m-%d %H:%M %Z')}",
+        "This report summarizes practice checks; it does not predict an examination result.",
+        "",
+    ]
+    if latest:
+        for (subject, topic), record in sorted(latest.items(), key=lambda item: item[0][1].casefold()):
+            status = topic_status(record)
+            report_lines.append(
+                f"{topic}: {record['score']}/{record['total']} "
+                f"({record['score'] / record['total'] * 100:.0f}%), "
+                f"status {status}, next review {record['review_due']}"
+            )
+    else:
+        report_lines.append("No topic checks recorded for this subject in the current session.")
+    report_text = "\n".join(report_lines) + "\n"
+    st.download_button(
+        "📄 Download this subject's learning summary (.txt)",
+        data=report_text,
+        file_name=f"Trentox_Learning_Summary_{active_subject}.txt",
+        mime="text/plain",
+        use_container_width=True,
+    )
