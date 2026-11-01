@@ -1038,13 +1038,13 @@ def render_topic_quiz(quiz, subject_code, topic_name):
                 key=radio_keys[index],
             )
         confidence_label = st.radio(
-            "Before checking, how confident are you in your answers?",
+            "Optional: how confident are you in your answers?",
             ["Mostly guessing", "Somewhat sure", "Very sure"],
-            index=1,
+            index=None,
             horizontal=True,
             key=confidence_key,
         )
-        confidence_value = {"Mostly guessing": 1, "Somewhat sure": 2, "Very sure": 3}[confidence_label]
+        confidence_value = {"Mostly guessing": 1, "Somewhat sure": 2, "Very sure": 3}.get(confidence_label)
         submitted = st.form_submit_button("Check my understanding", use_container_width=True)
 
     if submitted:
