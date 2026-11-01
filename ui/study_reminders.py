@@ -87,6 +87,10 @@ def render_study_reminders():
     default_repeat = saved.get("repeat", "Every day")
 
     with st.expander("🔔 Study reminders", expanded=False):
+        st.caption(
+            "The in-app alert appears while this app is open. Download the calendar event "
+            "and open it from your browser's Downloads to keep reminders after closing the app."
+        )
         study_time = st.time_input(
             "Reminder time (South African time)",
             value=default_time,
@@ -112,10 +116,6 @@ def render_study_reminders():
 
         saved = st.session_state.get("study_reminder", {})
         if saved.get("enabled"):
-            st.caption(
-                "In-app alerts run while this app session is open. "
-                "Download the calendar event below for reminders after closing the app."
-            )
             if st.button(
                 "Turn off in-app reminder",
                 key="disable_study_reminder",
