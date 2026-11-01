@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; color: #eef6fb; font-family: Inter, "Segoe UI", system-ui, sans-serif; }
+button { font: inherit; }
+.carousel { position: relative; width: 100%; height: 252px; overflow: hidden; border: 1px solid rgba(135,170,194,.2); border-radius: 14px; background: radial-gradient(ellipse at 78% 28%, rgba(29,126,151,.18), transparent 40%), linear-gradient(145deg,#102638 0%,#0b1b29 100%); box-shadow: 0 14px 34px rgba(0,0,0,.22); }
+.progress { position:absolute; z-index:2; left:0; top:0; height:3px; width:0; background:linear-gradient(90deg,#ffca6a,#43d3e5); }
+.slide { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(132px,.85fr); align-items:center; gap:12px; height:100%; padding:17px 17px 48px; }
+.copy { min-width:0; }
+.eyebrow { margin-bottom:7px; color:#68ddec; font-size:9px; font-weight:800; letter-spacing:.13em; line-height:1.3; text-transform:uppercase; }
+h2 { margin:0 0 7px; color:#f2f7fa; font-size:clamp(16px,2.1vw,21px); font-weight:760; letter-spacing:-.035em; line-height:1.13; }
+.body { margin:0 0 8px; color:#aec0cc; font-size:11.5px; line-height:1.42; }
+.highlight { padding:7px 9px; border-left:2px solid #ffad5b; border-radius:0 7px 7px 0; background:rgba(255,173,91,.08); color:#f5d4aa; font-size:10.5px; line-height:1.35; }
+.visual { position:relative; display:grid; min-width:0; height:158px; place-items:center; overflow:hidden; border:1px solid rgba(135,170,194,.12); border-radius:12px; background:radial-gradient(circle at 50% 44%,rgba(45,151,178,.14),transparent 62%),rgba(6,17,27,.42); perspective:700px; }
+.course { position:absolute; right:12px; bottom:38px; max-width:48%; overflow:hidden; color:#8fa7b7; font-size:8px; text-overflow:ellipsis; white-space:nowrap; }
+.controls { position:absolute; right:10px; bottom:7px; left:10px; display:flex; align-items:center; gap:6px; height:28px; }
+.control { display:grid; width:26px; height:26px; place-items:center; border:1px solid rgba(135,170,194,.2); border-radius:7px; background:rgba(17,39,56,.85); color:#d9e8ef; cursor:pointer; }
+.control:hover, .dot:hover { border-color:#43d3e5; color:#fff; }
+.dots { display:flex; align-items:center; gap:4px; margin-left:3px; }
+.dot { width:7px; height:7px; padding:0; border:0; border-radius:99px; background:#476170; cursor:pointer; }
+.dot.active { width:18px; background:#43d3e5; }
+.counter { margin-left:auto; color:#9bb0bd; font-size:9px; font-variant-numeric:tabular-nums; }
+.pause { width:auto; padding:0 8px; color:#c8d7df; font-size:9px; }
+
+/* Compact 3D study visuals */
+.dial { position:relative; display:grid; width:98px; height:98px; place-items:center; border:4px solid #496578; border-radius:50%; background:radial-gradient(circle at 35% 28%,#27475b,#0b1925 69%); box-shadow:inset 0 0 0 4px #102737, 8px 12px 17px rgba(0,0,0,.48); transform:rotateX(12deg) rotateY(-13deg); }
+.dial:before { position:absolute; width:3px; height:35px; border-radius:3px; background:#ffb85c; content:""; transform:translateY(-14px) rotate(37deg); transform-origin:bottom; box-shadow:0 0 8px rgba(255,184,92,.65); }
+.dial:after { position:absolute; bottom:20px; width:12px; height:12px; border:2px solid #d6e3e9; border-radius:50%; background:#17384b; content:""; }
+.dial-label { position:absolute; top:23px; color:#9edce4; font-size:8px; font-weight:750; letter-spacing:.08em; }
+.formula-board { width:92%; padding:13px 10px; border:1px solid rgba(67,211,229,.28); border-radius:10px; background:linear-gradient(145deg,rgba(17,52,69,.94),rgba(8,22,33,.97)); box-shadow:0 13px 20px rgba(0,0,0,.35); transform:rotateY(-8deg) rotateX(4deg); }
+.formula-text { color:#ffe1a5; font-family:"Cascadia Code",Consolas,monospace; font-size:clamp(11px,1.5vw,15px); font-weight:800; line-height:1.4; text-align:center; text-shadow:0 1px 0 #835a24; }
+.terms { display:flex; flex-wrap:wrap; justify-content:center; gap:4px; margin-top:10px; }
+.term { padding:3px 5px; border:1px solid rgba(135,170,194,.2); border-radius:6px; color:#d7e6ed; background:rgba(9,24,36,.8); font-size:8px; }
+.term b { color:#67deeb; }
+.cubes { display:flex; align-items:center; gap:11px; transform:rotateY(-13deg) rotateX(9deg); transform-style:preserve-3d; }
+.cube { display:grid; width:38px; height:38px; place-items:center; border:1px solid rgba(116,226,237,.62); border-radius:8px; background:linear-gradient(145deg,#24647b,#103045); color:#e3fbff; font-size:12px; font-weight:800; box-shadow:7px 9px 0 #09202e, 11px 15px 14px rgba(0,0,0,.35), inset 0 1px 5px rgba(255,255,255,.3); animation:float 3.2s ease-in-out infinite; }
+.cube:nth-child(2) { animation-delay:.35s; background:linear-gradient(145deg,#8c6330,#3c2e1b); border-color:#d4aa5e; }
+.cube:nth-child(3) { animation-delay:.7s; }
+@keyframes float { 0%,100%{transform:translateY(0) rotateY(-9deg)} 50%{transform:translateY(-7px) rotateY(10deg)} }
+.tube { position:relative; width:49px; height:126px; border:2px solid rgba(163,222,235,.76); border-radius:20px 20px 11px 11px; background:linear-gradient(90deg,rgba(67,211,229,.2),rgba(255,255,255,.1) 34%,rgba(67,211,229,.04) 68%,rgba(67,211,229,.19)); box-shadow:inset 5px 0 10px rgba(255,255,255,.11),8px 10px 14px rgba(0,0,0,.32); clip-path:polygon(27% 0,73% 0,96% 100%,4% 100%); transform:rotateY(-14deg) rotateX(5deg); }
+.tube:before { position:absolute; left:17px; top:57px; width:16px; height:19px; border:1px solid #ffca6a; border-radius:50% 50% 42% 42%; background:linear-gradient(90deg,#997024,#ffe08a,#9f6d20); content:""; box-shadow:0 0 12px rgba(255,202,106,.32); animation:rise 3s ease-in-out infinite alternate; }
+.tube:after { position:absolute; right:7px; top:16px; bottom:14px; border-right:1px dashed rgba(175,222,233,.58); content:""; }
+@keyframes rise { to { transform:translateY(-24px); } }
+.flow-arrow { position:absolute; top:72px; left:18px; color:#53d9e8; font-size:18px; text-shadow:0 0 8px rgba(83,217,232,.6); }
+.kmap { display:grid; width:116px; height:116px; grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(4,1fr); gap:3px; padding:5px; border:1px solid rgba(67,211,229,.32); border-radius:8px; background:#102535; transform:rotateX(9deg) rotateY(-9deg); box-shadow:7px 10px 16px rgba(0,0,0,.38); }
+.cell { display:grid; place-items:center; border-radius:3px; background:#193649; color:#c9dce6; font-size:9px; }
+.cell.on { background:linear-gradient(135deg,#167b8d,#145064); color:#e8fcff; }
+.cell.group { outline:2px solid #ffbd68; outline-offset:-2px; }
+.rectifier { position:relative; display:grid; width:108px; height:108px; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:22px; padding:14px; transform:rotateX(8deg) rotateY(-12deg); }
+.diode { display:grid; place-items:center; width:29px; height:29px; border:1px solid #6ad6e3; border-radius:7px; background:linear-gradient(145deg,#24637a,#0d293c); color:#ffe0a1; font-size:9px; font-weight:800; box-shadow:4px 5px 0 #09202e,5px 7px 10px rgba(0,0,0,.4); }
+.rectifier:before,.rectifier:after { position:absolute; background:#4bc9d8; content:""; opacity:.75; }
+.rectifier:before { top:53px; left:11px; width:87px; height:2px; }
+.rectifier:after { top:11px; left:53px; width:2px; height:87px; }
+.slope svg { width:92%; height:85%; overflow:visible; filter:drop-shadow(0 6px 7px rgba(0,0,0,.38)); }
+.turbine { position:relative; width:108px; height:108px; border:1px solid rgba(255,202,106,.42); border-radius:50%; background:radial-gradient(circle,rgba(255,202,106,.12),rgba(10,26,38,.38) 63%); transform-style:preserve-3d; animation:rotor 12s linear infinite; }
+.turbine .hub { position:absolute; top:39px; left:39px; width:30px; height:30px; border:3px solid #ffe3a0; border-radius:50%; background:radial-gradient(circle at 35% 30%,#fff2c3,#a77325 55%,#452f12); box-shadow:0 0 14px rgba(255,202,106,.35); transform:translateZ(10px); }
+.blade { position:absolute; top:10px; left:47px; width:14px; height:46px; border:1px solid #7ed6df; border-radius:60% 60% 18% 18%; background:linear-gradient(90deg,#17455a,#60c8d3,#163348); transform-origin:7px 44px; box-shadow:3px 4px 8px rgba(0,0,0,.42); }
+.blade:nth-child(2){transform:rotate(60deg);}.blade:nth-child(3){transform:rotate(120deg);}.blade:nth-child(4){transform:rotate(180deg);}.blade:nth-child(5){transform:rotate(240deg);}.blade:nth-child(6){transform:rotate(300deg);}
+.gear-pair { display:flex; align-items:center; gap:0; transform:perspective(700px) rotateX(10deg) rotateY(-12deg); }
+.gear { position:relative; display:grid; width:64px; height:64px; place-items:center; border:2px solid #f0c76c; border-radius:50%; background:repeating-conic-gradient(from 0deg,#e2b95b 0deg 12deg,#7b5a23 12deg 20deg); box-shadow:6px 8px 0 #302515,9px 13px 14px rgba(0,0,0,.42),inset 0 0 0 8px #66501f; animation:gear-a 8s linear infinite; }
+.gear:after { width:22px; height:22px; border:3px solid #f5dc9a; border-radius:50%; background:#102638; box-shadow:inset 0 0 0 4px #9b772f; content:""; }
+.gear.small { width:48px; height:48px; margin-left:-8px; border-color:#79d9e3; background:repeating-conic-gradient(from 0deg,#62bfca 0deg 12deg,#1e5764 12deg 20deg); box-shadow:5px 7px 0 #102d39,8px 11px 12px rgba(0,0,0,.42),inset 0 0 0 7px #1c5360; animation-name:gear-b; }
+.gear.small:after { width:16px; height:16px; border-color:#b7f0f2; box-shadow:inset 0 0 0 3px #277885; }
+@keyframes rotor { from { transform:rotateY(0deg) rotateX(8deg); } to { transform:rotateY(360deg) rotateX(8deg); } }
+@keyframes gear-a { to { transform:rotate(360deg); } }
+@keyframes gear-b { to { transform:rotate(-360deg); } }
+@media (max-width:530px) { .slide{grid-template-columns:minmax(0,1.15fr) minmax(105px,.75fr);gap:8px;padding:14px 11px 46px}.visual{height:148px}.body{font-size:10.5px}.highlight{font-size:9.5px}.course{max-width:45%} }
+@media (prefers-reduced-motion:reduce) { .cube,.tube:before,.turbine,.gear{animation:none} }
+</style>
+</head>
+<body>
+<div class="carousel" role="region" aria-label="Engineering study reminders">
+  <div class="progress" id="progress"></div>
+  <div class="slide" aria-live="polite">
+    <div class="copy">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h2 id="title"></h2>
+      <p class="body" id="body"></p>
+      <div class="highlight" id="highlight"></div>
+    </div>
+    <div class="visual" id="visual" aria-hidden="true"></div>
+  </div>
+  <div class="course" id="course"></div>
+  <div class="controls">
+    <button class="control" id="previous" aria-label="Previous reminder">‹</button>
+    <div class="dots" id="dots" aria-label="Choose reminder"></div>
+    <span class="counter" id="counter"></span>
+    <button class="control pause" id="pause" aria-label="Pause slideshow">Ⅱ Pause</button>
+    <button class="control" id="next" aria-label="Next reminder">›</button>
+  </div>
+</div>
+<script>
+const slides = __SLIDES_JSON__;
+const el = id => document.getElementById(id);
+const safe = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+let index = 0;
+let paused = false;
+let timer = null;
+const intervalMs = 8200;
+
+function visualFor(slide) {
+  if (slide.visual === "formula") {
+    return `<div class="formula-board"><div class="formula-text">${safe(slide.formula)}</div><div class="terms">${(slide.terms || []).map(item => `<span class="term"><b>${safe(item[0])}</b> ${safe(item[1])}</span>`).join("")}</div></div>`;
+  }
+  if (slide.visual === "study") return `<div class="cubes"><div class="cube">Recall</div><div class="cube">Check</div><div class="cube">Repeat</div></div>`;
+  if (slide.visual === "rotameter") return `<div class="tube"></div><div class="flow-arrow">→</div>`;
+  if (slide.visual === "kmap") return `<div class="kmap">${Array.from({length:16},(_,i)=>`<div class="cell ${[0,1,4,5].includes(i)?"on":""} ${[0,1,4,5].includes(i)?"group":""}">${[0,1,4,5].includes(i)?"1":"0"}</div>`).join("")}</div>`;
+  if (slide.visual === "rectifier") return `<div class="rectifier"><div class="diode">D1</div><div class="diode">D2</div><div class="diode">D3</div><div class="diode">D4</div></div>`;
+  if (slide.visual === "slope") return `<div class="slope"><svg viewBox="0 0 150 130" role="img" aria-label="Curve with tangent line"><path d="M18 110H137M28 118V16" fill="none" stroke="#557487" stroke-width="2"/><path d="M34 99 C54 94 57 77 72 68 C88 58 91 42 119 24" fill="none" stroke="#55d8e5" stroke-width="4"/><path d="M48 88L106 49" fill="none" stroke="#ffbd68" stroke-width="2" stroke-dasharray="5 4"/><circle cx="76" cy="65" r="5" fill="#ffbd68"/></svg></div>`;
+  if (slide.visual === "turbine") return `<div class="turbine"><div class="blade"></div><div class="blade"></div><div class="blade"></div><div class="blade"></div><div class="blade"></div><div class="blade"></div><div class="hub"></div></div>`;
+  if (slide.visual === "gears") return `<div class="gear-pair"><div class="gear"></div><div class="gear small"></div></div>`;
+  return `<div class="dial"><span class="dial-label">MARKS</span></div>`;
+}
+
+function draw() {
+  const slide = slides[index];
+  el("eyebrow").textContent = slide.eyebrow;
+  el("title").textContent = slide.title;
+  el("body").textContent = slide.copy;
+  el("highlight").textContent = slide.highlight;
+  el("visual").innerHTML = visualFor(slide);
+  el("course").textContent = slide.course || "";
+  el("counter").textContent = `${String(index + 1).padStart(2,"0")} / ${String(slides.length).padStart(2,"0")}`;
+  el("dots").innerHTML = slides.map((_,i) => `<button class="dot ${i===index?"active":""}" aria-label="Show reminder ${i+1}" data-index="${i}"></button>`).join("");
+  el("dots").querySelectorAll("button").forEach(button => button.addEventListener("click", () => { index=Number(button.dataset.index); draw(); restart(); }));
+  const bar = el("progress");
+  bar.style.transition = "none";
+  bar.style.width = "0%";
+  if (!paused) requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = `width ${intervalMs}ms linear`; bar.style.width = "100%"; }));
+  el("pause").textContent = paused ? "▶ Play" : "Ⅱ Pause";
+  el("pause").setAttribute("aria-label", paused ? "Resume slideshow" : "Pause slideshow");
+}
+function next() { index = (index + 1) % slides.length; draw(); }
+function previous() { index = (index - 1 + slides.length) % slides.length; draw(); }
+function restart() { clearInterval(timer); if (!paused) timer = setInterval(next, intervalMs); }
+el("next").addEventListener("click", () => { next(); restart(); });
+el("previous").addEventListener("click", () => { previous(); restart(); });
+el("pause").addEventListener("click", () => { paused = !paused; draw(); restart(); });
+draw();
+restart();
+</script>
+</body>
+</html>
