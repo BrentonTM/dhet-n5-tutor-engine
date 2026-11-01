@@ -15,7 +15,7 @@ LOW = "#475569"
 HIGH = "#10B981"
 
 
-def _board(title, size=(14, 9, 0.35)):
+def _board(size=(14, 9, 0.35)):
     return [
         box([0, 0, -0.75], list(size), BOARD, metal=0.35, rough=0.65,
             label="Insulated circuit board", lp=[-5.4, -size[1] / 2 + 0.35, 0.25],
