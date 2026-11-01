@@ -737,7 +737,8 @@ def extract_text_from_local_files(folder_path):
                         if extracted:
                             text += extracted + "\n"
                     if text.strip():
-                        extracted_notes.append(f"--- SOURCE FILE: {file} ---\n{text[:3000]}")
+                        relative_file = os.path.relpath(file_path, folder_path)
+                        extracted_notes.append(f"--- SOURCE FILE: {relative_file} ---\n{text[:3000]}")
                 except Exception as exc:
                     logging.warning("Could not read PDF file %s: %s", file_path, exc)
                     continue
@@ -752,7 +753,8 @@ def extract_text_from_local_files(folder_path):
                             if shape_text:
                                 text += shape_text + "\n"
                     if text.strip():
-                        extracted_notes.append(f"--- SOURCE FILE: {file} ---\n{text[:3000]}")
+                        relative_file = os.path.relpath(file_path, folder_path)
+                        extracted_notes.append(f"--- SOURCE FILE: {relative_file} ---\n{text[:3000]}")
                 except Exception as exc:
                     logging.warning("Could not read PowerPoint file %s: %s", file_path, exc)
                     continue
@@ -782,15 +784,18 @@ def select_course_material(material_text, subject_code, target_topic, limit=6000
         path_key = source_path.casefold().replace("_", " ").replace("-", " ")
         body_key = source_text.casefold()
         is_map = "reference alignment map" in path_key
-        if subject_code == "DIGI-N4" and re.search(r"\bn5\b", path_key) and not is_map:
-            continue
-        if subject_code == "DIGI-N5" and re.search(r"\bn4\b", path_key) and not is_map:
+        wanted_level = subject_code.rsplit("-", 1)[-1].casefold()
+        source_level = re.search(r"\bn[4-6]\b", path_key)
+        if source_level and source_level.group(0).casefold() != wanted_level and not is_map:
             continue
         path_match = any(term in path_key for term in course_terms)
         body_match = any(term in body_key for term in course_terms)
         if not (path_match or body_match or (is_map and subject_code.startswith("DIGI-"))):
             continue
-        topic_hits = sum(body_key.count(term) for term in dict.fromkeys(topic_terms))
+        topic_hits = sum(
+            path_key.count(term) + body_key.count(term)
+            for term in dict.fromkeys(topic_terms)
+        )
         score = (8 if path_match else 3) + (4 if is_map else 0) + min(topic_hits, 12)
         candidates.append((score, source_path, source_text))
     candidates.sort(key=lambda item: (-item[0], item[1].casefold()))
