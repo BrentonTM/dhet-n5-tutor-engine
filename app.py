@@ -588,7 +588,8 @@ def extract_text_from_local_files(folder_path):
                         text = source_file.read().strip()
                     if text:
                         relative_file = os.path.relpath(file_path, folder_path)
-                        extracted_notes.append(f"--- SOURCE FILE: {relative_file} ---\n{text[:3000]}")
+                        note_limit = 8000 if os.path.basename(file_path).lower() == "reference alignment map.md" else 3000
+                        extracted_notes.append(f"--- SOURCE FILE: {relative_file} ---\n{text[:note_limit]}")
                 except Exception as exc:
                     logging.warning("Could not read text file %s: %s", file_path, exc)
                     continue
@@ -884,11 +885,20 @@ SUBJECT_MODULES = {
         "A/D and D/A Conversion"
     ],
     "DIGI-N5": [
-        "Counters & Shift Registers (Asynchronous, Synchronous)",
-        "Digital-to-Analog (DAC) & Analog-to-Digital (ADC) Converters",
-        "Memory Organization (RAM, ROM, EPROM, EEPROM)",
-        "Microprocessor Fundamentals & Architecture",
-        "Arithmetic Logic Units (ALU) & Bus Systems"
+        "M1: Digital-to-Analog and Analog-to-Digital Converters",
+        "M2: Counter Design",
+        "M3: Encoder-Decoder Realisation",
+        "M4: Parity, Error Detection and ASCII Code",
+        "M5: K-Maps and Code Converters",
+        "M6: Code Converters",
+        "M7: Number Systems",
+        "M8: Addition and Multiplication",
+        "M9: Division and Two's Complement",
+        "M10: Party-Line Circuits (TTL and MOS Logic)",
+        "M11: Computer Architecture (Memory Systems)",
+        "M12: Boolean Algebra (XOR and XNOR)",
+        "M13: Contact Bounce Elimination and Data/Storage Interfaces",
+        "M14: Input/Output Devices"
     ]
 }
 
@@ -1013,6 +1023,8 @@ for subject in selected_programme["subjects"]:
     subject_code = integrated_subject_codes.get((subject["subject_id"], selected_level))
     if not subject_code:
         state_label = "planned"
+    elif subject_code == "DIGI-N5":
+        state_label = "school textbook map"
     elif subject_code in provisional_subject_codes:
         state_label = "provisional map"
     else:
@@ -1051,7 +1063,9 @@ active_route = " · ".join(
     [selected_programme_name, selected_level, selected_subject["subject_name"]]
 )
 course_state_label = (
-    "Provisional · syllabus pending"
+    "School textbook map · DHET detail pending"
+    if active_subject == "DIGI-N5"
+    else "Provisional · syllabus pending"
     if active_subject in provisional_subject_codes
     else "Course map available"
 )
@@ -1555,7 +1569,7 @@ with tab_tutor:
         elif active_subject == "DIGI-N4":
             st.caption("This is your confirmed N4 study scope: K-maps included; Memory Systems excluded. Module weights are not official.")
         elif active_subject == "DIGI-N5":
-            st.caption("Digital Electronics N5 is now available as a provisional working study outline with interactive converter previews. Its official DHET module sequence and weighting still need verification.")
+            st.caption("This topic map follows the 14 modules visible in your school textbook photos. The detailed DHET N5 syllabus and official weighting still need verification.")
         modules = SUBJECT_MODULES.get(active_subject, ["General Module Overview"])
         focus_minutes = st.select_slider(
             "Focus block",
@@ -1578,6 +1592,14 @@ with tab_tutor:
         target_topic = custom_query.strip() if custom_query.strip() else selected_module
         if st.button("📖 Generate Lesson & Explanation"):
             local_material = extract_text_from_local_files(os.path.join(BASE_DIR, "Learning material"))
+            material_context = local_material[:2000]
+            if active_subject in {"DIGI-N4", "DIGI-N5"}:
+                alignment_map = re.search(
+                    r"(?ms)^--- SOURCE FILE: [^\n]*REFERENCE ALIGNMENT MAP\.md ---\n(.*?)(?=^--- SOURCE FILE: |\Z)",
+                    local_material,
+                )
+                if alignment_map:
+                    material_context = alignment_map.group(0)[:8000]
 
             lesson_minutes = focus_minutes - quiz_minutes
             prompt = (
@@ -1586,7 +1608,7 @@ with tab_tutor:
                 "a plain-language explanation, one worked engineering example, one brief learner try-it prompt, "
                 "and a short recap. Keep each section easy to finish before moving on. Avoid a textbook-length dump "
                 "and do not use inline ASCII box diagrams. Use this course material where relevant:\n"
-                f"{local_material[:2000]}"
+                f"{material_context}"
             )
             with st.spinner(f"Building a focused lesson and topic check for '{target_topic}'..."):
                 notes, err = cached_query_gemini(prompt, active_subject)
