@@ -975,8 +975,10 @@ integrated_subject_codes = {
     ("mathematics", "N5"): "MATH-N5",
     ("industrial_electronics", "N5"): "IE-N5",
     ("digital_electronics", "N4"): "DIGI-N4",
+    ("digital_electronics", "N5"): "DIGI-N5",
     ("industrial_instruments", "N5"): "INST-N5",
 }
+provisional_subject_codes = {"DIGI-N5"}
 programme_by_name = {
     item["programme_name"]: item for item in programme_catalog["programmes"]
 }
@@ -995,7 +997,12 @@ subject_choices = []
 subject_by_label = {}
 for subject in selected_programme["subjects"]:
     subject_code = integrated_subject_codes.get((subject["subject_id"], selected_level))
-    state_label = "map available" if subject_code else "planned"
+    if not subject_code:
+        state_label = "planned"
+    elif subject_code in provisional_subject_codes:
+        state_label = "provisional map"
+    else:
+        state_label = "map available"
     label = f"{subject['subject_name']} — {state_label}"
     subject_choices.append(label)
     subject_by_label[label] = (subject, subject_code)
@@ -1029,11 +1036,16 @@ if not active_subject:
 active_route = " · ".join(
     [selected_programme_name, selected_level, selected_subject["subject_name"]]
 )
+course_state_label = (
+    "Provisional · syllabus pending"
+    if active_subject in provisional_subject_codes
+    else "Course map available"
+)
 st.markdown(
     '<div class="tx-course-bar">'
     '<div><div class="tx-course-label">Active learning path</div>'
     f'<div class="tx-course-name">{html.escape(active_route)}</div></div>'
-    '<span class="tx-course-state">Course map available</span>'
+    f'<span class="tx-course-state">{html.escape(course_state_label)}</span>'
     '</div>',
     unsafe_allow_html=True,
 )
@@ -1528,6 +1540,8 @@ with tab_tutor:
             st.caption("Topics and module weightings follow the verified DHET Industrial Electronics N5 syllabus.")
         elif active_subject == "DIGI-N4":
             st.caption("This is your confirmed N4 study scope: K-maps included; Memory Systems excluded. Module weights are not official.")
+        elif active_subject == "DIGI-N5":
+            st.caption("Digital Electronics N5 is now available as a provisional working study outline with interactive converter previews. Its official DHET module sequence and weighting still need verification.")
         modules = SUBJECT_MODULES.get(active_subject, ["General Module Overview"])
         focus_minutes = st.select_slider(
             "Focus block",
@@ -1712,6 +1726,7 @@ with tab_tutor:
             lab_default_by_code = {
                 "MATH-N5": "Mathematics N5",
                 "DIGI-N4": "Digital Electronics N4",
+                "DIGI-N5": "Digital Electronics N5 — visualization preview",
                 "IE-N5": "Industrial Electronics N5",
                 "INST-N5": "Industrial Instruments N5",
             }
