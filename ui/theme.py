@@ -216,7 +216,7 @@ def inject_industrial_theme():
             perspective: 520px;
             transform-style: preserve-3d;
             filter: drop-shadow(0 10px 11px rgba(0, 0, 0, .62));
-            animation: tx-monogram-rotate 14s linear infinite;
+            animation: tx-monogram-rotate 7s ease-in-out infinite;
             pointer-events: none;
         }
         .tx-monogram-letter {
@@ -246,8 +246,9 @@ def inject_industrial_theme():
             transform: translateZ(11px) rotateX(5deg) rotateY(-5deg);
         }
         @keyframes tx-monogram-rotate {
-            0% { transform: rotateY(-12deg) rotateX(6deg); }
-            100% { transform: rotateY(348deg) rotateX(6deg); }
+            0% { transform: rotateY(-12deg) rotateX(6deg) rotateZ(-1deg); }
+            50% { transform: rotateY(12deg) rotateX(6deg) rotateZ(1deg); }
+            100% { transform: rotateY(-12deg) rotateX(6deg) rotateZ(-1deg); }
         }
         .tx-hero-copy {
             padding: .5rem 0 .75rem;
