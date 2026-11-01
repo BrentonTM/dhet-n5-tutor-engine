@@ -310,6 +310,23 @@ def render_3d_scene(scene_file: str, height: int = 180):
 
         logging.exception("Unable to render 3D scene: %s", scene_file)
         st.warning(f"⚡ 3D Visual Scene [{scene_file}] could not be loaded.")    
+
+def render_subject_visual(subject_code: str, subject_name: str, height: int = 178):
+    """Render a subject-specific, self-contained interactive visual in the sidebar."""
+    try:
+        scene_path = os.path.join(BASE_DIR, "ui", "scenes", "subject_motifs.html")
+        with open(scene_path, "r", encoding="utf-8") as scene_file:
+            html_content = scene_file.read()
+        html_content = html_content.replace(
+            "__SUBJECT_CODE__", html.escape(str(subject_code), quote=True)
+        ).replace(
+            "__SUBJECT_NAME__", html.escape(str(subject_name))
+        )
+        components.html(html_content, height=height, scrolling=False)
+    except (OSError, UnicodeError) as exc:
+        logger.exception("Unable to render subject visual for %s", subject_code)
+        st.info(f"Subject visual for {subject_name} is temporarily unavailable.")
+
 def format_question_with_ai(raw_text: str) -> str:
     """Clean and normalize extracted exam question text."""
     if not isinstance(raw_text, str):
@@ -1443,7 +1460,7 @@ st.markdown(
 
 # Render Live Subject Motif in Sidebar
 with st.sidebar.expander("Subject visual", expanded=False):
-    render_3d_scene("subject_motifs.html", height=130)
+    render_subject_visual(active_subject, selected_subject["subject_name"], height=178)
 
 # Official NATED Categorized Formula Reference Sheets in Sidebar (Complete Exam Sheets Integration)
 with st.sidebar.expander("📐 Official NATED Formula Sheets", expanded=False):
