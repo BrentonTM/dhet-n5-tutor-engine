@@ -1,38 +1,36 @@
 {
-  "examination_body": "DHET NATED",
+  "examination_body": "Berea ColTech",
   "trimester": "T3-2026",
   "level": "N5",
-  "source_status": "unverified",
-  "source_url": null,
-  "source_note": "These dates are present in project data but have not been verified against a published DHET timetable. Confirm them with DHET or your exam centre before relying on or importing them.",
+  "source_status": "verified",
+  "source_name": "Berea ColTech student exam dates",
+  "source_url": "https://berea.coltech.co.za/student/cache/examdates",
+  "source_updated_at": "08 October 2026, 10:56 SAST",
+  "source_note": "Dates transcribed from the Berea ColTech student portal shown as updated 08 October 2026 at 10:56. Confirm that these match your registered subjects. This is a college portal schedule, not a national DHET-wide timetable; recheck the portal for changes.",
   "exams": [
     {
-      "subject_code": "INST-N5",
-      "subject_name": "Instrumentation N5",
-      "exam_date": "2026-11-18",
-      "session": "Morning (09:00 - 12:00)",
-      "paper_code": "8080205"
+      "subject_code": "MATH-N5",
+      "subject_name": "Mathematics N5",
+      "exam_date": "2026-11-26",
+      "session": "09:00 - 12:00"
     },
     {
       "subject_code": "IE-N5",
       "subject_name": "Industrial Electronics N5",
-      "exam_date": "2026-11-20",
-      "session": "Morning (09:00 - 12:00)",
-      "paper_code": "8080235"
+      "exam_date": "2026-11-30",
+      "session": "09:00 - 12:00"
+    },
+    {
+      "subject_code": "INST-N5",
+      "subject_name": "Industrial Instruments N5",
+      "exam_date": "2026-12-03",
+      "session": "09:00 - 12:00"
     },
     {
       "subject_code": "DE-N5",
       "subject_name": "Digital Electronics N5",
-      "exam_date": "2026-11-23",
-      "session": "Afternoon (13:00 - 16:00)",
-      "paper_code": "8080185"
-    },
-    {
-      "subject_code": "MATH-N5",
-      "subject_name": "Mathematics N5",
-      "exam_date": "2026-11-25",
-      "session": "Morning (09:00 - 12:00)",
-      "paper_code": "16030175"
+      "exam_date": "2026-12-04",
+      "session": "09:00 - 12:00"
     }
   ]
 }

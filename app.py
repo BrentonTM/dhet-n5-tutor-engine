@@ -1099,7 +1099,7 @@ def build_exam_calendar_ics(timetable, learner_verified=False):
     note = (
         "Dates checked by the learner against their current issued timetable."
         if learner_verified
-        else "Unverified project draft. Confirm dates with DHET or your exam centre before relying on them."
+        else "Unverified schedule. Confirm the dates with your college before relying on them."
     )
     lines = [
         "BEGIN:VCALENDAR",
@@ -1107,7 +1107,7 @@ def build_exam_calendar_ics(timetable, learner_verified=False):
         "PRODID:-//Trentox Tutor AI//Exam Calendar//EN",
         "CALSCALE:GREGORIAN",
         "METHOD:PUBLISH",
-        "X-WR-CALNAME:Trentox Tutor AI - DHET Exam Dates",
+        "X-WR-CALNAME:Trentox Tutor AI - College Exam Dates",
     ]
     for exam in timetable.get("exams", []):
         try:
@@ -1126,14 +1126,14 @@ def build_exam_calendar_ics(timetable, learner_verified=False):
                     f"DTSTART;VALUE=DATE:{exam_date.strftime('%Y%m%d')}",
                     f"DTEND;VALUE=DATE:{next_date.strftime('%Y%m%d')}",
                 ]
-            event_uid = f"{exam.get('subject_code', 'exam')}-{date_text}-{exam.get('paper_code', 'paper')}@trentox-tutor-ai"
-            description = f"{note}\nPaper code: {exam.get('paper_code', 'not listed')}\nCycle: {timetable.get('trimester', 'not listed')}"
+            event_uid = f"{exam.get('subject_code', 'exam')}-{date_text}@trentox-tutor-ai"
+            description = f"{note}\nSource: {timetable.get('source_name', timetable.get('examination_body', 'college exam schedule'))}\nCycle: {timetable.get('trimester', 'not listed')}"
             lines.extend([
                 "BEGIN:VEVENT",
                 f"UID:{_escape_ics_value(event_uid)}",
                 f"DTSTAMP:{now_utc}",
                 *date_fields,
-                f"SUMMARY:{_escape_ics_value(exam.get('subject_name', 'DHET examination'))}",
+                f"SUMMARY:{_escape_ics_value(exam.get('subject_name', 'College examination'))}",
                 f"DESCRIPTION:{_escape_ics_value(description)}",
                 f"STATUS:{'CONFIRMED' if learner_verified else 'TENTATIVE'}",
                 "END:VEVENT",
@@ -1970,7 +1970,7 @@ with tab_tutor:
                 st.metric("Differential Pressure (ΔP)", f"{delta_p/1000:.2f} kPa")
 
     with sub_tab4:
-        st.subheader("📅 DHET examination and study calendar")
+        st.subheader("📅 College exam and study calendar")
         timetable_path = os.path.join(BASE_DIR, "data", "timetables", "n5_exam_timetable.json")
         try:
             with open(timetable_path, "r", encoding="utf-8") as timetable_file:
@@ -1980,28 +1980,36 @@ with tab_tutor:
             st.error(f"The exam timetable could not be loaded: {exc}")
 
         if exam_timetable:
-            st.caption(f"{exam_timetable.get('trimester', 'Exam cycle')} · {exam_timetable.get('level', 'N-level')} · South African time")
-            if exam_timetable.get("source_status") != "verified":
-                st.warning(
-                    exam_timetable.get(
-                        "source_note",
-                        "The dates in this project file do not yet have a verified DHET source. Confirm them with your exam centre before relying on or importing them.",
-                    )
-                )
-            st.info("The current file contains N5 entries only. N4 and N6 exam dates are not loaded yet.")
+            st.caption(f"{exam_timetable.get('examination_body', 'College')} · {exam_timetable.get('trimester', 'Exam cycle')} · {exam_timetable.get('level', 'N-level')} · South African time")
+            source_label = exam_timetable.get("source_name", "Schedule source")
+            source_url = exam_timetable.get("source_url")
+            source_updated = exam_timetable.get("source_updated_at")
+            if source_url:
+                source_text = f"[Schedule source: {source_label}]({source_url})"
+                if source_updated:
+                    source_text += f" · updated {source_updated}"
+                st.markdown(source_text)
+            source_note = exam_timetable.get(
+                "source_note",
+                "Confirm these dates against your current college exam schedule before relying on them.",
+            )
+            if exam_timetable.get("source_status") == "verified":
+                st.info(source_note)
+            else:
+                st.warning(source_note)
+            st.info("This calendar currently contains Berea ColTech N5 entries only. N4 and N6 exam dates are not loaded yet.")
             exam_rows = [
                 {
                     "Date": item.get("exam_date", ""),
                     "Session": item.get("session", ""),
                     "Subject": item.get("subject_name", ""),
-                    "Paper code": item.get("paper_code", ""),
                 }
                 for item in exam_timetable.get("exams", [])
             ]
             if exam_rows:
                 st.table(exam_rows)
                 calendar_confirmed = st.checkbox(
-                    "I checked these dates against the current timetable issued by DHET or my exam centre.",
+                    "I checked these dates against my current college timetable and registered subjects.",
                     key=f"confirm_exam_calendar_{exam_timetable.get('trimester', 'current')}",
                 )
                 st.download_button(
