@@ -5,7 +5,6 @@ pandas
 plotly
 matplotlib
 python-dotenv
-openai
 pypdf
 python-pptx
 streamlit-mic-recorder
