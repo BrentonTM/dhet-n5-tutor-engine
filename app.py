@@ -26,11 +26,6 @@ try:
 except ImportError:
     genai = None
     genai_types = None
-# Safe OpenAI SDK Import (for OmniRoute gateway)
-try:
-    from openai import OpenAI
-except ImportError:
-    OpenAI = None
 load_dotenv()
 
 # Must be the first Streamlit command executed in the script
@@ -406,45 +401,24 @@ def format_question_with_ai(raw_text: str) -> str:
 
 
 load_dotenv()
-# --- Retrieve API Key from Environment or Streamlit Secrets ---
-api_key = os.getenv("OMNIROUTE_API_KEY") or os.getenv("GEMINI_API_KEY")
-
-if not api_key:
-    try:
-        api_key = st.secrets.get("OMNIROUTE_API_KEY") or st.secrets.get("GEMINI_API_KEY")
-    except (FileNotFoundError, KeyError):
-        api_key = None
-
-# --- Initialize Gemini Client Safely ---
-if api_key and genai is not None:
-    client = genai.Client(api_key=api_key)
-else:
-    client = None
-    st.warning("⚠️ Gemini API key or module not loaded. Add your API key to .env or Streamlit Cloud Secrets.")
-# --- OmniRoute (OpenAI-compatible gateway) initialization ---
-OMNIROUTE_BASE_URL = os.getenv("OMNIROUTE_BASE_URL", "http://localhost:20128/v1")
-# Comma-separated, tried in order. Run check_models.py (or the sidebar
-# "Test connection" button) to see the exact IDs your OmniRoute exposes.
-OMNIROUTE_MODELS = [
-    m.strip()
-    for m in os.getenv("OMNIROUTE_MODELS", "gemini-3.8-flash").split(",")
-    if m.strip()
-]
+def get_gemini_api_key():
+    """Read the hosted Gemini key from environment variables or Streamlit Secrets."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        try:
+            api_key = st.secrets.get("GEMINI_API_KEY")
+        except Exception:
+            api_key = None
+    return str(api_key).strip() if api_key else ""
 
 
-def build_omniroute_client(api_key=None):
-    """Return an OpenAI-compatible client pointed at OmniRoute, or None if unavailable."""
-    key = api_key or os.getenv("OMNIROUTE_API_KEY")
-    if not key or OpenAI is None:
-        return None
-    try:
-        return OpenAI(base_url=OMNIROUTE_BASE_URL, api_key=key, timeout=60.0)
-    except Exception:
-        return None
-
-
-client = build_omniroute_client()
-
+GEMINI_API_KEY = get_gemini_api_key()
+if genai is None:
+    st.warning("ASK TX needs the Google GenAI package, which is not installed in this deployment.")
+elif not GEMINI_API_KEY:
+    st.warning(
+        "ASK TX is ready to run once GEMINI_API_KEY is added in the Streamlit Cloud app settings under Secrets."
+    )
 # --- Stable Sidebar Navigation ---
 with st.sidebar:
     st.markdown("### ⚙️ Trentox Tutor AI")
@@ -899,25 +873,18 @@ def select_course_material(material_text, subject_code, target_topic, limit=6000
     return "\n\n".join(selected)
 
 
-# OmniRoute query helpers (models are served through the OpenAI-compatible endpoint)
-# Resilient GenAI call helper with automatic retry and fallback
-def _call_omniroute(prompt):
-    """Directly queries Google GenAI SDK with automatic multi-model fallback for 503 errors."""
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        try:
-            api_key = st.secrets.get("GEMINI_API_KEY")
-        except Exception:
-            api_key = None
+# Hosted AI requests run from Streamlit to Google's Gemini API, without a laptop process.
+def _call_gemini(prompt):
+    if not GEMINI_API_KEY or genai is None:
+        return None, (
+            "ASK TX needs GEMINI_API_KEY configured in Streamlit Cloud app settings under Secrets."
+        )
 
-    if not api_key or genai is None:
-        return None, "⚠️ API key missing or GenAI SDK not initialized."
-
-    client = genai.Client(api_key=api_key)
-    models_to_try = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash']
-
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    models_to_try = ("gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash")
+    last_error = None
     for model_name in models_to_try:
-        for attempt in range(2):  # Try each model up to 2 times
+        for attempt in range(2):
             try:
                 response = client.models.generate_content(
                     model=model_name,
@@ -925,20 +892,23 @@ def _call_omniroute(prompt):
                 )
                 if response and response.text:
                     return response.text, None
-            except Exception as e:
-                error_str = str(e)
-                if "503" in error_str or "UNAVAILABLE" in error_str:
-                    time.sleep(1.5)  # Brief backoff before retry
+            except Exception as exc:
+                last_error = exc
+                error_text = str(exc).upper()
+                if any(marker in error_text for marker in ("503", "UNAVAILABLE", "RESOURCE_EXHAUSTED")):
+                    time.sleep(1.5)
                     continue
-                else:
-                    break  # Non-503 error, try next model
+                break
 
-    st.warning("⚠️ Google's AI servers are experiencing high traffic congestion. Please try generating again in a moment.")
-    return None, "GenAI SDK Error: 503 UNAVAILABLE (Service Temporarily Busy)"
+    if last_error:
+        logger.warning("Gemini request failed: %s", last_error)
+    return None, "Google Gemini is temporarily unavailable. Please check the cloud API key and try again."
+
+
 @st.cache_data(show_spinner=False)
-def _cached_omniroute_success(prompt_text, subject_code):
+def _cached_gemini_success(prompt_text, subject_code):
     """Raises on failure so st.cache_data only ever stores successful replies."""
-    reply, err = _call_omniroute(prompt_text)
+    reply, err = _call_gemini(prompt_text)
     if err:
         raise RuntimeError(err)
     return reply
@@ -946,65 +916,23 @@ def _cached_omniroute_success(prompt_text, subject_code):
 
 def cached_query_gemini(prompt_text, subject_code):
     try:
-        return _cached_omniroute_success(prompt_text, subject_code), None
+        return _cached_gemini_success(prompt_text, subject_code), None
     except Exception as exc:
         return None, str(exc)
 
 
 def query_gemini_with_fallback(prompt):
-    """
-    Directly uses Google GenAI SDK if GEMINI_API_KEY is available.
-    Prevents falling back to localhost when running in the cloud.
-    """
-    # 1. Retrieve API key from Environment or Streamlit Secrets
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        try:
-            api_key = st.secrets.get("GEMINI_API_KEY")
-        except Exception:
-            api_key = None
-
-    # 2. Execute direct call if key exists
-    if api_key and genai is not None:
-        try:
-            client = genai.Client(api_key=api_key)
-            response = client.models.generate_content(
-                model='gemini-3.8-flash',
-                contents=prompt,
-            )
-            return response.text, None
-        except Exception as e:
-            # If 503 high demand occurs, try falling back to another stable model or retry
-            try:
-                client = genai.Client(api_key=api_key)
-                response = client.models.generate_content(
-                    model='gemini-2.5-flash',  # Or another available model variant
-                    contents=prompt,
-                )
-                return response.text, None
-            except Exception:
-                return None, f"GenAI SDK Error (Service Busy): {str(e)}"
-
-    # 3. Only allow OmniRoute fallback if running locally
-    if os.getenv("LOCAL_DEV") == "true" or not os.getenv("STREAMLIT_SHARING_MODE"):
-        return _call_omniroute(prompt)
-
-    return None, "⚠️ **Configuration Error:** `GEMINI_API_KEY` is missing from your Streamlit Cloud Secrets. Please add it in your app settings."
+    """Use the hosted Gemini API, with model fallback for availability."""
+    return _call_gemini(prompt)
 
 
 def query_gemini_with_attachment(prompt, file_bytes, mime_type):
     """Send a learner-provided image or scanned PDF to Gemini for visual review."""
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        try:
-            api_key = st.secrets.get("GEMINI_API_KEY")
-        except Exception:
-            api_key = None
-    if not api_key or genai is None or genai_types is None:
+    if not GEMINI_API_KEY or genai is None or genai_types is None:
         return None, "Visual answer review needs the Google Gemini connection configured for this app. You can still upload text-based PDFs, Word documents, or .txt answers."
 
     try:
-        client = genai.Client(api_key=api_key)
+        client = genai.Client(api_key=GEMINI_API_KEY)
         attachment = genai_types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
         for model_name in ("gemini-3.8-flash", "gemini-2.5-flash"):
             try:
@@ -1664,26 +1592,6 @@ with st.sidebar.expander("📐 Official NATED Formula Sheets", expanded=False):
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-if not os.getenv("OMNIROUTE_API_KEY"):
-    manual_key = st.sidebar.text_input("OmniRoute API Key:", type="password")
-    if manual_key:
-        client = build_omniroute_client(manual_key)
-        if client:
-            st.sidebar.success("OmniRoute key loaded.")
-        else:
-            st.sidebar.error("Could not create the OmniRoute client. Is the 'openai' package installed?")
-
-if client:
-    with st.sidebar.expander("🔌 OmniRoute connection", expanded=False):
-        st.caption(f"Endpoint: {OMNIROUTE_BASE_URL}")
-        st.caption("Models tried: " + ", ".join(OMNIROUTE_MODELS))
-        if st.button("Test connection", key="omniroute_test"):
-            try:
-                available = [m.id for m in client.models.list().data]
-                st.success(f"Connected. {len(available)} models available.")
-                st.code("\n".join(available[:40]))
-            except Exception as exc:
-                st.error(f"Connection failed: {exc}")
 
 # --- Main App Tabs ---
 st.markdown('<div class="tx-eyebrow">LEARNING WORKSPACE</div>', unsafe_allow_html=True)
