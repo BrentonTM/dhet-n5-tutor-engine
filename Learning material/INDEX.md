@@ -7,9 +7,9 @@ This index catalogues the learner-provided files in this folder. The original fi
 ### Digital Electronics
 
 - `Digital Electronics/N4/Assignments/Assignment 1 N4.pdf` — number-system arithmetic and conversions, BCD and other codes, and an AND-gate symbol, truth table, and Boolean expression.
-- `Digital Electronics/Reference Library/REFERENCE ALIGNMENT MAP.md` — concise mapping from the book's chapters to the learner-confirmed N4 study groups and the provisional N5 outline. The app reads this note; it does not contain textbook passages.
+- `Digital Electronics/Reference Library/REFERENCE ALIGNMENT MAP.md` — concise mapping from the book's chapters to the learner-confirmed N4 scope and the 14 N5 modules transcribed from the school textbook contents photos. The app reads this note; it contains no textbook passages.
 - A user-supplied 741-page Digital Electronics textbook (Anil K. Maini, 2007) was reviewed locally to prepare the map. It is a broad reference, not an authenticated DHET syllabus. The full PDF stays in the local project and is not in the public app repository.
-- Use the book only to explain aligned concepts, not to expand the confirmed course scope. K-maps remain included in N4; Memory Systems remain outside the learner-confirmed N4 scope.
+- Use the book only to explain aligned concepts, not to expand the confirmed course scope. K-maps remain included in N4; Memory Systems remain outside N4 and appear in the learner's N5 textbook list.
 - The N4 assignment is the other Digital Electronics source in the imported learning-material set. The project also has a working N4 topic map and reference screenshots, but these are not substitutes for an official syllabus.
 
 ### Industrial Electronics N5
@@ -51,5 +51,4 @@ This index catalogues the learner-provided files in this folder. The original fi
 - The app walks subfolders under `Learning material`, so this subject-based filing keeps the materials discoverable.
 - The Industrial Instruments textbook scan, the flow-measurement scan, and the pH-measurement scan have no selectable text. The app’s text-only material reader cannot learn from those pages yet; OCR or a text-based source is needed.
 - The current app reader extracts only the first 15 pages and first 3,000 characters of each PDF. Full use of the 158-page Industrial Instruments scan needs OCR and page-aware ingestion; using the 741-page Digital Electronics book effectively also needs chapter-aware ingestion.
-- The imported files do not provide an official Digital Electronics textbook or an authenticated detailed Digital Electronics N4/N5 syllabus. Do not treat the working topic maps as official syllabus documents.
-
+- The N5 list reflects the learner's school textbook contents pages. The imported files do not provide an authenticated detailed DHET Digital Electronics N4/N5 syllabus. Do not treat the working topic maps as official syllabus documents.
