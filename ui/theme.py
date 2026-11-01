@@ -219,31 +219,30 @@ def inject_industrial_theme():
             animation: tx-monogram-rotate 7s ease-in-out infinite;
             pointer-events: none;
         }
-        .tx-monogram-letter {
-            display: inline-block;
-            color: #f5c84b;
-            font-family: "Segoe UI", Inter, system-ui, sans-serif;
-            font-size: 3.35rem;
-            font-weight: 1000;
-            letter-spacing: -.08em;
-            line-height: 1;
-            -webkit-text-stroke: .7px #fff0a1;
-            text-shadow: 1px 1px 0 #b87f12, 2px 2px 0 #9d6a0a, 3px 3px 0 #805307, 4px 4px 0 #624006, 6px 7px 10px rgba(0, 0, 0, .78);
-            transform: translateZ(9px) rotateX(5deg) rotateY(-9deg);
+        .tx-monogram svg {
+            width: 106px;
+            height: 90px;
+            overflow: visible;
+            transform: translateZ(12px) rotateX(4deg) rotateY(-7deg);
+            transform-style: preserve-3d;
         }
-        .tx-letter-t {
-            background: linear-gradient(145deg, #fff7cd 0%, #f8d968 24%, #d39a21 52%, #fff0a2 68%, #8a5c09 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .tx-extrusion path {
+            fill: #67470d;
+            stroke: #3d2b0b;
+            stroke-width: 2.2;
+            stroke-linejoin: bevel;
         }
-        .tx-letter-x {
-            margin-left: -.04em;
-            background: linear-gradient(145deg, #fff8d6 0%, #f4cf5e 27%, #bd8517 54%, #ffe98f 72%, #704909 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            transform: translateZ(11px) rotateX(5deg) rotateY(-5deg);
+        .tx-face-t {
+            fill: url(#tx-gold-t);
+            stroke: #fff0a1;
+            stroke-width: 1.5;
+            stroke-linejoin: bevel;
+        }
+        .tx-face-x {
+            fill: url(#tx-gold-x);
+            stroke: #f9df7b;
+            stroke-width: 1.3;
+            stroke-linejoin: bevel;
         }
         @keyframes tx-monogram-rotate {
             0% { transform: rotateY(-12deg) rotateX(6deg) rotateZ(-1deg); }
@@ -268,6 +267,7 @@ def inject_industrial_theme():
         }
         .tx-hero-chip-row-label { margin: .8rem 0 .3rem; color: var(--tx-muted); font-size: .65rem; font-weight: 750; letter-spacing: .13em; }
         .st-key-hero_course_button button,
+        .st-key-hero_ai_button button,
         .st-key-hero_lab_button button,
         .st-key-hero_exam_button button {
             min-height: 40px;
@@ -277,6 +277,7 @@ def inject_industrial_theme():
             font-size: .78rem;
         }
         .st-key-hero_course_button button { border-color: rgba(111, 221, 178, .36); }
+        .st-key-hero_ai_button button { border-color: rgba(245, 200, 75, .48); color: #fff2bf; }
         .tx-chip {
             display: inline-flex;
             align-items: center;
@@ -326,7 +327,7 @@ def inject_industrial_theme():
             [data-testid="stTabs"] [role="tab"] { padding: .48rem .65rem; font-size: .82rem; }
             .tx-course-bar { align-items: flex-start; flex-direction: column; gap: .45rem; }
             .tx-monogram { right: 8px; bottom: 72px; width: 76px; height: 60px; }
-            .tx-monogram-letter { font-size: 2.55rem; }
+            .tx-monogram svg { width: 78px; height: 66px; }
         }
         @media (prefers-reduced-motion: reduce) {
             .tx-monogram { animation: none; }
@@ -335,3 +336,4 @@ def inject_industrial_theme():
         """,
         unsafe_allow_html=True,
     )
+
