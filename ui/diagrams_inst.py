@@ -11,6 +11,60 @@ def _tube(x, y0, y1, **kw):
     return cyl([x, (y0 + y1) / 2, 0], 0.13, y1 - y0, GLASS, open=True, opacity=0.25, **kw)
 
 
+# -------------------------------------------------------------------- variable-area flow
+@reg("rotameter", "Rotameter – float position and variable-area flow")
+def rotameter():
+    o = [
+        # A closed annular profile produces a hollow, tapered transparent tube.
+        lathe([0, 0, 0], [[0.62, -3.0], [0.98, 3.0], [0.86, 3.0], [0.50, -3.0]],
+              CY, opacity=0.19, label="Tapered glass tube", la=[-1.6, 2.6, 0.6], lsize=0.26,
+              info="The tube widens upward. As the float rises, the annular area around it increases."),
+        cyl([0, -3.12, 0], 0.7, 0.22, ST, axis="y", label="Bottom inlet", lp=[-1.7, -0.1, 0],
+            info="Process fluid enters below the float and flows upward."),
+        cyl([0, 3.12, 0], 0.96, 0.22, ST, axis="y", label="Top outlet", lp=[1.5, 0.1, 0]),
+        lathe([0, -2.35, 0], [[0.0, -0.31], [0.30, -0.31], [0.40, -0.14],
+                              [0.40, 0.14], [0.30, 0.31], [0.0, 0.31]],
+              OR, metal=0.55, label="Float", la=[-1.4, 0, 0.5], lsize=0.3,
+              bind={"pos.y": "-2.35+0.047*p.Q+0.5*(p.SG-1)"},
+              info="The float rises until upward drag and buoyancy balance its effective weight. Read this model at the float centre."),
+        arrow([0, -4.25, 0], [0, -3.45, 0], OR, label="Flow in", lp=[0.8, -0.1, 0]),
+        arrow([0, 3.45, 0], [0, 4.15, 0], CY, label="Flow out", lp=[0.8, 0.1, 0]),
+    ]
+
+    # Scale graduations are spaced along the calibrated float-centre range.
+    for i in range(11):
+        y = -2.35 + i * 0.47
+        x0 = 0.82 + (y + 2.35) * 0.035
+        o.append(line([[x0, y, 0.72], [x0 + (0.42 if i % 2 == 0 else 0.2), y, 0.72]],
+                      YL if i % 2 == 0 else WH, 0.018))
+        if i % 2 == 0:
+            o.append(text([1.42, y, 0.72], str(i * 10), YL, 0.22))
+
+    for x in (-0.12, 0.12):
+        o.append(flow([[x, -2.7, 0.18], [x, 2.7, 0.18]], CY, 18,
+                      "0.25+p.Q*0.035", 0.09, bind={"visible": "p.Q>0"}))
+
+    o += [
+        text([2.2, 2.3, 0.2], "Flow scale", YL, 0.28),
+        text([2.2, 1.8, 0.2], "L/min", WH, 0.22),
+        line([[1.25, -2.55, 0.72], [1.25, 2.55, 0.72]], "#64748B", 0.012),
+    ]
+    return spec(
+        "Rotameter – variable-area flow meter",
+        o,
+        "Increase Q → the float rises → annular area increases.  Aₐ = π(Dₜ² − Df²)/4; approximately Q ∝ Aₐ at constant float pressure drop.",
+        [param("Q", "Flow-rate setting / calibrated scale", 0, 100, 45, 1, "L/min"),
+         param("SG", "Fluid specific gravity (water = 1.0)", 0.6, 1.4, 1.0, 0.01, "SG")],
+        [readout("Actual flow input", "p.Q.toFixed(1)+' L/min'"),
+         readout("Water-calibrated scale estimate", "min(100,max(0,p.Q+0.5*(p.SG-1)/0.047)).toFixed(1)+' L/min'"),
+         readout("Float height above water calibration", "(p.Q*0.47+0.5*(p.SG-1)).toFixed(2)+' model units'"),
+         readout("Fluid correction", "abs(p.SG-1)<0.01?'Water reference calibration':(p.SG>1?'Denser fluid: equilibrium shifts upward':'Lighter fluid: equilibrium shifts downward')"),
+         readout("Operating principle", "p.Q<1?'No flow: float rests near the inlet':'Float forces balance: drag + buoyancy = effective weight'"),
+         readout("Scale note", "'Illustrative density response only; real scales require fluid-specific calibration.'")],
+        cam=(4.2, 3.5, 12.8), target=(0, 0, 0), grid_y=-3.7,
+    )
+
+
 # --------------------------------------------------------------------------- flow
 @reg("venturi", "Venturi meter – Bernoulli & differential pressure")
 def venturi():

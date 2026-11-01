@@ -1,6 +1,10 @@
 """Mathematics N5 – 3D diagrams."""
 import math
+import streamlit.components.v1 as components
 
+def render_interactive_diagram(html_content, height=400):
+    """Embeds true HTML/CSS/3D/JS schematics directly into Streamlit UI."""
+    components.html(html_content, height=height, scrolling=True)
 from ui.diagram_lib import *
 from ui.diagram_registry import reg
 

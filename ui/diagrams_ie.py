@@ -60,6 +60,87 @@ def rc_response():
 
 
 # ------------------------------------------------------------------ Module 2: power supplies
+@reg("bridge_rectifier_3d", "Bridge rectifier and reservoir filter – 3D circuit")
+def bridge_rectifier_3d():
+    positive_half = "sin(p.phase*PI/180)>0.01"
+    negative_half = "sin(p.phase*PI/180)<-0.01"
+    o = [
+        box([0, 0, -0.72], [14.5, 8.2, 0.35], "#142235", metal=0.35, rough=0.65,
+            label="Insulated circuit board", lp=[-5.6, -3.65, 0.2]),
+        box([-5.35, 0, 0.05], [1.55, 1.6, 0.75], CHIP, label="AC transformer", lp=[0, 1.0, 0.2], lsize=0.25,
+            info="The transformer supplies an isolated low-voltage AC signal to the bridge."),
+        text([-5.35, 0, 0.52], "AC", YL, 0.34),
+        wire([[-4.55, 0.55, 0.35], [-3.4, 0.55, 0.35], [-2.5, 1.2, 0.35]], OR, 0.07,
+             label="AC terminal 1", lsize=0.21),
+        wire([[-4.55, -0.55, 0.35], [-3.4, -0.55, 0.35], [-2.5, -1.2, 0.35]], OR, 0.07,
+             label="AC terminal 2", lsize=0.21),
+        sphere([-2.5, 1.2, 0.35], 0.13, OR, label="AC1", lp=[-0.2, 0.35, 0.2], lsize=0.2),
+        sphere([-2.5, -1.2, 0.35], 0.13, OR, label="AC2", lp=[-0.2, -0.4, 0.2], lsize=0.2),
+        sphere([0, 2.1, 0.35], 0.15, GR, label="DC+", lp=[0, 0.45, 0.2], lsize=0.23),
+        sphere([0, -2.1, 0.35], 0.15, BL, label="DC− / 0 V", lp=[0, -0.55, 0.2], lsize=0.21),
+        # Four labelled diode packages occupy the four arms of the bridge.
+        box([-1.25, 1.62, 0.12], [0.82, 0.42, 0.52], "#334155",
+            bind={"color": positive_half + "?'#10B981':'#334155'"}, label="D1 · 1N4007",
+            lp=[0, 0.43, 0.15], lsize=0.19, info="Bridge diode: conducts on the positive half-cycle toward DC+."),
+        box([-1.25, 0.35, 0.42], [0.82, 0.42, 0.52], "#334155",
+            bind={"color": negative_half + "?'#10B981':'#334155'"}, label="D2 · 1N4007",
+            lp=[0, 0.43, 0.15], lsize=0.19, info="Bridge diode: routes the opposite AC half-cycle to the same DC+ node."),
+        box([-1.25, -0.35, 0.72], [0.82, 0.42, 0.52], "#334155",
+            bind={"color": negative_half + "?'#10B981':'#334155'"}, label="D3 · 1N4007",
+            lp=[0, -0.48, 0.15], lsize=0.19, info="Bridge return diode: completes the load-current path on one half-cycle."),
+        box([-1.25, -1.62, 0.12], [0.82, 0.42, 0.52], "#334155",
+            bind={"color": positive_half + "?'#10B981':'#334155'"}, label="D4 · 1N4007",
+            lp=[0, -0.48, 0.15], lsize=0.19, info="Bridge return diode: completes the load-current path on the alternate half-cycle."),
+        # Raised conductors keep the crossing diagonal paths visually distinct.
+        wire([[-2.5, 1.2, 0.35], [-1.7, 1.45, 0.35], [-0.8, 1.82, 0.35], [0, 2.1, 0.35]], OR, 0.055,
+             bind={"color": positive_half + "?'#10B981':'#475569'"}, label="D1 path · positive half-cycle"),
+        wire([[-2.5, -1.2, 0.35], [-1.7, -0.35, 0.35], [-0.8, 0.35, 0.68], [0, 2.1, 0.68]], CY, 0.055,
+             bind={"color": negative_half + "?'#10B981':'#475569'"}, label="D2 path · negative half-cycle"),
+        wire([[0, -2.1, 0.72], [-0.8, -0.35, 0.72], [-1.7, 0.8, 0.72], [-2.5, 1.2, 0.72]], VI, 0.055,
+             bind={"color": negative_half + "?'#10B981':'#475569'"}, label="D3 path · negative half-cycle"),
+        wire([[0, -2.1, 0.35], [-0.8, -1.82, 0.35], [-1.7, -1.45, 0.35], [-2.5, -1.2, 0.35]], GR, 0.055,
+             bind={"color": positive_half + "?'#10B981':'#475569'"}, label="D4 path · positive half-cycle"),
+        wire([[0, 2.1, 0.35], [2.9, 2.1, 0.35], [3.6, 1.4, 0.35]], GR, 0.075,
+             label="Positive DC rail", info="Both AC half-cycles produce the same output polarity."),
+        wire([[0, -2.1, 0.35], [2.9, -2.1, 0.35], [3.6, -1.4, 0.35]], BL, 0.075, label="0 V return rail"),
+        cyl([2.15, 0, 0.15], 0.44, 2.1, CY, axis="y", opacity=0.78,
+            label="Reservoir capacitor C", lp=[-0.7, 1.35, 0.2], lsize=0.22,
+            info="The capacitor charges near each rectified peak and discharges into the load between peaks. Larger C reduces ripple."),
+        wire([[2.15, 1.05, 0.15], [2.15, 1.55, 0.15], [2.9, 1.55, 0.15], [2.9, 2.1, 0.35]], CY, 0.045,
+             label="Capacitor positive lead"),
+        wire([[2.15, -1.05, 0.15], [2.15, -1.55, 0.15], [2.9, -1.55, 0.15], [2.9, -2.1, 0.35]], CY, 0.045,
+             label="Capacitor return lead"),
+        box([4.25, 0, 0.12], [0.85, 1.6, 0.62], "#C28E53", metal=0.55,
+            label="RLoad", lp=[0.0, 1.0, 0.2], lsize=0.22,
+            info="Load resistance sets output current. With a capacitor-input filter, approximate ripple is Vr(pp) ≈ Iload/(2 f C)."),
+        wire([[3.6, 1.4, 0.35], [4.25, 0.8, 0.35]], GR, 0.055),
+        wire([[4.25, -0.8, 0.35], [3.6, -1.4, 0.35]], BL, 0.055),
+        sphere([5.45, 0, 0.42], 0.24, LOW,
+               bind={"color": "p.Vpk>1.4?'#10B981':'#475569'", "emissive": "p.Vpk>1.4?0.65:0.02"},
+               label="Filtered DC output", lp=[0.8, 0, 0.2], lsize=0.20),
+        text([0.0, 3.15, 0.2], "FULL-WAVE BRIDGE · 4 DIODES · CAPACITOR FILTER", YL, 0.25),
+    ]
+
+    return spec(
+        "Full-wave bridge rectifier with capacitor filter",
+        o,
+        "Four diodes steer both AC half-cycles into the same load polarity. Approximate capacitor-input ripple: Vr(pp) ≈ Iload/(2 f C).",
+        [param("Vpk", "Transformer secondary peak Vpk", 3, 24, 12, 0.5, "V"),
+         param("f", "Mains frequency", 50, 60, 50, 1, "Hz"),
+         param("C", "Reservoir capacitor C", 100, 2200, 470, 10, "µF"),
+         param("Rload", "Load resistance RLoad", 470, 5000, 1000, 10, "Ω"),
+         param("phase", "AC phase angle", 0, 360, 45, 1, "°")],
+        [readout("Peak after two diode drops", "max(0,p.Vpk-1.4).toFixed(2)+' V'"),
+         readout("Approximate load current", "var v=max(0,p.Vpk-1.4);return (v/p.Rload*1000).toFixed(2)+' mA';"),
+         readout("Ripple frequency", "(2*p.f).toFixed(0)+' Hz'"),
+         readout("Estimated ripple Vr(pp)", "var v=max(0,p.Vpk-1.4),i=v/p.Rload,c=p.C*0.000001;return (i/(2*p.f*c)).toFixed(3)+' V'"),
+         readout("Estimated average DC output", "var v=max(0,p.Vpk-1.4),i=v/p.Rload,c=p.C*0.000001;return max(0,v-i/(4*p.f*c)).toFixed(2)+' V';"),
+         readout("Conducting diode pair", "abs(sin(p.phase*PI/180))<0.01?'At the AC zero crossing':(sin(p.phase*PI/180)>0?'D1 + D4':'D2 + D3')"),
+         readout("Model assumptions", "'Ideal transformer, silicon Vf≈0.7 V per diode; ripple estimate assumes modest ripple.'")],
+        cam=(0.2, 8.5, 17), target=(0, 0, 0), grid_y=-4.5,
+    )
+
+
 @reg("rectifier", "Rectifier and capacitor filter")
 def rectifier():
     body = ("var s=sin(x);var rect=p.full>0.5?abs(s):max(s,0);if(p.tau<0.3)return rect;"
