@@ -1200,8 +1200,8 @@ with shortcut_columns[3]:
     )
 st.markdown(
     '''<div class="tx-monogram" aria-label="Golden 3D TX monogram">
-    <svg viewBox="0 0 150 100" role="img" aria-labelledby="tx-monogram-title">
-      <title id="tx-monogram-title">TX monogram: T and X</title>
+    <svg viewBox="0 0 248 140" role="img" aria-labelledby="tx-monogram-title">
+      <title id="tx-monogram-title">TX monogram: separate T and X solid forms</title>
       <defs>
         <linearGradient id="tx-gold-t" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="#fff5c0"/><stop offset=".28" stop-color="#f7d86c"/>
@@ -1212,13 +1212,16 @@ st.markdown(
           <stop offset="0" stop-color="#9b690f"/><stop offset=".38" stop-color="#e8bd48"/>
           <stop offset=".68" stop-color="#fff1a6"/><stop offset="1" stop-color="#bd8213"/>
         </linearGradient>
+        <linearGradient id="tx-gold-side" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#6d4908"/><stop offset=".55" stop-color="#9e6c13"/><stop offset="1" stop-color="#4f3508"/>
+        </linearGradient>
       </defs>
-      <g class="tx-extrusion" aria-hidden="true">
-        <text x="8" y="80" transform="translate(4 5)">T</text>
-        <text x="78" y="80" transform="translate(4 5)">X</text>
+      <g class="tx-extrusion" aria-hidden="true" transform="translate(7 8)">
+        <path d="M16 16 H102 V44 H72 V120 H46 V44 H16 Z"/>
+        <path d="M130 16 H160 L181 45 L202 16 H232 L196 66 L232 120 H202 L181 87 L160 120 H130 L166 66 Z"/>
       </g>
-      <text class="tx-face-t" x="8" y="80">T</text>
-      <text class="tx-face-x" x="78" y="80">X</text>
+      <path class="tx-face-t" d="M16 16 H102 V44 H72 V120 H46 V44 H16 Z"/>
+      <path class="tx-face-x" d="M130 16 H160 L181 45 L202 16 H232 L196 66 L232 120 H202 L181 87 L160 120 H130 L166 66 Z"/>
     </svg></div>''',
     unsafe_allow_html=True,
 )
@@ -1319,8 +1322,9 @@ st.markdown(
 
 model_column, reminder_column = st.columns([1, 1], gap="large")
 with model_column:
-    st.markdown('<div class="tx-visual-label">Live engineering model · drag to inspect</div>', unsafe_allow_html=True)
+    st.markdown('<div class="tx-visual-label">Live engineering model · drag to rotate</div>', unsafe_allow_html=True)
     render_3d_scene("hero_scene.html", height=235)
+    st.caption("Drag to rotate the model · scroll to zoom · use the control tips in Tutor & lab → 3D lab for labelled parts and simulations.")
 with reminder_column:
     st.markdown('<div class="tx-visual-label">Engineering quick reminders · auto-rotating</div>', unsafe_allow_html=True)
     render_home_slideshow(active_subject, selected_subject["subject_name"], height=262)
@@ -2043,7 +2047,7 @@ with tab_tutor:
     with sub_tab6:
         if sub_tab6.open:
             st.markdown("### 🧊 Interactive 3D engineering lab")
-            st.caption("Drag to rotate · scroll to zoom · hover a component for its label and explanation · use the in-scene controls or click input switches.")
+            st.caption("How to operate a 3D model: drag empty space to rotate · scroll or pinch to zoom · right-drag to pan where supported · hover or click a labelled component to inspect it · adjust sliders or input switches, then use Reset.")
 
             from ui.diagram_engine import render_diagram3d
             from ui.diagram_registry import get_spec, title_of
@@ -2075,6 +2079,14 @@ with tab_tutor:
                 st.warning("This DAC scene is an interactive study aid. The standalone Digital Electronics N5 curriculum map still needs authoritative syllabus verification.")
             elif lab_subject == "Digital Electronics N4":
                 st.caption("N4 lab scope includes logic gates, full adders and K-maps. Memory Systems are excluded from your confirmed N4 scope.")
+
+            if lab_subject == "Industrial Electronics N5":
+                st.markdown("#### 🧰 Build a circuit on the 3D workbench")
+                st.caption("Add a resistor and LED, drag them across the breadboard centre gap, then click two holes or pins to connect a wire. The Arduino Uno, breadboard rails and connected hole groups are built in; Start simulation pulses D13 and lights a complete resistor–LED–GND path.")
+                from ui.circuit_lab import render_circuit_lab
+                render_circuit_lab(height=790)
+                st.divider()
+                st.markdown("#### Guided 3D engineering diagrams")
 
             diagram_ids = lab_profiles[lab_subject]
             diagram_id = st.selectbox(

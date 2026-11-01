@@ -211,8 +211,8 @@ def inject_industrial_theme():
             align-items: center;
             justify-content: center;
             gap: .02em;
-            width: 132px;
-            height: 86px;
+            width: 156px;
+            height: 94px;
             perspective: 520px;
             transform-style: preserve-3d;
             filter: drop-shadow(0 10px 11px rgba(0, 0, 0, .62));
@@ -220,38 +220,27 @@ def inject_industrial_theme():
             pointer-events: none;
         }
         .tx-monogram svg {
-            width: 132px;
-            height: 90px;
+            width: 154px;
+            height: 88px;
             overflow: visible;
             transform: translateZ(12px) rotateX(4deg) rotateY(-7deg);
             transform-style: preserve-3d;
         }
-        .tx-extrusion text {
-            fill: #67470d;
+        .tx-extrusion path {
+            fill: url(#tx-gold-side);
             stroke: #3d2b0b;
-            stroke-width: 1.4;
-            stroke-linejoin: round;
-            font-family: "Arial Black", "Segoe UI Black", sans-serif;
-            font-size: 82px;
-            font-weight: 900;
-            letter-spacing: -5px;
+            stroke-width: 2.4;
+            stroke-linejoin: bevel;
         }
         .tx-face-t,
         .tx-face-x {
             stroke: #fff0a1;
-            stroke-width: 1.2;
-            stroke-linejoin: round;
-            font-family: "Arial Black", "Segoe UI Black", sans-serif;
-            font-size: 82px;
-            font-weight: 900;
-            letter-spacing: -5px;
+            stroke-width: 2.4;
+            stroke-linejoin: bevel;
+            stroke-linecap: square;
         }
-        .tx-face-t {
-            fill: url(#tx-gold-t);
-        }
-        .tx-face-x {
-            fill: url(#tx-gold-x);
-        }
+        .tx-face-t { fill: url(#tx-gold-t); }
+        .tx-face-x { fill: url(#tx-gold-x); }
         @keyframes tx-monogram-rotate {
             0% { transform: rotateY(-12deg) rotateX(6deg) rotateZ(-1deg); }
             50% { transform: rotateY(12deg) rotateX(6deg) rotateZ(1deg); }
@@ -334,11 +323,11 @@ def inject_industrial_theme():
             [data-testid="stMainBlockContainer"] { padding: 1rem .8rem 2rem; }
             [data-testid="stTabs"] [role="tab"] { padding: .48rem .65rem; font-size: .82rem; }
             .tx-course-bar { align-items: flex-start; flex-direction: column; gap: .45rem; }
-            .tx-monogram { right: 8px; bottom: 72px; width: 98px; height: 62px; }
-            .tx-monogram svg { width: 98px; height: 66px; }
-            .tx-extrusion text,
+            .tx-monogram { right: 8px; bottom: 72px; width: 118px; height: 76px; }
+            .tx-monogram svg { width: 116px; height: 68px; }
+            .tx-extrusion path,
             .tx-face-t,
-            .tx-face-x { font-size: 82px; }
+            .tx-face-x { stroke-width: 2; }
         }
         @media (prefers-reduced-motion: reduce) {
             .tx-monogram { animation: none; }
