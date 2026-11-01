@@ -58,6 +58,8 @@ from ui.learning_progress import (
     topic_status,
 )
 from ui.device_guide import render_device_guide_and_reminders
+
+
 def render_exam_question_card(question_num: str, title: str, question_text: str, has_diagram: bool = False, given_data: list = None):
     """Renders a clean, structured exam question card with visual separation and diagram notices."""
     
