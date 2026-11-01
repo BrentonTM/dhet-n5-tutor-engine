@@ -202,49 +202,48 @@ def inject_industrial_theme():
             font-size: 1.04rem;
             line-height: 1.6;
         }
-        .tx-monogram {
-            position: fixed;
-            right: 18px;
-            bottom: 78px;
-            z-index: 99999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: .02em;
-            width: 72px;
-            height: 46px;
-            perspective: 520px;
-            transform-style: preserve-3d;
-            filter: drop-shadow(0 10px 11px rgba(0, 0, 0, .62));
-            animation: tx-monogram-rotate 7s ease-in-out infinite;
-            pointer-events: none;
+        .st-key-ask_tx_launcher {
+            position: fixed !important;
+            right: 18px !important;
+            bottom: 78px !important;
+            z-index: 99999 !important;
+            width: fit-content !important;
+            max-width: calc(100vw - 24px) !important;
+            margin: 0 !important;
+            filter: drop-shadow(0 9px 12px rgba(0, 0, 0, .54));
         }
-        .tx-monogram svg {
-            width: 70px;
-            height: 42px;
-            overflow: visible;
-            transform: translateZ(12px) rotateX(4deg) rotateY(-7deg);
-            transform-style: preserve-3d;
+        .st-key-ask_tx_launcher button {
+            min-width: 122px !important;
+            min-height: 48px !important;
+            padding: .55rem 1rem !important;
+            border: 1px solid #ffe79a !important;
+            border-radius: 999px !important;
+            color: #2a1b03 !important;
+            background: linear-gradient(145deg, #fff1ac 0%, #e5b13e 36%, #a96b0d 72%, #f8d96d 100%) !important;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,.72), 0 5px 15px rgba(0,0,0,.45) !important;
+            font-size: .86rem !important;
+            font-weight: 900 !important;
+            letter-spacing: .1em !important;
+            transition: transform .18s ease, filter .18s ease, box-shadow .18s ease !important;
         }
-        .tx-extrusion path {
-            fill: url(#tx-gold-side);
-            stroke: #3d2b0b;
-            stroke-width: 2.4;
-            stroke-linejoin: bevel;
+        .st-key-ask_tx_launcher button:hover {
+            transform: translateY(-2px) scale(1.025);
+            filter: brightness(1.08);
+            box-shadow: inset 0 1px 1px rgba(255,255,255,.82), 0 8px 20px rgba(0,0,0,.52) !important;
         }
-        .tx-face-t,
-        .tx-face-x {
-            stroke: #fff0a1;
-            stroke-width: 2.4;
-            stroke-linejoin: bevel;
-            stroke-linecap: square;
+        .st-key-ask_tx_launcher button:focus-visible {
+            outline: 3px solid #49d9e8 !important;
+            outline-offset: 3px !important;
         }
-        .tx-face-t { fill: url(#tx-gold-t); }
-        .tx-face-x { fill: url(#tx-gold-x); }
-        @keyframes tx-monogram-rotate {
-            0% { transform: rotateY(-12deg) rotateX(6deg) rotateZ(-1deg); }
-            50% { transform: rotateY(12deg) rotateX(6deg) rotateZ(1deg); }
-            100% { transform: rotateY(-12deg) rotateX(6deg) rotateZ(-1deg); }
+        [data-testid="stPopoverBody"] {
+            width: min(430px, calc(100vw - 28px)) !important;
+            max-width: calc(100vw - 28px) !important;
+            max-height: calc(100vh - 132px) !important;
+            overflow-y: auto !important;
+            border: 1px solid rgba(88, 213, 229, .42) !important;
+            border-radius: 16px !important;
+            background: linear-gradient(145deg, #0b1b29, #10283a) !important;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, .56) !important;
         }
         .tx-hero-copy {
             padding: .5rem 0 .75rem;
@@ -323,14 +322,13 @@ def inject_industrial_theme():
             [data-testid="stMainBlockContainer"] { padding: 1rem .8rem 2rem; }
             [data-testid="stTabs"] [role="tab"] { padding: .48rem .65rem; font-size: .82rem; }
             .tx-course-bar { align-items: flex-start; flex-direction: column; gap: .45rem; }
-            .tx-monogram { right: 6px; bottom: 66px; width: 58px; height: 38px; }
-            .tx-monogram svg { width: 56px; height: 35px; }
-            .tx-extrusion path,
-            .tx-face-t,
-            .tx-face-x { stroke-width: 2; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .tx-monogram { animation: none; }
+            .st-key-ask_tx_launcher { right: 8px !important; bottom: 66px !important; }
+            .st-key-ask_tx_launcher button { min-width: 112px !important; min-height: 44px !important; }
+            [data-testid="stPopoverBody"] {
+                width: min(370px, calc(100vw - 18px)) !important;
+                max-width: calc(100vw - 18px) !important;
+                max-height: calc(100vh - 114px) !important;
+            }
         }
         </style>
         """,
