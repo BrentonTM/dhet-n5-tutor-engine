@@ -57,7 +57,8 @@ from ui.learning_progress import (
     summarize_progress,
     topic_status,
 )
-from ui.device_guide import render_device_guide_and_reminders
+from ui.device_guide import render_first_use_guide
+from ui.study_reminders import open_exam_calendar_workspace, render_study_reminders
 
 
 def render_exam_question_card(question_num: str, title: str, question_text: str, has_diagram: bool = False, given_data: list = None):
@@ -368,7 +369,8 @@ client = build_omniroute_client()
 with st.sidebar:
     st.markdown("### ⚙️ Trentox Tutor AI")
     st.caption("Engineering Studies learning workspace")
-    render_device_guide_and_reminders()
+    render_first_use_guide()
+    render_study_reminders()
     st.markdown("---")
 # Configure Matplotlib for headless Streamlit rendering
 try:
@@ -1282,6 +1284,12 @@ with shortcut_row_two[1]:
         on_click=open_learning_workspace,
         args=("⏱ Mock exam",),
     )
+st.button(
+    "📅  Exam & study calendar",
+    key="hero_calendar_button",
+    use_container_width=True,
+    on_click=open_exam_calendar_workspace,
+)
 st.markdown(
     '''<div class="tx-monogram" aria-label="Golden 3D TX monogram">
     <svg viewBox="0 0 248 140" role="img" aria-labelledby="tx-monogram-title">
