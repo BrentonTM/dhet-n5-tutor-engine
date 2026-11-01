@@ -204,7 +204,7 @@ _DEVICE_SUPPORT_HTML = r"""
       <button id="tx-reminder-off" type="button" hidden>Turn browser reminder off</button>
       <button id="tx-reminder-calendar" type="button">Add recurring reminder to calendar (.ics)</button>
       <p id="tx-reminder-status" role="status" aria-live="polite">Choose a time and save the reminder on this device.</p>
-      <small class="tx-device-note">Browser notifications need your permission and this app open. The calendar file can remind you after you close the app. Settings stay in this browser on this device.</small>
+      <small class="tx-device-note">Browser notifications need your permission and this app open. The calendar file can remind you after you close the app. Settings stay in this browser on this device. If you change the time later, remove the old calendar event before importing the updated one.</small>
       <button id="tx-guide-replay" type="button">📘 Replay the app guide</button>
     </div>
   </details>
@@ -400,7 +400,8 @@ _DEVICE_SUPPORT_HTML = r"""
       "CALSCALE:GREGORIAN",
       "X-WR-CALNAME:Trentox Tutor AI Study Reminders",
       "BEGIN:VEVENT",
-      "UID:" + Date.now() + "@trentox-tutor-ai",
+      "UID:trentox-study-reminder@trentox-tutor-ai",
+      "SEQUENCE:0",
       "DTSTAMP:" + nowUtc,
       "DTSTART:" + stamp(start),
       "DTEND:" + stamp(end),
