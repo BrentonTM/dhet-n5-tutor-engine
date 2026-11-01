@@ -759,6 +759,55 @@ def extract_text_from_local_files(folder_path):
 
     return "\n\n".join(extracted_notes)
 
+
+def select_course_material(material_text, subject_code, target_topic, limit=6000):
+    """Select only local reference files that clearly match the active course."""
+    if not material_text:
+        return ""
+    course_terms = {
+        "MATH-N5": ("mathematics n5", "math-n5", "mathematics"),
+        "IE-N5": ("industrial electronics", "ie-n5"),
+        "INST-N5": ("industrial instruments", "instrumentation", "inst-n5"),
+        "DIGI-N4": ("digital electronics", "digital-n4", "digi-n4"),
+        "DIGI-N5": ("digital electronics", "digital-n5", "digi-n5"),
+    }.get(subject_code, (subject_code.casefold(),))
+    topic_terms = [
+        word.casefold() for word in re.findall(r"[A-Za-z0-9]{3,}", str(target_topic))
+    ]
+    source_pattern = re.compile(
+        r"(?ms)^--- SOURCE FILE: ([^\n]+) ---\n(.*?)(?=^--- SOURCE FILE: |$)"
+    )
+    candidates = []
+    for source_path, source_text in source_pattern.findall(material_text):
+        path_key = source_path.casefold().replace("_", " ").replace("-", " ")
+        body_key = source_text.casefold()
+        is_map = "reference alignment map" in path_key
+        if subject_code == "DIGI-N4" and re.search(r"\bn5\b", path_key) and not is_map:
+            continue
+        if subject_code == "DIGI-N5" and re.search(r"\bn4\b", path_key) and not is_map:
+            continue
+        path_match = any(term in path_key for term in course_terms)
+        body_match = any(term in body_key for term in course_terms)
+        if not (path_match or body_match or (is_map and subject_code.startswith("DIGI-"))):
+            continue
+        topic_hits = sum(body_key.count(term) for term in dict.fromkeys(topic_terms))
+        score = (8 if path_match else 3) + (4 if is_map else 0) + min(topic_hits, 12)
+        candidates.append((score, source_path, source_text))
+    candidates.sort(key=lambda item: (-item[0], item[1].casefold()))
+
+    selected = []
+    remaining = limit
+    for _, source_path, source_text in candidates[:4]:
+        header = f"--- SOURCE FILE: {source_path} ---\n"
+        available = remaining - len(header)
+        if available <= 0:
+            break
+        excerpt = source_text[:available]
+        selected.append(header + excerpt)
+        remaining -= len(header) + len(excerpt) + 2
+    return "\n\n".join(selected)
+
+
 # OmniRoute query helpers (models are served through the OpenAI-compatible endpoint)
 # Resilient GenAI call helper with automatic retry and fallback
 def _call_omniroute(prompt):
@@ -1872,14 +1921,13 @@ with tab_tutor:
         target_topic = custom_query.strip() if custom_query.strip() else selected_module
         if st.button("📖 Generate Lesson & Explanation"):
             local_material = extract_text_from_local_files(os.path.join(BASE_DIR, "Learning material"))
-            material_context = local_material[:2000]
-            if active_subject in {"DIGI-N4", "DIGI-N5"}:
-                alignment_map = re.search(
-                    r"(?ms)^--- SOURCE FILE: [^\n]*REFERENCE ALIGNMENT MAP\.md ---\n(.*?)(?=^--- SOURCE FILE: |\Z)",
-                    local_material,
+            material_context = select_course_material(local_material, active_subject, target_topic)
+            if not material_context:
+                material_context = (
+                    "No local reference file clearly matched this selected subject and topic. "
+                    "Give a general explanation, label it as general guidance, and do not claim "
+                    "that it is verified against the official course syllabus."
                 )
-                if alignment_map:
-                    material_context = alignment_map.group(0)[:8000]
 
             lesson_minutes = focus_minutes - quiz_minutes
             prompt = (
@@ -1887,7 +1935,8 @@ with tab_tutor:
                 f"Structure it for about {lesson_minutes} minutes of study, with 3–4 short sections, "
                 "a plain-language explanation, one worked engineering example, one brief learner try-it prompt, "
                 "and a short recap. Keep each section easy to finish before moving on. Avoid a textbook-length dump "
-                "and do not use inline ASCII box diagrams. Use this course material where relevant:\n"
+                "and do not use inline ASCII box diagrams. Use only the selected course source below where relevant. "
+                "Distinguish sourced facts from general explanation and never claim an official syllabus match unless the source states it.\n"
                 f"{material_context}"
             )
             with st.spinner(f"Building a focused lesson and topic check for '{target_topic}'..."):
