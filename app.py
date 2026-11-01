@@ -641,6 +641,7 @@ def render_home_slideshow(subject_code, subject_name, height=262):
     components.html(slide_html.replace("__SLIDES_JSON__", slide_data), height=height, scrolling=False)
 
 # Universal Topic Diagram Engine
+@st.cache_data(show_spinner=False, max_entries=64)
 def render_topic_diagram(topic_name):
     if not plt or not patches:
         st.info("💡 Install Matplotlib (`python -m pip install matplotlib`) to render dynamic vector diagrams.")
@@ -2049,21 +2050,21 @@ with tab_tutor:
                 "and use retrieval without notes when accuracy is good but the learner reports uncertainty. "
                 "Do not label the learner with a fixed learning style or imply a diagnosis. "
                 "Include a plain-language explanation, one worked engineering example, one brief learner try-it prompt, "
-                "and a short recap. Keep each section easy to finish before moving on. Avoid a textbook-length dump "
+                "and a short recap. Aim for roughly 350–500 words; prioritize the worked example over a long introduction. "
+                "Keep each section easy to finish before moving on. Avoid a textbook-length dump "
                 "and do not use inline ASCII box diagrams. Use only the selected course source below where relevant. "
                 "Distinguish sourced facts from general explanation and never claim an official syllabus match unless the source states it.\n"
                 f"{material_context}"
             )
-            with st.spinner(f"Building a focused lesson and topic check for '{target_topic}'..."):
+            with st.spinner(f"Writing a focused lesson on '{target_topic}'..."):
                 notes, err = cached_query_gemini(prompt, active_subject)
                 if notes:
-                    quiz, quiz_err = request_topic_quiz(active_subject, target_topic, notes)
                     st.session_state["active_topic_lesson"] = {
                         "subject": active_subject,
                         "topic": target_topic,
                         "notes": notes,
-                        "quiz": quiz,
-                        "quiz_error": quiz_err,
+                        "quiz": None,
+                        "quiz_error": None,
                     }
                 else:
                     st.session_state["active_topic_lesson"] = {
@@ -2087,7 +2088,7 @@ with tab_tutor:
                     render_topic_quiz(lesson_state["quiz"], active_subject, target_topic)
                 else:
                     st.markdown("### 🧠 Quick topic check")
-                    st.info("Your lesson is ready. The quiz needs one more generation step before it can be checked.")
+                    st.info("Your lesson is open. Generate the optional topic quiz whenever you're ready.")
                     quiz_button_id = re.sub(r"[^A-Za-z0-9]+", "_", target_topic)[:40]
                     if st.button("Generate this topic's quiz", key=f"generate_topic_quiz_{active_subject}_{quiz_button_id}"):
                         with st.spinner("Creating five gentle questions from this lesson..."):
