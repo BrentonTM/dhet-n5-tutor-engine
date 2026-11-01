@@ -1,7 +1,9 @@
 import logging
+import json
 import os
 import re
 import sqlite3
+import sys
 import time
 import unicodedata
 
@@ -34,6 +36,8 @@ st.set_page_config(
 
 # Base path configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 DATABASE_DIR = os.path.join(BASE_DIR, "data", "databases")
 os.makedirs(DATABASE_DIR, exist_ok=True)
 def render_exam_question_card(question_num: str, title: str, question_text: str, has_diagram: bool = False, given_data: list = None):
@@ -120,7 +124,7 @@ def clean_exam_text(text: str) -> str:
     return cleaned.strip()
 def render_ai_tutor_chat():
     st.subheader("🤖 Trentox AI Socratic Tutor")
-    st.markdown("Ask questions about Power Electronics N5, past exam problems, or circuit theory.")
+    st.markdown("Ask about the selected subject, its topics, or an exam question.")
 
     if "tutor_chat" not in st.session_state:
         st.session_state.tutor_chat = []
@@ -224,13 +228,13 @@ client = build_omniroute_client()
 
 # --- Stable Sidebar Navigation ---
 with st.sidebar:
-    st.title("⚡ Trentox N5 Tutor")
+    st.title("⚡ Trentox Tutor AI")
     st.markdown("---")
     
     st.caption("Use the tabs at the top of the page to navigate.")
     
     st.markdown("---")
-    st.caption("DHET N5 Power Electronics Engine")
+    st.caption("Engineering Studies tutor")
 # Configure Matplotlib for headless Streamlit rendering
 try:
     import matplotlib
@@ -627,32 +631,40 @@ def query_gemini_with_fallback(prompt):
 
 SUBJECT_MODULES = {
     "INST-N5": [
-        "Flow Measurement (Orifice, Venturi, Weirs, Bernoulli's Equation)",
-        "Pressure Measurement (Bourdon Tube, Strain Gauges, Differential Pressure)",
-        "Temperature Measurement (RTDs, Thermocouples, Pyrometers)",
-        "Level Measurement & Chemical Instrumentation (pH, pOH)",
-        "Control Systems & PID Controllers (P, PI, PID tuning)"
+        "General Instrumentation Concepts and Terminology",
+        "Flow Measurement",
+        "Density, Humidity and Viscosity Measurement",
+        "pH and Conductivity Measurement",
+        "Automatic Control"
     ],
     "MATH-N5": [
-        "Trigonometric Identities & Binomial Theorem",
-        "Differential Calculus & Rules (Product, Quotient, Chain Rule)",
-        "Integral Calculus & Standard Integration Formulas",
-        "Applications of Integration (Areas, Volumes, Second Moment of Area)",
-        "Moment of Inertia & Differential Equations"
+        "Limits and continuity",
+        "Differentiation",
+        "Applications of differentiation",
+        "Integration techniques",
+        "The definite integral",
+        "Areas and volumes",
+        "Second moment of area and moment of inertia",
+        "Differential equations"
     ],
     "IE-N5": [
-        "Operational Amplifiers (Inverting, Non-Inverting, Summing)",
-        "Power Control & Thyristors (SCRs, TRIACs, DIACs)",
-        "Transducers & Signal Conditioning",
-        "Integrated Circuits & Timer ICs (555 Timer Applications)",
-        "Closed-Loop & Open-Loop Control Systems"
+        "Alternating Current Theory",
+        "Power Supplies",
+        "Amplifiers",
+        "Integrated Circuits and Transducers",
+        "Electronic Phase Control",
+        "Measuring Instruments",
+        "Oscillators",
+        "Liquid Crystal Display"
     ],
     "DIGI-N4": [
-        "Number Systems & Binary Codes (Hex, Octal, BCD)",
-        "Logic Gates & Boolean Algebra",
-        "Karnaugh Maps (K-Maps) & Simplification",
-        "Combinational Logic (Encoders, Decoders, Multiplexers)",
-        "Sequential Logic (SR, JK, D Flip-Flops)"
+        "Number Systems and Codes",
+        "Logic Gates and Boolean Algebra",
+        "Logic-Device Characteristics",
+        "Combinational Circuits",
+        "Flip-Flops and Latches",
+        "Counters and Shift Registers",
+        "A/D and D/A Conversion"
     ],
     "DIGI-N5": [
         "Counters & Shift Registers (Asynchronous, Synchronous)",
@@ -673,29 +685,106 @@ FLASHCARDS_DATA = {
             "q": "What is the standard formula for pH?",
             "a": r"$$\text{pH} = -\log[H+]$$"
         },
+    ],
+    "MATH-N5": [
         {
             "q": "State the product rule for differentiation.",
-            "a": r"$$\frac{dy}{dx} = u \frac{dv}{dx} + v \frac{du}{dx}$$"
+            "a": r"$$\frac{d}{dx}(uv) = u\frac{dv}{dx} + v\frac{du}{dx}$$"
         },
         {
-            "q": "What is the formula for volume of revolution around the x-axis?",
+            "q": "What is the guide-stated examination weighting for Integration techniques?",
+            "a": "24% in the official DHET Mathematics N5 syllabus (module 4: Integration techniques)."
+        },
+        {
+            "q": "Name four techniques listed in the Integration techniques module.",
+            "a": "Integration by inspection, algebraic substitution, integration of trigonometric functions, integration of algebraic fractions, partial fractions, and integration by parts are listed in the lecturer guide."
+        },
+        {
+            "q": "What formula is used for the volume generated by rotating a function y about the x-axis?",
             "a": r"$$V_x = \pi \int_{a}^{b} y^2 \, dx$$"
+        },
+        {
+            "q": "Which three topics are listed in the Differential equations module?",
+            "a": "Distinguishing first-order from second-order equations, first-order differential equations, and second-order differential equations."
         }
     ]
 }
 # App Header
 st.title("⚡ Trentox Tutor AI")
-st.caption("Industrial Engineering Mastery Engine | Instrumentation N5 | Mathematics N5 | Industrial Electronics N5 | Digital Electronics N4/N5")
+st.caption("Report 191 Engineering Studies tutor | Choose a programme, N-level and subject")
 
 # Render 3D Hero Banner Scene
 render_3d_scene("hero_scene.html", height=180)
 
 # Sidebar navigation & Categorized Formula Reference Expander
 st.sidebar.header("Navigation & Settings")
-active_subject = st.sidebar.selectbox(
-    "Select Active Subject:",
-    ["INST-N5", "MATH-N5", "IE-N5", "DIGI-N4", "DIGI-N5"]
+catalog_path = os.path.join(BASE_DIR, "config", "programme_catalog.json")
+try:
+    with open(catalog_path, "r", encoding="utf-8") as catalog_file:
+        programme_catalog = json.load(catalog_file)
+except (OSError, json.JSONDecodeError) as exc:
+    st.error(f"The programme catalogue could not be loaded: {exc}")
+    st.stop()
+
+integrated_subject_codes = {
+    ("mathematics", "N5"): "MATH-N5",
+    ("industrial_electronics", "N5"): "IE-N5",
+    ("digital_electronics", "N4"): "DIGI-N4",
+    ("industrial_instruments", "N5"): "INST-N5",
+}
+programme_by_name = {
+    item["programme_name"]: item for item in programme_catalog["programmes"]
+}
+selected_programme_name = st.sidebar.selectbox(
+    "Programme:",
+    list(programme_by_name),
 )
+selected_programme = programme_by_name[selected_programme_name]
+selected_level = st.sidebar.selectbox(
+    "N-level:",
+    programme_catalog["n_levels"],
+    index=programme_catalog["n_levels"].index("N5"),
+)
+
+subject_choices = []
+subject_by_label = {}
+for subject in selected_programme["subjects"]:
+    subject_code = integrated_subject_codes.get((subject["subject_id"], selected_level))
+    state_label = "map available" if subject_code else "planned"
+    label = f"{subject['subject_name']} — {state_label}"
+    subject_choices.append(label)
+    subject_by_label[label] = (subject, subject_code)
+
+preferred_subject_id = (
+    "industrial_instruments"
+    if selected_programme["programme_id"] == "electrical_instrumentation" and selected_level == "N5"
+    else None
+)
+default_subject_index = next(
+    (
+        index
+        for index, label in enumerate(subject_choices)
+        if subject_by_label[label][0]["subject_id"] == preferred_subject_id
+    ),
+    0,
+)
+selected_subject_label = st.sidebar.selectbox(
+    "Subject:",
+    subject_choices,
+    index=default_subject_index,
+)
+selected_subject, active_subject = subject_by_label[selected_subject_label]
+if not active_subject:
+    st.info(
+        f"{selected_subject['subject_name']} {selected_level} is in the programme catalogue, "
+        "but its curriculum map has not been integrated yet. The roadmap tracks the source review and build work."
+    )
+    st.stop()
+
+if selected_programme["programme_id"] != "electrical_instrumentation":
+    st.sidebar.caption(
+        "A subject map is available by title and level. Confirm this programme's subject code and syllabus version before marking its route verified."
+    )
 
 # Sidebar Font Size & Display Adjuster
 st.sidebar.markdown("---")
@@ -918,7 +1007,7 @@ def load_mastery_data(subject, db_path):
     try:
         with sqlite3.connect(db_path) as conn:
             return conn.execute(
-                "SELECT topic_name, mastery_percentage FROM mastery_scores WHERE subject_code = ?",
+                "SELECT topic_name, mastery_score FROM topic_mastery WHERE subject_code = ?",
                 (subject,)
             ).fetchall()
     except sqlite3.OperationalError:
@@ -1155,15 +1244,24 @@ with tab_exam:
 
 # TAB 4: AI Tutor Notes, Simulators & Spaced-Repetition Flashcards
 with tab_tutor:
-    sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5 = st.tabs([
+    sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5, sub_tab6 = st.tabs([
         "📖 Module Lessons & Notes",
         "🧠 Spaced-Repetition Cards",
         "🎛 Live Parameter Simulators",
         "📅 14-Day Timetable",
-        "💬 Ask the Tutor"
-    ])
+        "💬 Ask the Tutor",
+        "🧊 Interactive 3D Lab",
+    ], on_change="rerun")
     
     with sub_tab1:
+        if active_subject == "MATH-N5":
+            st.caption("The eight module names and weights match the official DHET N5 syllabus. Detailed topic lists are transcribed from the Future Managers Lecturer Guide and await a full cross-check.")
+        elif active_subject == "INST-N5":
+            st.caption("These study groups are based on readable question papers. The detailed DHET syllabus and official weighting are not yet available.")
+        elif active_subject == "IE-N5":
+            st.caption("Topics and module weightings follow the verified DHET Industrial Electronics N5 syllabus.")
+        elif active_subject == "DIGI-N4":
+            st.caption("This is your confirmed N4 study scope: K-maps included; Memory Systems excluded. Module weights are not official.")
         modules = SUBJECT_MODULES.get(active_subject, ["General Module Overview"])
         selected_module = st.selectbox("Select Topic:", modules)
         custom_query = st.text_input("Or enter specific concept/formula:", placeholder="e.g., Op-amp summing amplifier derivation")
@@ -1187,27 +1285,30 @@ with tab_tutor:
 
     with sub_tab2:
         st.markdown("### 🧠 Active Recall Flashcard Deck")
-        cards = FLASHCARDS_DATA.get(active_subject, FLASHCARDS_DATA["INST-N5"])
-        if "card_idx" not in st.session_state:
-            st.session_state.card_idx = 0
-            st.session_state.show_answer = False
-            
-        current_card = cards[st.session_state.card_idx % len(cards)]
-        st.info(f"**Flashcard {st.session_state.card_idx % len(cards) + 1} of {len(cards)}**\n\n### ❓ Question:\n{current_card['q']}")
-        
-        if st.button("👁️ Flip Card / Reveal Answer"):
-            st.session_state.show_answer = not st.session_state.show_answer
-            
-        if st.session_state.show_answer:
-            st.success(f"**💡 Official Solution / Definition:**\n\n{current_card}")
-            col_a, col_b = st.columns(2)
-            if col_a.button("✅ Got It Right (+1 Score)"):
-                st.session_state.card_idx += 1
+        cards = FLASHCARDS_DATA.get(active_subject, [])
+        if not cards:
+            st.info("Flashcards for this subject have not been integrated yet.")
+        else:
+            if "card_idx" not in st.session_state:
+                st.session_state.card_idx = 0
                 st.session_state.show_answer = False
-                st.rerun()
-            if col_b.button("❌ Need Review"):
-                st.session_state.show_answer = False
-                st.warning("Flagged for review!")
+
+            current_card = cards[st.session_state.card_idx % len(cards)]
+            st.info(f"**Flashcard {st.session_state.card_idx % len(cards) + 1} of {len(cards)}**\n\n### ❓ Question:\n{current_card['q']}")
+
+            if st.button("👁️ Flip Card / Reveal Answer"):
+                st.session_state.show_answer = not st.session_state.show_answer
+
+            if st.session_state.show_answer:
+                st.success(f"**💡 Answer:**\n\n{current_card['a']}")
+                col_a, col_b = st.columns(2)
+                if col_a.button("✅ Got It Right (+1 Score)"):
+                    st.session_state.card_idx += 1
+                    st.session_state.show_answer = False
+                    st.rerun()
+                if col_b.button("❌ Need Review"):
+                    st.session_state.show_answer = False
+                    st.warning("Flagged for review!")
 
     with sub_tab3:
         st.markdown("### 🎛 Interactive Parameter Simulation Sandbox")
@@ -1266,6 +1367,78 @@ with tab_tutor:
 
     with sub_tab5:
         render_ai_tutor_chat()
+
+    with sub_tab6:
+        if sub_tab6.open:
+            st.markdown("### 🧊 Interactive 3D engineering lab")
+            st.caption("Drag to rotate · scroll to zoom · hover a component for its label and explanation · use the in-scene controls or click input switches.")
+
+            from ui.diagram_engine import render_diagram3d
+            from ui.diagram_registry import get_spec, title_of
+
+            lab_profiles = {
+                "Mathematics N5": ["derivative", "riemann", "revolve", "second_moment", "ode_decay", "unit_circle", "pascal"],
+                "Digital Electronics N4": ["logic_gate_board", "kmap4", "full_adder_3d"],
+                "Digital Electronics N5 — visualization preview": ["weighted_dac_3d", "flash_adc_3d"],
+                "Industrial Electronics N5": ["phasor", "rc_response", "bridge_rectifier_3d", "rectifier", "bjt_structure", "load_line", "opamp_inv", "opamp_noninv", "timer555", "wheatstone", "lvdt", "scr_structure", "scr_waveform", "cro", "lc_tank", "lcd_cell"],
+                "Industrial Instruments N5": ["rotameter", "venturi", "orifice", "weir", "target_flow", "manometer", "bourdon", "strain_gauge", "rtd_tc", "tank_level", "ph_probe", "pid_loop", "step_response"],
+            }
+            lab_default_by_code = {
+                "MATH-N5": "Mathematics N5",
+                "DIGI-N4": "Digital Electronics N4",
+                "IE-N5": "Industrial Electronics N5",
+                "INST-N5": "Industrial Instruments N5",
+            }
+            lab_subjects = list(lab_profiles)
+            preferred_lab_subject = lab_default_by_code.get(active_subject, "Digital Electronics N5 — visualization preview")
+            lab_subject = st.selectbox(
+                "Lab subject:",
+                lab_subjects,
+                index=lab_subjects.index(preferred_lab_subject),
+                key="interactive_3d_lab_subject",
+            )
+
+            if lab_subject == "Digital Electronics N5 — visualization preview":
+                st.warning("This DAC scene is an interactive study aid. The standalone Digital Electronics N5 curriculum map still needs authoritative syllabus verification.")
+            elif lab_subject == "Digital Electronics N4":
+                st.caption("N4 lab scope includes logic gates, full adders and K-maps. Memory Systems are excluded from your confirmed N4 scope.")
+
+            diagram_ids = lab_profiles[lab_subject]
+            diagram_id = st.selectbox(
+                "Interactive model:",
+                diagram_ids,
+                format_func=title_of,
+                key=f"interactive_3d_lab_diagram_{lab_subject}",
+            )
+            lab_challenges = {
+                "rotameter": "Predict where the float will sit. Raise flow, then change specific gravity while holding flow steady. Explain why the water-calibrated indication shifts.",
+                "logic_gate_board": "Try A/B = 00, 01, 10 and 11. Record AND, OR, XOR and NAND; explain why XOR differs from OR.",
+                "kmap4": "Set four edge-adjacent minterms to 1. Identify the largest valid group, including wraparound adjacency.",
+                "full_adder_3d": "Set A = 1, B = 1 and Cin = 1. Predict SUM and CARRY before toggling the inputs.",
+                "weighted_dac_3d": "Set D3D2D1D0 = 1010. Calculate Vout from the resistor weights, then compare with the readout.",
+                "flash_adc_3d": "Move Vin just below and above a comparator threshold. Observe the thermometer count, binary code and quantization error.",
+                "derivative": "Keep the point fixed and reduce h. Compare the secant slope with the exact tangent slope.",
+                "riemann": "Increase the number of strips. Observe how the sum approaches the area under the curve.",
+                "opamp_inv": "Double Rf while keeping R1 and Vin fixed. Predict the gain and check whether the output clips.",
+                "opamp_noninv": "Change Rf and R1. Relate the measured gain to 1 + Rf/R1.",
+                "rectifier": "Compare half-wave and full-wave output, then increase the filter size and observe ripple.",
+                "bridge_rectifier_3d": "Move phase through both half-cycles and identify the conducting diode pair. Then change C and RLoad; predict the ripple change.",
+                "scr_structure": "Apply forward anode voltage with the gate off, then trigger the gate. Describe the state change.",
+                "scr_waveform": "Increase firing angle α. Predict how the conduction angle and average output change.",
+                "venturi": "Increase inlet velocity. Compare throat velocity with the change in differential pressure.",
+                "bourdon": "Increase pressure and follow the tube tip, linkage and pointer response.",
+                "rtd_tc": "Change process temperature. Compare how the RTD resistance and thermocouple EMF are represented.",
+                "pid_loop": "Change the error and controller gains. Observe how P, I and D terms contribute to the control-valve output.",
+            }
+            st.info("**Try this:** " + lab_challenges.get(
+                diagram_id,
+                "Rotate the model, hover each labelled part, then change one control at a time and explain the updated readouts.",
+            ))
+            diagram_spec = get_spec(diagram_id)
+            if diagram_spec:
+                render_diagram3d(diagram_spec, height=680)
+            else:
+                st.error("This model could not be loaded. Check the diagram registry and its source module.")
 
 # TAB 5: Formula & Reference Hub
 with tab_formulas:
