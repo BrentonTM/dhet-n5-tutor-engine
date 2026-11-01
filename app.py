@@ -318,6 +318,133 @@ def render_3d_scene(scene_file, height=200):
         fallback_html = f'<div style="color: #22D3EE; font-family: monospace; text-align: center; padding: 20px;">[3D Scene Canvas Placeholder: {scene_file}]</div>'
         components.html(fallback_html, height=height, scrolling=False)
 
+
+def render_home_slideshow(subject_code, subject_name, height=262):
+    """Show rotating course-aware reminders beside the live engineering model."""
+    formula_cards = {
+        "MATH-N5": {
+            "title": "Power rule for differentiation",
+            "formula": "d(xⁿ) / dx = n xⁿ⁻¹",
+            "terms": [("n", "power"), ("x", "variable"), ("n−1", "new power")],
+            "note": "Multiply by the power, then reduce the power by one.",
+        },
+        "DIGI-N4": {
+            "title": "XOR as a Boolean expression",
+            "formula": "Y = A′B + AB′",
+            "terms": [("′", "NOT"), ("·", "AND"), ("+", "OR")],
+            "note": "Use K-map groups of powers of two; opposite edges are adjacent.",
+        },
+        "IE-N5": {
+            "title": "Inverting amplifier gain",
+            "formula": "Aᵥ = −Rᶠ / R₁",
+            "terms": [("Rᶠ", "feedback"), ("R₁", "input"), ("−", "inverting")],
+            "note": "The minus sign shows a 180° phase reversal.",
+        },
+        "INST-N5": {
+            "title": "Differential-pressure flow relation",
+            "formula": "Q = CᵈA₂ √[2ΔP / ρ(1−β⁴)]",
+            "terms": [("Cᵈ", "discharge coefficient"), ("A₂", "throat area"), ("ΔP", "pressure difference"), ("ρ", "density"), ("β", "diameter ratio")],
+            "note": "Check consistent units and state what each measured quantity represents.",
+        },
+    }
+    concept_cards = {
+        "MATH-N5": {
+            "eyebrow": "COURSE CONCEPT · MATHEMATICS N5",
+            "title": "See the derivative as a slope",
+            "copy": "A tangent shows the instantaneous gradient of a curve at one point.",
+            "highlight": "Compare a secant slope with the tangent as h approaches zero.",
+            "visual": "slope",
+        },
+        "DIGI-N4": {
+            "eyebrow": "COURSE CONCEPT · DIGITAL ELECTRONICS N4",
+            "title": "Group K-map neighbours",
+            "copy": "Place 1s in Gray-code order, then form the largest valid groups.",
+            "highlight": "Groups may wrap across an edge; only powers of two are valid.",
+            "visual": "kmap",
+        },
+        "IE-N5": {
+            "eyebrow": "COURSE CONCEPT · INDUSTRIAL ELECTRONICS N5",
+            "title": "Follow the rectifier current path",
+            "copy": "Trace which diode pair conducts in each half-cycle before calculating the output.",
+            "highlight": "A larger filter capacitor reduces ripple for the same load and frequency.",
+            "visual": "rectifier",
+        },
+        "INST-N5": {
+            "eyebrow": "COURSE CONCEPT · INDUSTRIAL INSTRUMENTS N5",
+            "title": "Watch the rotameter float rise",
+            "copy": "Increasing flow lifts the float in the tapered tube until the forces balance.",
+            "highlight": "Read the float at eye level and identify the instrument's calibration fluid.",
+            "visual": "rotameter",
+        },
+    }
+    formula = formula_cards.get(subject_code, {
+        "title": "Binary-weight reminder",
+        "formula": "8 : 4 : 2 : 1",
+        "terms": [("D₃", "8s weight"), ("D₂", "4s weight"), ("D₁", "2s weight"), ("D₀", "1s weight")],
+        "note": "Add the active bit weights before converting to the analogue output.",
+    })
+    concept = concept_cards.get(subject_code, {
+        "eyebrow": f"COURSE CONCEPT · {subject_name.upper()}",
+        "title": "Inspect the system before solving",
+        "copy": "Identify the inputs, the process and the output before choosing an equation.",
+        "highlight": "Sketch the signal or energy path and label each quantity.",
+        "visual": "rectifier",
+    })
+    slides = [
+        {
+            "eyebrow": "EXAM TIP · METHOD",
+            "title": "Make every mark count",
+            "copy": "Underline the command word, scan the mark value, and show the steps that earn method marks.",
+            "highlight": "Budget time from the paper's time allowance and marks.",
+            "visual": "dial",
+            "course": subject_name,
+        },
+        {
+            "eyebrow": "FORMULA FLASH · QUICK RECALL",
+            "title": formula["title"],
+            "copy": formula["note"],
+            "highlight": "Say each symbol and unit aloud before substituting values.",
+            "visual": "formula",
+            "formula": formula["formula"],
+            "terms": formula["terms"],
+            "course": subject_name,
+        },
+        {
+            "eyebrow": "STUDY METHOD · ACTIVE RECALL",
+            "title": "Retrieve first. Check second.",
+            "copy": "Close your notes, explain the idea from memory, then compare your answer with a worked example.",
+            "highlight": "Revisit mistakes after a break and again the next day.",
+            "visual": "study",
+            "course": subject_name,
+        },
+        {**concept, "course": subject_name},
+        {
+            "eyebrow": "ENGINEERING SPOTLIGHT · TURBINE",
+            "title": "From fluid flow to rotation",
+            "copy": "A turbine redirects moving fluid through shaped blades to produce shaft rotation.",
+            "highlight": "Look for the energy input, the rotor and the useful output.",
+            "visual": "turbine",
+            "course": subject_name,
+        },
+        {
+            "eyebrow": "ENGINEERING SPOTLIGHT · GEAR TRAIN",
+            "title": "Trade speed for torque",
+            "copy": "A gear pair transfers rotation; the tooth-count ratio links output speed to output torque.",
+            "highlight": "Count teeth before deciding which shaft turns faster.",
+            "visual": "gears",
+            "course": subject_name,
+        },
+    ]
+    scene_path = os.path.join(BASE_DIR, "ui", "scenes", "home_slideshow.html")
+    try:
+        with open(scene_path, "r", encoding="utf-8") as slide_file:
+            slide_html = slide_file.read()
+    except OSError:
+        st.info("Quick reminders are temporarily unavailable.")
+        return
+    slide_data = json.dumps(slides, ensure_ascii=False).replace("</", "<\\/")
+    components.html(slide_html.replace("__SLIDES_JSON__", slide_data), height=height, scrolling=False)
+
 # Universal Topic Diagram Engine
 def render_topic_diagram(topic_name):
     if not plt or not patches:
@@ -656,26 +783,26 @@ FLASHCARDS_DATA = {
         }
     ]
 }
-# Home page hero
-hero_copy, hero_visual = st.columns([1.25, 0.75], gap="large")
-with hero_copy:
-    st.markdown('<div class="tx-eyebrow">ENGINEERING STUDIES  ·  DHET REPORT 191</div>', unsafe_allow_html=True)
-    st.title("Engineering, made interactive.")
-    st.markdown(
-        "Learn the theory, test your understanding, and explore how real engineering systems behave. "
-        "Your lessons, practice and simulations follow the course selected in the study path."
-    )
-    st.markdown(
-        '<div class="tx-hero-chip-row">'
-        '<span class="tx-chip"><span class="tx-chip-dot"></span>Course-aware learning</span>'
-        '<span class="tx-chip">3D engineering lab</span>'
-        '<span class="tx-chip">Exam practice</span>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-with hero_visual:
-    st.markdown('<div class="tx-visual-label">Live engineering model · drag to inspect</div>', unsafe_allow_html=True)
-    render_3d_scene("hero_scene.html", height=220)
+# Home page brand and quick orientation
+st.markdown('<div class="tx-eyebrow">ENGINEERING STUDIES  ·  DHET REPORT 191</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="tx-brand-title" role="heading" aria-level="1"><span>Trentox</span> <strong>Tutor AI</strong></div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<p class="tx-brand-subtitle">A hands-on engineering study workspace: build understanding, explore real systems, '
+    'and prepare for your exams.</p>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="tx-hero-chip-row">'
+    '<span class="tx-chip"><span class="tx-chip-dot"></span>Course-aware learning</span>'
+    '<span class="tx-chip">3D engineering lab</span>'
+    '<span class="tx-chip">Exam practice</span>'
+    '</div>',
+    unsafe_allow_html=True,
+)
+st.markdown('<div class="tx-gold-monogram" aria-hidden="true"><span>TX</span></div>', unsafe_allow_html=True)
 
 # Sidebar learning path and reference navigation
 st.sidebar.header("Study path")
@@ -754,6 +881,14 @@ st.markdown(
     '</div>',
     unsafe_allow_html=True,
 )
+
+model_column, reminder_column = st.columns([1, 1], gap="large")
+with model_column:
+    st.markdown('<div class="tx-visual-label">Live engineering model · drag to inspect</div>', unsafe_allow_html=True)
+    render_3d_scene("hero_scene.html", height=235)
+with reminder_column:
+    st.markdown('<div class="tx-visual-label">Engineering quick reminders · auto-rotating</div>', unsafe_allow_html=True)
+    render_home_slideshow(active_subject, selected_subject["subject_name"], height=262)
 
 if selected_programme["programme_id"] != "electrical_instrumentation":
     st.sidebar.caption(
