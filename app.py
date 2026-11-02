@@ -1,6 +1,7 @@
 import logging
 import json
 import html
+import importlib
 import os
 import re
 import sqlite3
@@ -55,6 +56,10 @@ from ui.learning_progress import (
 )
 from ui.device_guide import render_first_use_guide
 from ui.study_reminders import open_exam_calendar_workspace, render_study_reminders
+from ui import exam_questions as _exam_questions
+# A running Streamlit process can still hold the previous helper after a git update.
+if not hasattr(_exam_questions, "guidance_documents"):
+    _exam_questions = importlib.reload(_exam_questions)
 from ui.exam_questions import CONTENT_VERSION, guidance_documents, list_documents, original_pdf, question_pdf, select_questions
 from ui.gemini_client import configured_models, generate_reply
 

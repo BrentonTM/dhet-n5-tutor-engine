@@ -1,15 +1,19 @@
 import ast
+import importlib
 import hashlib
 import json
 import logging
 import random
 import sqlite3
+import sys
 import tempfile
 import unittest
 from io import BytesIO
 from pathlib import Path
-from types import SimpleNamespace
-from unittest.mock import Mock
+from types import ModuleType, SimpleNamespace
+from unittest.mock import Mock, patch
+
+import ui
 
 from pypdf import PdfReader
 from ui.exam_questions import guidance_documents, list_documents, original_pdf, question_pdf, select_questions
@@ -108,6 +112,28 @@ class SourceQuestionTests(unittest.TestCase):
         for question in self.questions:
             totals[question["document_id"]] = totals.get(question["document_id"], 0) + question["marks"]
         self.assertEqual(set(totals.values()), {100})
+
+    def test_app_imports_survive_a_cached_previous_helper(self):
+        current = sys.modules["ui.exam_questions"]
+        legacy = ModuleType("ui.exam_questions")
+        legacy.__spec__ = current.__spec__
+        legacy.CONTENT_VERSION = "source-papers-v1"
+        tree = ast.parse((ROOT / "app.py").read_text(encoding="utf-8"))
+        statements = []
+        for node in tree.body:
+            if isinstance(node, ast.ImportFrom) and node.module == "ui" and any(alias.asname == "_exam_questions" for alias in node.names):
+                statements.append(node)
+            elif isinstance(node, ast.If) and "_exam_questions" in ast.unparse(node.test):
+                statements.append(node)
+            elif isinstance(node, ast.ImportFrom) and node.module == "ui.exam_questions":
+                statements.append(node)
+        self.assertEqual(len(statements), 3)
+        namespace = {"importlib": importlib}
+        with patch.dict(sys.modules, {"ui.exam_questions": legacy}), patch.object(ui, "exam_questions", legacy):
+            exec(compile(ast.Module(body=statements, type_ignores=[]), "app.py", "exec"), namespace)
+            self.assertEqual(namespace["CONTENT_VERSION"], "all-subject-papers-and-memos-v2")
+            self.assertTrue(callable(namespace["guidance_documents"]))
+            self.assertTrue(callable(namespace["original_pdf"]))
 
     def test_legacy_import_placeholders_and_covers_are_not_questions(self):
         with tempfile.TemporaryDirectory(dir=ROOT / "tests") as tmp:
