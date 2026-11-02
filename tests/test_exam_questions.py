@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from pypdf import PdfReader
-from ui.exam_questions import question_pdf, select_questions
+from ui.exam_questions import guidance_documents, list_documents, original_pdf, question_pdf, select_questions
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -33,8 +33,8 @@ class SourceQuestionTests(unittest.TestCase):
         cls.questions = cls.index["questions"]
 
     def test_all_indexed_questions_have_original_pages_and_matching_source_digests(self):
-        self.assertEqual(len(self.questions), 72)
-        self.assertEqual(len({q["id"] for q in self.questions}), 72)
+        self.assertEqual(sum(q["subject"] == "DIGI-N4" for q in self.questions), 72)
+        self.assertEqual(len(self.questions), len({q["id"] for q in self.questions}))
         for question in self.questions:
             with self.subTest(question=question["id"]):
                 original = (ROOT / question["source_file"]).read_bytes()
@@ -53,10 +53,61 @@ class SourceQuestionTests(unittest.TestCase):
         self.assertEqual(binary["source_pages"], [6])
 
     def test_mock_sample_is_unique_and_never_crosses_subject_level(self):
-        selected = select_questions(ROOT, "DIGI-N4", 15, random.Random(6))
-        self.assertEqual(len(selected), 15)
-        self.assertEqual(len({q["id"] for q in selected}), 15)
-        self.assertEqual({q["subject"] for q in selected}, {"DIGI-N4"})
+        for subject in ("DIGI-N4", "IE-N5", "INST-N5", "MATH-N5"):
+            selected = select_questions(ROOT, subject, 15, random.Random(6))
+            self.assertEqual(len(selected), 15)
+            self.assertEqual(len({q["id"] for q in selected}), 15)
+            self.assertEqual({q["subject"] for q in selected}, {subject})
+
+    def test_every_original_paper_and_memo_is_preserved(self):
+        documents = self.index["documents"]
+        self.assertEqual(len(documents), 133)
+        self.assertEqual(len({d["id"] for d in documents}), 133)
+        for document in documents:
+            data = original_pdf(ROOT, document["source_file"])
+            self.assertEqual(hashlib.sha256(data).hexdigest(), document["source_sha256"])
+            self.assertEqual(len(PdfReader(BytesIO(data)).pages), len(document["source_pages"]))
+
+    def test_memos_match_exact_subject_and_printed_cover_date(self):
+        documents = {d["id"]: d for d in self.index["documents"]}
+        for question in self.questions:
+            if question.get("memo_id"):
+                memo = documents[question["memo_id"]]
+                self.assertEqual(memo["kind"], "memo")
+                self.assertEqual(question["subject"], memo["subject"])
+                self.assertEqual(question["exam_date"], memo["exam_date"])
+                self.assertEqual(len(memo["exam_date"]), 10)
+
+    def test_conflicting_august_2023_instruments_memo_is_not_auto_paired(self):
+        documents = list_documents(ROOT, "INST-N5")
+        paper = next(d for d in documents if d["kind"] == "paper" and d["exam_date"] == "2023-08-17")
+        self.assertNotIn("memo_id", paper)
+        self.assertTrue(any(d["kind"] == "memo" and d["exam_date"] == "2023-08-04" for d in documents))
+
+    def test_printed_date_overrides_misleading_filename(self):
+        paper = next(d for d in self.index["documents"] if d["original_filename"] == "T1030-MATHEMATICS-N5-APR-QP-2025.pdf")
+        self.assertEqual(paper["exam_date"], "2025-03-28")
+        self.assertIn("memo_id", paper)
+
+    def test_scans_remain_in_original_document_library(self):
+        paper = next(d for d in list_documents(ROOT, "MATH-N5") if d["kind"] == "paper" and d["exam_date"] == "2026-03-27")
+        self.assertFalse(paper["question_indexed"])
+        self.assertTrue(original_pdf(ROOT, paper["source_file"]).startswith(b"%PDF"))
+
+    def test_inconsistent_same_date_memo_is_kept_out_of_automatic_grading(self):
+        paper = next(d for d in list_documents(ROOT, "IE-N5") if d["kind"] == "paper" and d["exam_date"] == "2015-04-09")
+        self.assertNotIn("memo_id", paper)
+        self.assertEqual(paper["memo_total_conflicts"]["Q1"], [14, 16])
+        for question in self.questions:
+            if question["document_id"] == paper["id"]:
+                self.assertNotIn("memo_file", question)
+                self.assertIn("review", question["memo_status"])
+
+    def test_indexed_question_totals_match_each_complete_paper(self):
+        totals = {}
+        for question in self.questions:
+            totals[question["document_id"]] = totals.get(question["document_id"], 0) + question["marks"]
+        self.assertEqual(set(totals.values()), {100})
 
     def test_legacy_import_placeholders_and_covers_are_not_questions(self):
         with tempfile.TemporaryDirectory(dir=ROOT / "tests") as tmp:
@@ -95,6 +146,7 @@ class SourceQuestionTests(unittest.TestCase):
         question = self.questions[0]
         requests = []
         namespace = {
+            "guidance_documents": guidance_documents,
             "genai_types": SimpleNamespace(Part=SimpleNamespace(from_bytes=lambda **kwargs: kwargs)),
             "cached_question_pdf": lambda ident, source, pages: question_pdf(ROOT, {"source_file": source, "source_pages": pages}),
             "_call_gemini": lambda contents: requests.append(contents) or ("feedback", None),
@@ -103,7 +155,7 @@ class SourceQuestionTests(unittest.TestCase):
         self.assertEqual(reply, "feedback")
         self.assertIsNone(error)
         attachments = [part for part in requests[0] if isinstance(part, dict)]
-        self.assertEqual(len(attachments), 1)
+        self.assertEqual(len(attachments), 2)
         self.assertEqual(attachments[0]["mime_type"], "application/pdf")
         self.assertTrue(attachments[0]["data"].startswith(b"%PDF"))
         self.assertIn("original question pages", requests[0][0])

@@ -1,0 +1,208 @@
+{
+  "subjects": {
+    "DIGI-N4": {
+      "papers": 16,
+      "memos": 17,
+      "question_groups": 72,
+      "paired_papers": 14,
+      "library_only_papers": [
+        {
+          "document": "DIGI-N4 · 2023-08-16 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "DIGI-N4 · 2025-08-15 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "DIGI-N4 · 2025-12-09 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "DIGI-N4 · 2026-04-13 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        }
+      ]
+    },
+    "IE-N5": {
+      "papers": 18,
+      "memos": 17,
+      "question_groups": 98,
+      "paired_papers": 13,
+      "library_only_papers": [
+        {
+          "document": "IE-N5 · 2020-04-06 · paper",
+          "note": "Printed question totals add to 98; the paper states 100. Use the original paper and memo to review the discrepancy."
+        },
+        {
+          "document": "IE-N5 · 2023-08-04 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "IE-N5 · 2023-11-27 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "IE-N5 · 2026-03-31 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "IE-N5 · 2025-08-04 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "IE-N5 · 2026-08-03 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "IE-N5 · 2025-11-27 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        }
+      ]
+    },
+    "INST-N5": {
+      "papers": 17,
+      "memos": 17,
+      "question_groups": 56,
+      "paired_papers": 14,
+      "library_only_papers": [
+        {
+          "document": "INST-N5 · 2019-08-13 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "INST-N5 · 2023-08-17 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "INST-N5 · 2023-12-07 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "INST-N5 · 2026-04-10 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "INST-N5 · 2025-08-18 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "INST-N5 · 2026-08-18 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "INST-N5 · 2025-12-11 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        }
+      ]
+    },
+    "MATH-N5": {
+      "papers": 15,
+      "memos": 16,
+      "question_groups": 48,
+      "paired_papers": 12,
+      "library_only_papers": [
+        {
+          "document": "MATH-N5 · 2010-08-02 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "MATH-N5 · 2023-08-02 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "MATH-N5 · 2023-11-23 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "MATH-N5 · 2026-03-27 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "MATH-N5 · 2025-07-31 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "MATH-N5 · 2026-07-30 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        },
+        {
+          "document": "MATH-N5 · 2025-11-25 · paper",
+          "note": "Use the complete original paper here; a complete question sequence and mark totals could not be established automatically."
+        }
+      ]
+    }
+  },
+  "excluded": [
+    {
+      "filename": "N5 Industrial Electronics.pdf",
+      "reason": "Syllabus, not an exam paper"
+    }
+  ],
+  "unmatched_memos": [
+    "DIGI-N4 · 2019-08-07 · memo",
+    "DIGI-N4 · 2021-08 · memo",
+    "DIGI-N4 · 2026-08-17 · memo",
+    "IE-N5 · 2025-04-01 · memo",
+    "INST-N5 · 2021-04-22 · memo",
+    "INST-N5 · 2023-08-04 · memo",
+    "MATH-N5 · 2010-08 · memo",
+    "MATH-N5 · 2009-04 · memo"
+  ],
+  "memo_pairs_requiring_review": [
+    {
+      "paper": "IE-N5 · 2015-04-09 · paper",
+      "extracted_totals": {
+        "Q1": [
+          14,
+          16
+        ]
+      }
+    },
+    {
+      "paper": "IE-N5 · 2020-04-06 · paper",
+      "extracted_totals": {
+        "Q7": [
+          3,
+          5
+        ]
+      }
+    },
+    {
+      "paper": "IE-N5 · 2023-04-04 · paper",
+      "extracted_totals": {
+        "Q3": [
+          18,
+          16
+        ]
+      }
+    },
+    {
+      "paper": "INST-N5 · 2015-12-02 · paper",
+      "extracted_totals": {
+        "Q4": [
+          4,
+          10
+        ]
+      }
+    },
+    {
+      "paper": "MATH-N5 · 2016-04-04 · paper",
+      "extracted_totals": {
+        "Q4": [
+          22,
+          5
+        ]
+      }
+    },
+    {
+      "paper": "MATH-N5 · 2024-11-21 · paper",
+      "extracted_totals": {
+        "Q4": [
+          24,
+          15
+        ]
+      }
+    }
+  ]
+}

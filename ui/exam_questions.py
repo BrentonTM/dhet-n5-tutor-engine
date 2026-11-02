@@ -8,7 +8,33 @@ from contextlib import closing
 from io import BytesIO
 from pathlib import Path
 
-CONTENT_VERSION = "source-papers-v1"
+CONTENT_VERSION = "all-subject-papers-and-memos-v2"
+
+
+def list_documents(base_dir, subject_code):
+    path = Path(base_dir) / "data" / "past_papers" / "source_questions.json"
+    if not path.is_file():
+        return []
+    index = json.loads(path.read_text(encoding="utf-8"))
+    return sorted(
+        [document for document in index.get("documents", []) if document["subject"] == subject_code],
+        key=lambda document: (document["exam_date"], document["kind"] == "paper"), reverse=True,
+    )
+
+
+def guidance_documents(questions):
+    """Combine repeated source pages and keep original memos distinct from papers."""
+    grouped = {}
+    for question in questions:
+        for source_file, pages, label in [
+            (question.get("source_file"), question.get("source_pages", []) + question.get("reference_pages", []), question.get("source_label")),
+            (question.get("memo_file"), question.get("memo_pages", []), question.get("memo_label")),
+        ]:
+            if not source_file:
+                continue
+            group = grouped.setdefault(source_file, {"source_file": source_file, "source_pages": set(), "label": label})
+            group["source_pages"].update(pages)
+    return [dict(group, source_pages=sorted(group["source_pages"])) for group in grouped.values()]
 
 
 def question_pdf(base_dir, question):
@@ -28,6 +54,14 @@ def question_pdf(base_dir, question):
     output = BytesIO()
     writer.write(output)
     return output.getvalue()
+
+
+def original_pdf(base_dir, source_file):
+    root = Path(base_dir).resolve()
+    source = (root / source_file).resolve()
+    if not source.is_relative_to(root / "data" / "past_papers" / "sources"):
+        raise ValueError("Document source must be in the bundled paper library")
+    return source.read_bytes()
 
 
 def select_questions(base_dir, subject_code, limit=1, rng=None):

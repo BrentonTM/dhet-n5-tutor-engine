@@ -1,0 +1,284 @@
+{
+  "93ab4e070221e791abbd360501f850c432ddca504cab772321c68f6f8fea6935": {
+    "exam_date": "2023-08-16",
+    "subject": "DIGI-N4",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "03da203a00bf91c6389e2c1fbcafe41eea7612b74e28a286209f32bd342ddad6": {
+    "exam_date": "2023-08-16",
+    "subject": "DIGI-N4",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "36626ca208fc2d0429aa66aa270d99eb1573cf9a403323aae03316e46c1414b0": {
+    "exam_date": "2025-08-15",
+    "subject": "DIGI-N4",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "d66b2849c269ffc027a1c246a5c3de607c931aed463d3fa45c2b167fbb37736e": {
+    "exam_date": "2025-08-15",
+    "subject": "DIGI-N4",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "5144f76fed7a6da0586a6025b0f722784e0ceffe4a85bd03c8260fa3e9fb5733": {
+    "exam_date": "2026-04-13",
+    "subject": "DIGI-N4",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "50b85662e20b34cb9b5367524563d3f2a8e0aaf51d49b24035df85ba72fcf360": {
+    "exam_date": "2026-08-17",
+    "subject": "DIGI-N4",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "e411e2124705bc13ea73e6cbe11107696f0a36bd13aabd2585127718ca463f70": {
+    "exam_date": "2025-12-09",
+    "subject": "DIGI-N4",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "be8d424583334c4871c71c21e41b2ff4caf8ee036387ff1f0a274112e5286958": {
+    "exam_date": "2025-12-09",
+    "subject": "DIGI-N4",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "314fe0a47fc95ba84dd48d77776c8fc390852d211f51f904a3c94d6c6d230dda": {
+    "exam_date": "2026-04-13",
+    "subject": "DIGI-N4",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "7b15f4ceeb888adcd652dcace9c2fbe0f42efaee7b083222722573abb6ea40f2": {
+    "exam_date": "2023-08-04",
+    "subject": "IE-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "0e51ea7567e9711f9d6a857c133417c3cb74183dbbf49ba5655dac09ae7bfc48": {
+    "exam_date": "2023-11-27",
+    "subject": "IE-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "eed90cd5049b425fe38c08e02c38a2954d8591e674070887e5e8af89217cccee": {
+    "exam_date": "2023-08-04",
+    "subject": "IE-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "e9c4529e2c7ca914c73b4facbc326623136efd8f9c8ed5a30857135d6b764244": {
+    "exam_date": "2023-11-27",
+    "subject": "IE-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "96cf1946659fae5359ac30c875fae990700a337afc3873a3ef62894d11f166a5": {
+    "exam_date": "2026-03-31",
+    "subject": "IE-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "a2eb640ff4e79031fda725d16033fecd1098886673b26c24e5b61bd7a264ed74": {
+    "exam_date": "2025-08-04",
+    "subject": "IE-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "8c619ed131fc13762ea1bd5129bad02413eb8e82d3720da3eddba6c8fb81d9f6": {
+    "exam_date": "2025-11-27",
+    "subject": "IE-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "e8f4fe32fe6714f8a1164381ccb0a289ba95f64fca0e55fd9d472f3d4fd55229": {
+    "exam_date": "2026-03-31",
+    "subject": "IE-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "a69c662eae773ae943c8a62808d74e734585054b6cbde2c08df13e9c1e39a59c": {
+    "exam_date": "2025-08-04",
+    "subject": "IE-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "839fb87ba55dcc64dc56188980cc6e955f807f6ed81fca198109f21bb4398491": {
+    "exam_date": "2026-08-03",
+    "subject": "IE-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "bc6d38bb3cea2f14133d19418f6793b57cbb18c0b4262483fd4fa71969580d5a": {
+    "exam_date": "2025-11-27",
+    "subject": "IE-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "8062477c2f8e165f29530adf99f5297476fd0ac805968fa002ea076f0cab20c1": {
+    "exam_date": "2023-08-04",
+    "subject": "INST-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "23cd7b5b2bc4fe76a134c6c9c43f823a0f167d5dc552536ac0c7bdfa37eb5304": {
+    "exam_date": "2023-08-17",
+    "subject": "INST-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "6dfc43e559b00f959fd9951437df2030e7544c8a21f3825481632eee6437fb5e": {
+    "exam_date": "2023-12-07",
+    "subject": "INST-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "0524585acbdad9cc56bd0a860d7aefd5a6fa3ec5a6d25e795d048725a859bbec": {
+    "exam_date": "2023-12-07",
+    "subject": "INST-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "2692cf3ed4f1573bfe5875954c2a911fee31e4dbb073b1f10ceed84947b1e239": {
+    "exam_date": "2026-04-10",
+    "subject": "INST-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "516ef38260820f08b89bcd1f20f6b450b7361816c308b1fa69f0e97b525f8598": {
+    "exam_date": "2025-08-18",
+    "subject": "INST-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "032767437d8331f565056df324f3a6b02fc58b1bd3a8eccdba28a7c82d7e2fbc": {
+    "exam_date": "2026-08-18",
+    "subject": "INST-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "6e36f17a54a95d428e14d5b14509b30ec09201b935aa071e383b150f78342c5b": {
+    "exam_date": "2025-12-11",
+    "subject": "INST-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "759831fe56883cc9608f01d5e26f366606d15b9ceaf0911ecf689c37cdbe24d3": {
+    "exam_date": "2026-04-10",
+    "subject": "INST-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "45ae1538c5133ecf3aa7653fe84221e72e61198b86d1485b4a6ee90cbc632290": {
+    "exam_date": "2025-08-18",
+    "subject": "INST-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "32e190da32120bff86824f89cff05fc8058741bdde6203e5d8d0338f4d73f293": {
+    "exam_date": "2026-08-18",
+    "subject": "INST-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "1d6af814864d0ecef659e63da3a5d4ddec663ad7a0179569ba4b002ae34d229c": {
+    "exam_date": "2025-12-11",
+    "subject": "INST-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "d625b12a26e2a1b52776ccb002a41ea7279ff28f4e9561fb92bc2f0eba607fae": {
+    "exam_date": "2010-08",
+    "subject": "MATH-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "6d7f9312b6dfae524bd338d1e8dc432057842cce5e7f64db55bcd6e0b419db9e": {
+    "exam_date": "2010-08-02",
+    "subject": "MATH-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "95ebf54eca02ce76c4d9ceaf4e03b0c1d3fd334b6b1532948558dbbfc97e98bd": {
+    "exam_date": "2023-08-02",
+    "subject": "MATH-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "8ba4943e20666a61f97fe17ddc10879e17f9d4d19bbeee7b48a77e106e847056": {
+    "exam_date": "2023-08-02",
+    "subject": "MATH-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "5a92fa4364a85fb56434f5c07afc90cec40874c4a60bf06c5cc71138a7962601": {
+    "exam_date": "2023-11-23",
+    "subject": "MATH-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "841d9302fdf1166a56c48e7d4922e869ef04523768cd38fd53eb3b6e91e06efb": {
+    "exam_date": "2023-11-23",
+    "subject": "MATH-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "5dda7544806e2b463e7ff58ac1853a038e5c439eb988e885016ae9a30525e482": {
+    "exam_date": "2009-04",
+    "subject": "MATH-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "2558ff7942cbe0a4ac9f8b6ce19eac5cec41cd88a61721e8cc620f1a95df2f71": {
+    "exam_date": "2026-03-27",
+    "subject": "MATH-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "7f01b161e1051a333c8970d761a152ef6cb55f40100b5fccec58a1f0a136ad22": {
+    "exam_date": "2026-03-27",
+    "subject": "MATH-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "3cf1f85d78a486de3c2893fee1472b88612b1551a65a8a24cbb662ff447a1494": {
+    "exam_date": "2025-07-31",
+    "subject": "MATH-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "f8bfd361fdac2f3c4f1a96b8c9e3186d1fe7a601c9201a45feb098c9b090e572": {
+    "exam_date": "2026-07-30",
+    "subject": "MATH-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "d1864794de6eb2b32910febcd98c2abad24cfbe37e724ce9049ae32d3ed793fa": {
+    "exam_date": "2025-11-25",
+    "subject": "MATH-N5",
+    "kind": "memo",
+    "verified_by": "visual cover review"
+  },
+  "3fd5adaf047cf17f279092b56521e5949328d2a0510b03a098485321e547a8f1": {
+    "exam_date": "2025-07-31",
+    "subject": "MATH-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "34086f433029cf83dd70bf031888318dd2abd3b93b510dc155ddc318e55e94cc": {
+    "exam_date": "2026-07-30",
+    "subject": "MATH-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  },
+  "75a640fe7ac38bbcf8a8f69d4ba374f3356b726930211492c19cf593030dfcb8": {
+    "exam_date": "2025-11-25",
+    "subject": "MATH-N5",
+    "kind": "paper",
+    "verified_by": "visual cover review"
+  }
+}
