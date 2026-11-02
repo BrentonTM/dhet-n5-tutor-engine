@@ -1,5 +1,5 @@
 google-genai
-streamlit[pdf]>=1.57
+streamlit[auth,pdf]>=1.66
 numpy
 pandas
 plotly
@@ -7,5 +7,4 @@ matplotlib
 python-dotenv
 pypdf
 python-pptx
-streamlit-mic-recorder
 

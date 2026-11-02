@@ -34,7 +34,7 @@ st.set_page_config(
     page_title="Trentox Tutor AI",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # Base path configuration
@@ -62,6 +62,14 @@ if not hasattr(_exam_questions, "guidance_documents"):
     _exam_questions = importlib.reload(_exam_questions)
 from ui.exam_questions import CONTENT_VERSION, guidance_documents, list_documents, original_pdf, question_pdf, select_questions
 from ui.gemini_client import configured_models, generate_reply
+from ui.tex_partner import MODES, conversation_context, partner_instruction, recent_turns
+from ui.student_identity import require_student, render_student_menu
+from ui.rubik_cube import render_rubik_cube
+from ui.logic_builder import render_logic_builder
+
+# Verify Google identity before rendering any learning content or calling AI.
+student = require_student()
+student_name = student["display_name"]
 
 
 @st.cache_data(show_spinner=False, max_entries=128)
@@ -243,41 +251,47 @@ def clean_exam_text(text: str) -> str:
     
     return cleaned.strip()
 def _ensure_tutor_chat():
-    if "tutor_chat" not in st.session_state or not isinstance(st.session_state.tutor_chat, list):
-        st.session_state.tutor_chat = []
+    threads = st.session_state.setdefault("tex_conversations", {})
+    st.session_state.tutor_chat = threads.setdefault(active_subject, [])
     if st.session_state.get("tutor_chat_subject") != active_subject:
-        st.session_state.tutor_chat = []
-        st.session_state.tutor_chat_subject = active_subject
+        st.session_state.pop("tex_error", None)
+    st.session_state.tutor_chat_subject = active_subject
 
 
-def _submit_tutor_message(user_msg: str):
+def _submit_tutor_message(user_msg: str = "", audio=None, retry=False):
     user_msg = str(user_msg or "").strip()
-    if not user_msg:
+    if not user_msg and not audio and not retry:
         return
     _ensure_tutor_chat()
-    st.session_state.tutor_chat.append({"role": "user", "content": user_msg})
-    history = "\n".join(
-        f"{message['role'].upper()}: {message['content']}"
-        for message in st.session_state.tutor_chat[-8:]
-    )
-    current_lesson = st.session_state.get("active_topic_lesson", {})
-    topic_context = (
-        f"Current lesson topic: {current_lesson['topic']}\n"
-        if current_lesson.get("subject") == active_subject and current_lesson.get("topic")
-        else ""
-    )
-    chat_prompt = (
-        f"You are ASK TX, a Socratic NATED engineering tutor for {active_subject}. "
-        "Help the learner understand, not just copy an answer. Ask one focused question at a time; give a small hint first; "
-        "check their reasoning; correct misconceptions kindly; and show a complete worked explanation when they ask or remain stuck. "
-        "Use SI units and distinguish assumptions from facts.\n"
-        f"{topic_context}\n{history}\nASSISTANT:"
-    )
-    with st.spinner("ASK TX is thinking..."):
-        reply, err = query_gemini_with_fallback(chat_prompt)
-    st.session_state.tutor_chat.append(
-        {"role": "assistant", "content": reply or f"⚠️ {err}"}
-    )
+    if audio and len(audio) > 8 * 1024 * 1024:
+        st.session_state["tex_error"] = "That recording is too large. Record a shorter message (up to 8 MB)."
+        st.rerun()
+    if not retry:
+        st.session_state.tutor_chat.append({"role": "user", "content": user_msg[:6000] or "Voice message", "audio": audio})
+    if not st.session_state.tutor_chat or st.session_state.tutor_chat[-1]["role"] != "user":
+        return
+    if genai_types is None:
+        st.session_state["tex_error"] = "Tex needs the Google GenAI package installed in this deployment."
+        st.rerun()
+    contents = []
+    for message in recent_turns(st.session_state.tutor_chat):
+        parts = [genai_types.Part.from_text(text=message["content"])]
+        if message.get("audio"):
+            parts.append(genai_types.Part.from_bytes(data=message["audio"], mime_type="audio/wav"))
+        contents.append(genai_types.Content(role="user" if message["role"] == "user" else "model", parts=parts))
+    instruction = partner_instruction(student_name, active_subject, st.session_state.get("tex_mode", "Hint"),
+                                      conversation_context(st.session_state, active_subject))
+    with st.spinner("Tex is reading your message..."):
+        reply, err = _call_gemini(contents, system_instruction=instruction)
+    if reply:
+        st.session_state.tutor_chat.append({"role": "assistant", "content": reply})
+        st.session_state.pop("tex_error", None)
+    else:
+        st.session_state["tex_error"] = err
+    # Bound session memory, including audio, without caching private messages.
+    del st.session_state.tutor_chat[:-20]
+    for old_message in st.session_state.tutor_chat[:-4]:
+        old_message.pop("audio", None)
     st.rerun()
 
 
@@ -288,21 +302,32 @@ def render_ai_tutor_chat(
     include_upload: bool = True,
 ):
     _ensure_tutor_chat()
+    pending_message = st.session_state.pop("tex_pending_message", None)
+    if pending_message:
+        _submit_tutor_message(pending_message)
     if compact:
-        st.markdown("### 💬 ASK TX · Socratic tutor")
+        st.subheader("Tex · your thinking partner", anchor=False)
         st.caption(f"Ask about {active_subject}, request a hint, or upload your worked answer for feedback.")
     else:
-        st.subheader("🤖 ASK TX Socratic Tutor")
+        st.subheader("Tex · your thinking partner", anchor=False)
         st.markdown(
             "Ask about the selected subject, its topics, or an exam question. "
-            "ASK TX guides your reasoning with prompts and hints before showing a full explanation."
+            "Tex builds on your ideas, checks your reasoning, and explains when you need it."
         )
+
+    def mode_changed(mode_key):
+        st.session_state["tex_mode"] = st.session_state[mode_key] or "Hint"
+
+    mode_key = f"{widget_prefix}_response_mode"
+    st.segmented_control("How should Tex help?", MODES,
+                         default=st.session_state.get("tex_mode", "Hint"), key=mode_key,
+                         on_change=mode_changed, args=(mode_key,))
 
     if include_upload:
         with st.expander("📄 Upload an answer for feedback", expanded=False):
             st.caption(
                 "Upload a PDF, Word document, text file, or clear answer image. "
-                "ASK TX will identify strengths, corrections, and a useful next step."
+                "Tex will identify strengths, corrections, and a useful next step."
             )
             answer_file = st.file_uploader(
                 "Your worked answer",
@@ -320,7 +345,7 @@ def render_ai_tutor_chat(
                 "Review my answer",
                 key=f"{widget_prefix}_review_answer_{active_subject}",
                 disabled=answer_file is None,
-                use_container_width=True,
+                width="stretch",
             ):
                 answer_bytes = answer_file.getvalue()
                 if len(answer_bytes) > 12 * 1024 * 1024:
@@ -356,39 +381,35 @@ def render_ai_tutor_chat(
 
     if st.session_state.tutor_chat:
         for message in st.session_state.tutor_chat[-12:]:
-            with st.chat_message(message["role"]):
+            with st.chat_message(message["role"], avatar=":material/psychology:" if message["role"] == "assistant" else None):
                 st.markdown(message["content"])
+                if message.get("audio"):
+                    st.audio(message["audio"], format="audio/wav")
     elif compact:
-        st.info("Start with one question. ASK TX will guide you step by step.")
+        st.write(f"Hi {student_name}. What are we working through today? Tell me what you think, or where you got stuck.")
 
-    if use_form:
-        with st.form(f"{widget_prefix}_message_form", clear_on_submit=True):
-            user_msg = st.text_area(
-                "Ask ASK TX",
-                placeholder="Type a question or explain where you got stuck...",
-                key=f"{widget_prefix}_message_text",
-                height=76,
-                max_chars=3000,
-            )
-            submitted = st.form_submit_button("Send to ASK TX", use_container_width=True)
-        if submitted:
-            if user_msg.strip():
-                _submit_tutor_message(user_msg)
-            else:
-                st.info("Type a question first.")
-    else:
-        user_msg = st.chat_input(
-            "Ask ASK TX a question...",
-            key=f"{widget_prefix}_chat_input",
-        )
-        if user_msg:
-            _submit_tutor_message(user_msg)
+    if st.session_state.get("tex_error"):
+        st.error(st.session_state["tex_error"])
+        if st.session_state.tutor_chat and st.session_state.tutor_chat[-1]["role"] == "user":
+            if st.button("Try that message again", key=f"{widget_prefix}_retry"):
+                _submit_tutor_message(retry=True)
+    submission = st.chat_input("Ask Tex anything…", key=f"{widget_prefix}_chat_input",
+                               max_chars=6000, accept_audio=True, max_upload_size=8, submit_mode="disable")
+    st.caption("Type or record a message. Messages and recordings are sent to Google Gemini for a reply and kept in this study session.")
+    if submission:
+        if isinstance(submission, str):
+            _submit_tutor_message(submission)
+        else:
+            recording = submission.audio.getvalue() if submission.audio else None
+            _submit_tutor_message(submission.text, audio=recording)
 
     if st.session_state.tutor_chat and st.button(
         "🗑️ Clear chat",
         key=f"{widget_prefix}_chat_clear",
     ):
-        st.session_state.tutor_chat = []
+        st.session_state["tex_conversations"][active_subject] = []
+        st.session_state.setdefault("tex_logic_context", {}).pop(active_subject, None)
+        st.session_state.pop("tex_error", None)
         st.rerun()
 
 def _extract_answer_text(filename, file_bytes):
@@ -521,10 +542,10 @@ def get_gemini_api_key():
 
 GEMINI_API_KEY = get_gemini_api_key()
 if genai is None:
-    st.warning("ASK TX needs the Google GenAI package, which is not installed in this deployment.")
+    st.warning("Tex needs the Google GenAI package, which is not installed in this deployment.")
 elif not GEMINI_API_KEY:
     st.warning(
-        "ASK TX is ready to run once GEMINI_API_KEY is added in the Streamlit Cloud app settings under Secrets."
+        "Tex is ready to run once GEMINI_API_KEY is added in the Streamlit Cloud app settings under Secrets."
     )
 # --- Stable Sidebar Navigation ---
 with st.sidebar:
@@ -560,20 +581,13 @@ except ImportError:
     pptx = None
     PackageNotFoundError = ()
 
-# Optional Audio Recorder
-try:
-    from streamlit_mic_recorder import mic_recorder
-except ImportError:
-    mic_recorder = None
-
 # (st.set_page_config now runs at the top of the file)
 
-# --- High-Impact Glowing Top Tab Navigation ---
-try:
-    from ui.theme import inject_industrial_theme
-    inject_industrial_theme()
-except ImportError:
-    pass
+# Native theme settings keep the workspace usable on narrow screens.
+with st.sidebar.expander("Display & 3D settings"):
+    fx_mode = st.selectbox("3D scene quality", ["High", "Low", "Off"], key="scene_quality")
+    st.session_state["fx_mode"] = fx_mode.lower()
+    st.caption("Use your browser's zoom or text-size settings to enlarge the interface.")
 
 # Helper function to clean corrupted PDF question characters
 # Helper function to clean and structure PDF question text
@@ -982,14 +996,15 @@ def select_course_material(material_text, subject_code, target_topic, limit=6000
 
 
 # Hosted AI requests run from Streamlit to Google's Gemini API, without a laptop process.
-def _call_gemini(prompt):
+def _call_gemini(prompt, *, system_instruction=None):
     if genai is None:
-        return None, "ASK TX needs the Google GenAI package installed in this deployment."
+        return None, "Tex needs the Google GenAI package installed in this deployment."
     return generate_reply(
         prompt,
         api_key=GEMINI_API_KEY,
         client_factory=genai.Client,
         models=configured_models(get_ai_setting("GEMINI_MODEL"), get_ai_setting("GEMINI_FALLBACK_MODELS")),
+        system_instruction=system_instruction,
     )
 
 
@@ -1022,7 +1037,7 @@ def query_gemini_with_attachment(prompt, file_bytes, mime_type):
     return _call_gemini([prompt, attachment])
 
 
-def query_exam_guidance(prompt, questions):
+def query_exam_guidance(prompt, questions, audio_bytes=None):
     """Send original question, formula and matched memo pages without transcription."""
     contents = [
         prompt + "\nRead the original question pages as the authority for notation, diagrams, tables and marks. "
@@ -1036,6 +1051,12 @@ def query_exam_guidance(prompt, questions):
     documents = guidance_documents(questions)
     if documents and genai_types is None:
         return None, "Original-paper guidance needs the Google GenAI package installed in this deployment."
+    if audio_bytes:
+        if len(audio_bytes) > 8 * 1024 * 1024:
+            return None, "Record a shorter explanation (up to 8 MB)."
+        if genai_types is None:
+            return None, "Voice guidance needs the Google GenAI package installed in this deployment."
+        contents.append(genai_types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"))
     for document in documents:
         contents.append(f"Source document: {document['label']}.")
         try:
@@ -1143,7 +1164,7 @@ def render_topic_quiz(quiz, subject_code, topic_name):
             key=confidence_key,
         )
         confidence_value = {"Mostly guessing": 1, "Somewhat sure": 2, "Very sure": 3}.get(confidence_label)
-        submitted = st.form_submit_button("Check my understanding", use_container_width=True)
+        submitted = st.form_submit_button("Check my understanding", width="stretch")
 
     if submitted:
         responses = [st.session_state.get(key) for key in radio_keys]
@@ -1406,69 +1427,32 @@ def build_exam_calendar_ics(timetable, learner_verified=False):
     return "\r\n".join(lines) + "\r\n"
 
 
-# Home page brand and quick orientation
-st.markdown('<div class="tx-eyebrow">ENGINEERING STUDIES  ·  DHET REPORT 191</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="tx-brand-title" role="heading" aria-level="1"><span>Trentox</span> <strong>Tutor AI</strong></div>',
-    unsafe_allow_html=True,
-)
-st.markdown(
-    '<p class="tx-brand-subtitle">A hands-on engineering study workspace: build understanding, explore real systems, '
-    'and prepare for your exams.</p>',
-    unsafe_allow_html=True,
-)
-st.markdown('<div class="tx-hero-chip-row-label">CHOOSE YOUR NEXT STEP</div>', unsafe_allow_html=True)
-
-
+# Home shortcuts select the same workspaces as the main navigation.
 def open_learning_workspace(workspace: str, tutor_section: str = None):
-    """Select a learning tab from the home-page shortcuts."""
     st.session_state["learning_workspace"] = workspace
     if tutor_section:
         st.session_state["tutor_section"] = tutor_section
-        if tutor_section == "💬 Ask tutor":
-            st.session_state["ask_tx_launcher"] = True
 
 
-shortcut_columns = st.columns(2, gap="small")
-with shortcut_columns[0]:
-    st.button(
-        "✦  Course-aware learning",
-        key="hero_course_button",
-        use_container_width=True,
-        on_click=open_learning_workspace,
-        args=("🤖 Tutor & lab", "📖 Lessons"),
-    )
-with shortcut_columns[1]:
-    st.button(
-        "💬  Quick AI tutor",
-        key="hero_ai_button",
-        use_container_width=True,
-        on_click=open_learning_workspace,
-        args=("🤖 Tutor & lab", "💬 Ask tutor"),
-    )
-shortcut_row_two = st.columns(2, gap="small")
-with shortcut_row_two[0]:
-    st.button(
-        "◈  3D engineering lab",
-        key="hero_lab_button",
-        use_container_width=True,
-        on_click=open_learning_workspace,
-        args=("🤖 Tutor & lab", "🧊 3D lab"),
-    )
-with shortcut_row_two[1]:
-    st.button(
-        "⌁  Exam practice",
-        key="hero_exam_button",
-        use_container_width=True,
-        on_click=open_learning_workspace,
-        args=("⏱ Mock exam",),
-    )
-st.button(
-    "📅  Exam & study calendar",
-    key="hero_calendar_button",
-    use_container_width=True,
-    on_click=open_exam_calendar_workspace,
-)
+def resume_learning():
+    lesson = st.session_state.get("active_topic_lesson", {})
+    if lesson.get("subject") == active_subject and lesson.get("topic"):
+        topic = lesson["topic"]
+        modules = SUBJECT_MODULES.get(active_subject, [])
+        if topic in modules:
+            st.session_state[f"lesson_topic_{active_subject}"] = topic
+            st.session_state[f"custom_topic_{active_subject}"] = ""
+        else:
+            st.session_state[f"custom_topic_{active_subject}"] = topic
+    open_learning_workspace("🤖 Tutor & lab", "📖 Lessons")
+
+
+def discuss_logic_with_tex(prompt):
+    st.session_state.setdefault("tex_logic_context", {})[active_subject] = prompt
+    st.session_state["tex_pending_message"] = prompt
+    st.session_state["pending_workspace"] = ("🤖 Tutor & lab", "💬 Ask tutor")
+    st.rerun()
+
 
 # Sidebar learning path and reference navigation
 st.sidebar.header("Study path")
@@ -1539,6 +1523,11 @@ selected_subject_label = st.sidebar.selectbox(
 )
 selected_subject, active_subject = subject_by_label[selected_subject_label]
 
+with st.container(horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"):
+    st.markdown("**:green[●] T R E N T O X**")
+    render_student_menu(student)
+st.caption(f"{selected_subject['subject_name']} · {selected_level} · Change your course in Study path.")
+
 # Old extracted questions must not survive a content update or subject change.
 exam_context = (active_subject, CONTENT_VERSION)
 if st.session_state.get("exam_content_context") != exam_context:
@@ -1552,70 +1541,10 @@ if not active_subject:
     )
     st.stop()
 
-ask_tx_popover = st.popover(
-    "ASK TX",
-    icon="💬",
-    key="ask_tx_launcher",
-    on_change="rerun",
-    help="Open your Socratic AI tutor and upload work for feedback.",
-    width="content",
-)
-with ask_tx_popover:
-    if ask_tx_popover.open:
-        render_ai_tutor_chat(
-            widget_prefix="ask_tx",
-            compact=True,
-            use_form=True,
-            include_upload=True,
-        )
-
-active_route = " · ".join(
-    [selected_programme_name, selected_level, selected_subject["subject_name"]]
-)
-course_state_label = (
-    "School textbook map · DHET detail pending"
-    if active_subject == "DIGI-N5"
-    else "Provisional · syllabus pending"
-    if active_subject in provisional_subject_codes
-    else "Course map available"
-)
-st.markdown(
-    '<div class="tx-course-bar">'
-    '<div><div class="tx-course-label">Active learning path</div>'
-    f'<div class="tx-course-name">{html.escape(active_route)}</div></div>'
-    f'<span class="tx-course-state">{html.escape(course_state_label)}</span>'
-    '</div>',
-    unsafe_allow_html=True,
-)
-
-model_column, reminder_column = st.columns([1, 1], gap="large")
-with model_column:
-    st.markdown('<div class="tx-visual-label">Live engineering model · drag to rotate</div>', unsafe_allow_html=True)
-    render_3d_scene("hero_scene.html", height=235)
-    st.caption("Drag to rotate the model · scroll to zoom · use the control tips in Tutor & lab → 3D lab for labelled parts and simulations.")
-with reminder_column:
-    st.markdown('<div class="tx-visual-label">Engineering quick reminders · auto-rotating</div>', unsafe_allow_html=True)
-    render_home_slideshow(active_subject, selected_subject["subject_name"], height=262)
-
 if selected_programme["programme_id"] != "electrical_instrumentation":
     st.sidebar.caption(
         "A subject map is available by title and level. Confirm this programme's subject code and syllabus version before marking its route verified."
     )
-
-# Sidebar text size control
-with st.sidebar.expander("Text size", expanded=False):
-    font_scale = st.slider("Font scale", min_value=0.8, max_value=1.5, value=1.0, step=0.1)
-
-st.markdown(
-    f"""
-    <style>
-        html, body, [class*="css"] {{
-            font-size: {font_scale * 100}%;
-        }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 # Render Live Subject Motif in Sidebar
 with st.sidebar.expander("Subject visual", expanded=False):
@@ -1770,9 +1699,11 @@ with st.sidebar.expander("📐 Official NATED Formula Sheets", expanded=False):
 
 
 # --- Main App Tabs ---
-st.markdown('<div class="tx-eyebrow">LEARNING WORKSPACE</div>', unsafe_allow_html=True)
-st.caption("Choose a workspace to study a topic, practise a problem, run an interactive model or review your progress.")
-tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = st.tabs([
+pending_workspace = st.session_state.pop("pending_workspace", None)
+if pending_workspace:
+    open_learning_workspace(*pending_workspace)
+tab_home, tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = st.tabs([
+    "Home",
     "📊 Progress",
     "📝 Practice",
     "⏱ Mock exam",
@@ -1784,880 +1715,946 @@ tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = st
 
 # Tab bodies follow, one block per tab.
 
-with tab_practice:
-    st.subheader("📝 Practical & Socratic Sandbox")
-    st.markdown("Practice past exam questions structured for clear problem-solving.")
-    
-    st.caption("Fetch a past-paper question below, or switch to Fault Diagnosis mode.")
+if tab_home.open:
+    with tab_home:
+        hour = datetime.now(timezone(timedelta(hours=2))).hour
+        greeting = "Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening"
+        st.title(f"{greeting}, {student_name}", anchor=False)
+        st.write("What are we cracking today?")
+        tex_column, action_column = st.columns([1.35, 1], gap="large")
+        with tex_column:
+            with st.container(border=True, key="home_tex"):
+                render_ai_tutor_chat(widget_prefix="home_tex", compact=True)
+        with action_column:
+            lesson = st.session_state.get("active_topic_lesson", {})
+            continuing = lesson.get("subject") == active_subject and lesson.get("topic")
+            next_topic = lesson["topic"] if continuing else SUBJECT_MODULES.get(active_subject, ["Your next topic"])[0]
+            with st.container(border=True):
+                st.caption("CONTINUE" if continuing else "START A TOPIC")
+                st.subheader(next_topic, anchor=False)
+                st.caption(f"{selected_subject['subject_name']} {selected_level}")
+                st.button("Continue learning" if continuing else "Explore this course", key="home_continue",
+                          icon=":material/arrow_forward:", width="stretch",
+                          on_click=resume_learning)
+            destinations = [
+                ("Practice", "Past papers and original memos", ":material/edit:", "📝 Practice", None),
+                ("Mock exam", "A timed run at your pace", ":material/timer:", "⏱ Mock exam", None),
+                ("3D lab", "Rotate, inspect and experiment", ":material/deployed_code:", "🤖 Tutor & lab", "🧊 3D lab"),
+                ("Formulas", "A quick course-aware lookup", ":material/functions:", "📐 Formula hub", None),
+            ]
+            for offset in (0, 2):
+                for column, (label, caption, icon, workspace, section) in zip(st.columns(2), destinations[offset:offset+2]):
+                    with column.container(border=True, height="stretch"):
+                        st.button(label, icon=icon, key=f"home_shortcut_{workspace}_{section}", width="stretch",
+                                  on_click=open_learning_workspace, args=(workspace, section))
+                        st.caption(caption)
+            with st.container(horizontal=True):
+                st.button("My progress", icon=":material/bar_chart:", key="home_progress",
+                          on_click=open_learning_workspace, args=("📊 Progress",))
+                st.button("Study calendar", icon=":material/calendar_month:", key="home_calendar",
+                          on_click=open_exam_calendar_workspace)
+        st.subheader("Build, explore, take a brain break", anchor=False)
+        cube_tab, logic_tab = st.tabs(["Rubik cube", "Logic builder"], key="home_explore", on_change="rerun")
+        with cube_tab:
+            if cube_tab.open:
+                render_rubik_cube(key="home_cube")
+        with logic_tab:
+            if logic_tab.open:
+                render_logic_builder(student_name, on_ask_tex=discuss_logic_with_tex)
 
-with tab_exam:
-    st.subheader("⚡ Stress-Conditioned Exam Simulator")
-    st.markdown("Simulate timed exam conditions with structured problem cards.")
+
+
+if tab_practice.open:
+    with tab_practice:
+        st.subheader("📝 Practical & Socratic Sandbox")
+        st.markdown("Practice past exam questions structured for clear problem-solving.")
     
-    st.caption("Configure the mock exam on the left, then press Start.")      
+        st.caption("Fetch a past-paper question below, or switch to Fault Diagnosis mode.")
+
+if tab_exam.open:
+    with tab_exam:
+        st.subheader("⚡ Stress-Conditioned Exam Simulator")
+        st.markdown("Simulate timed exam conditions with structured problem cards.")
+    
+        st.caption("Configure the mock exam on the left, then press Start.")
 # TAB 1: Learner Progress Dashboard
-with tab_mastery:
-    st.subheader(f"Your learning progress: {active_subject}")
-    st.caption(
-        "Progress below comes from topic checks in this browser session. It is a study guide, "
-        "not a grade or an exam-pass prediction."
-    )
-    history = st.session_state.get("topic_quiz_history", [])
-    summary = summarize_progress(history, active_subject)
-    modules = SUBJECT_MODULES.get(active_subject, [])
-    latest = summary["latest_by_topic"]
-    mapped_checked = sum((active_subject, module) in latest for module in modules)
-    avg = summary["average_latest_percent"]
+if tab_mastery.open:
+    with tab_mastery:
+        st.subheader(f"Your learning progress: {active_subject}")
+        st.caption(
+            "Progress below comes from topic checks in this browser session. It is a study guide, "
+            "not a grade or an exam-pass prediction."
+        )
+        history = st.session_state.get("topic_quiz_history", [])
+        summary = summarize_progress(history, active_subject)
+        modules = SUBJECT_MODULES.get(active_subject, [])
+        latest = summary["latest_by_topic"]
+        mapped_checked = sum((active_subject, module) in latest for module in modules)
+        avg = summary["average_latest_percent"]
 
-    metric_cols = st.columns(4)
-    metric_cols[0].metric("Topics checked", f"{mapped_checked} / {len(modules)}")
-    metric_cols[1].metric("Average latest check", f"{avg:.0f}%" if avg is not None else "—")
-    metric_cols[2].metric("Reviews due", len(summary["due_reviews"]))
-    metric_cols[3].metric("Study streak", f"{study_streak(history)} days")
+        metric_cols = st.columns(4)
+        metric_cols[0].metric("Topics checked", f"{mapped_checked} / {len(modules)}")
+        metric_cols[1].metric("Average latest check", f"{avg:.0f}%" if avg is not None else "—")
+        metric_cols[2].metric("Reviews due", len(summary["due_reviews"]))
+        metric_cols[3].metric("Study streak", f"{study_streak(history)} days")
 
-    if modules:
-        progress_rows = []
-        for module in modules:
-            record = latest.get((active_subject, module))
-            percent = (record["score"] / record["total"] * 100) if record else None
-            progress_rows.append({
-                "Course topic": module,
-                "Latest check": f"{record['score']}/{record['total']} ({percent:.0f}%)" if record else "—",
-                "Next review": record["review_due"] if record else "—",
-                "Study status": topic_status(record),
-            })
-        st.dataframe(progress_rows, hide_index=True, use_container_width=True)
+        if modules:
+            progress_rows = []
+            for module in modules:
+                record = latest.get((active_subject, module))
+                percent = (record["score"] / record["total"] * 100) if record else None
+                progress_rows.append({
+                    "Course topic": module,
+                    "Latest check": f"{record['score']}/{record['total']} ({percent:.0f}%)" if record else "—",
+                    "Next review": record["review_due"] if record else "—",
+                    "Study status": topic_status(record),
+                })
+            st.dataframe(progress_rows, hide_index=True, width="stretch")
 
-    if summary["due_reviews"]:
-        st.markdown("### 🔁 Ready for a short review")
-        for review in summary["due_reviews"][:6]:
-            st.markdown(
-                f"- **{review['topic']}** · {review['score']}/{review['total']} last check · "
-                f"review due {review['review_due']}"
-            )
-    elif not history:
-        st.info("Your topic map is ready. Generate a short lesson and complete its quiz to start tracking progress.")
-    else:
-        st.success("No topic reviews are due today. Continue with a new topic or return to a recent one.")
+        if summary["due_reviews"]:
+            st.markdown("### 🔁 Ready for a short review")
+            for review in summary["due_reviews"][:6]:
+                st.markdown(
+                    f"- **{review['topic']}** · {review['score']}/{review['total']} last check · "
+                    f"review due {review['review_due']}"
+                )
+        elif not history:
+            st.info("Your topic map is ready. Generate a short lesson and complete its quiz to start tracking progress.")
+        else:
+            st.success("No topic reviews are due today. Continue with a new topic or return to a recent one.")
 
-    st.caption(
-        "Your session keeps topic, score, review date and missed-concept labels. "
-        "It does not save your submitted answer text in the progress history."
-    )
+        st.caption(
+            "Your session keeps topic, score, review date and missed-concept labels. "
+            "It does not save your submitted answer text in the progress history."
+        )
 
 # TAB 2: Practical & Socratic Sandbox
-with tab_practice:
-    if "current_question" not in st.session_state:
-        st.session_state.current_question = None
-    st.subheader("💡 Practical Engineering Sandbox & Fault-Finding Scenarios")
-    mode = st.radio("Select Practice Mode:", ["Exam Past Paper Guidance", "🚨 Plant Fault Diagnosis Scenario"], horizontal=True)
-    
-    st.caption("🎙️ You can type your solution or record a brief spoken explanation below:")
-    voice_text = ""
-    if mic_recorder:
-        audio = mic_recorder(start_prompt="⏺️ Record Voice Explanation", stop_prompt="⏹️ Stop Recording", key="mic_rec")
-        if audio:
-            st.audio(audio['bytes'])
-            voice_text = "[Voice Input Audio Recorded Successfully]"
-
-    if mode == "🚨 Plant Fault Diagnosis Scenario":
-        st.markdown("### Industrial Troubleshooting & Fault Diagnosis")
-        fault_scenarios = {
-            "INST-N5": "A differential pressure transmitter across an orifice plate reads 0 kPa despite a high fluid flow rate in the main pipeline. The 4-20mA loop current is steady at 4.0 mA.",
-            "IE-N5": "An operational amplifier non-inverting circuit outputs a clipped square wave at ±15V when a 2V peak-to-peak sine wave is applied at the input.",
-            "DIGI-N5": "An asynchronous 4-bit ripple counter skips count state 0110 (6) and resets directly to 0000 on every cycle."
-        }
-        selected_scenario = fault_scenarios.get(active_subject, "A 4-20mA pressure transducer signal is noisy and tripping the relay switch.")
-        st.error(f"**SCENARIO:** {selected_scenario}")
-        
-        typed_diag = st.text_area("Your Step-by-Step Fault Diagnosis & Repair Strategy:", placeholder="e.g., Step 1: Check impulse line blockage...")
-        user_diag = typed_diag if typed_diag.strip() else voice_text
-        
-        if st.button("Submit Fault Diagnosis"):
-            if not user_diag.strip():
-                st.warning("Type or record your diagnostic process first!")
-            else:
-                with st.spinner("Senior Engineering Technician reviewing your strategy..."):
-                    diag_prompt = f"Evaluate troubleshooting steps for {active_subject}.\nSCENARIO: {selected_scenario}\nDIAGNOSIS: {user_diag}"
-                    resp, err = query_gemini_with_fallback(diag_prompt)
-                    if resp:
-                        st.markdown("### 🛠 Senior Technician Feedback")
-                        st.markdown(resp)
-                    else:
-                        st.error(err)
-    else:
+if tab_practice.open:
+    with tab_practice:
         if "current_question" not in st.session_state:
             st.session_state.current_question = None
+        st.subheader("💡 Practical Engineering Sandbox & Fault-Finding Scenarios")
+        mode = st.radio("Select Practice Mode:", ["Exam Past Paper Guidance", "🚨 Plant Fault Diagnosis Scenario"], horizontal=True)
+    
+        st.caption("🎙️ You can type your solution or record a brief spoken explanation below:")
+        voice_note = st.audio_input("Record a voice explanation", key="practice_voice")
+        voice_bytes = voice_note.getvalue() if voice_note else None
+        voice_text = "Listen to my attached voice explanation." if voice_bytes else ""
+        st.caption("Submitting sends your written work and recording to Google Gemini for feedback.")
 
-        if st.button("Fetch Random Exam Question"):
-            st.session_state.current_question = None
-            questions = load_selected_questions(1)
-            if questions:
-                st.session_state.current_question = questions[0]
-            elif questions is not None:
-                st.warning("No usable past-paper questions are available for this subject and level yet.")
+        if mode == "🚨 Plant Fault Diagnosis Scenario":
+            st.markdown("### Industrial Troubleshooting & Fault Diagnosis")
+            fault_scenarios = {
+                "INST-N5": "A differential pressure transmitter across an orifice plate reads 0 kPa despite a high fluid flow rate in the main pipeline. The 4-20mA loop current is steady at 4.0 mA.",
+                "IE-N5": "An operational amplifier non-inverting circuit outputs a clipped square wave at ±15V when a 2V peak-to-peak sine wave is applied at the input.",
+                "DIGI-N5": "An asynchronous 4-bit ripple counter skips count state 0110 (6) and resets directly to 0000 on every cycle."
+            }
+            selected_scenario = fault_scenarios.get(active_subject, "A 4-20mA pressure transducer signal is noisy and tripping the relay switch.")
+            st.error(f"**SCENARIO:** {selected_scenario}")
+        
+            typed_diag = st.text_area("Your Step-by-Step Fault Diagnosis & Repair Strategy:", placeholder="e.g., Step 1: Check impulse line blockage...")
+            user_diag = typed_diag if typed_diag.strip() else voice_text
+        
+            if st.button("Submit Fault Diagnosis"):
+                if not user_diag.strip():
+                    st.warning("Type or record your diagnostic process first!")
+                else:
+                    with st.spinner("Senior Engineering Technician reviewing your strategy..."):
+                        diag_prompt = f"Evaluate troubleshooting steps for {active_subject}.\nSCENARIO: {selected_scenario}\nDIAGNOSIS: {user_diag}"
+                        if voice_bytes and len(voice_bytes) > 8 * 1024 * 1024:
+                            resp, err = None, "Record a shorter explanation (up to 8 MB)."
+                        elif voice_bytes:
+                            resp, err = query_gemini_with_attachment(diag_prompt, voice_bytes, "audio/wav")
+                        else:
+                            resp, err = query_gemini_with_fallback(diag_prompt)
+                        if resp:
+                            st.markdown("### 🛠 Senior Technician Feedback")
+                            st.markdown(resp)
+                        else:
+                            st.error(err)
+        else:
+            if "current_question" not in st.session_state:
+                st.session_state.current_question = None
 
-    q = st.session_state.current_question
-    if q:
-        st.markdown(f"**{q['num']} · {q['marks']} marks** — {q['topic']}")
-        render_selected_question(q, "practice_pdf")
-        typed_sol = st.text_area("Your Working / Answer Attempt:", height=140)
-        user_sol = typed_sol if typed_sol.strip() else voice_text
+            if st.button("Fetch Random Exam Question"):
+                st.session_state.current_question = None
+                questions = load_selected_questions(1)
+                if questions:
+                    st.session_state.current_question = questions[0]
+                elif questions is not None:
+                    st.warning("No usable past-paper questions are available for this subject and level yet.")
 
-        if st.button("Get AI Socratic Guidance"):
-            if not user_sol.strip():
-                st.warning("Type or record your answer first!")
-            else:
-                with st.spinner("Analyzing solution..."):
-                    prompt = f"Socratic guidance for {active_subject}:\nQUESTION: {q['text']}\nMARKING: {q['marking']}\nATTEMPT: {user_sol}"
-                    resp, err = query_exam_guidance(prompt, [q])
-                    if resp:
-                        st.markdown(resp)
-                    else:
-                        st.error(err)
-        render_matched_memo(q, "practice_memo")
+        q = st.session_state.current_question
+        if q:
+            st.markdown(f"**{q['num']} · {q['marks']} marks** — {q['topic']}")
+            render_selected_question(q, "practice_pdf")
+            typed_sol = st.text_area("Your Working / Answer Attempt:", height=140)
+            user_sol = typed_sol if typed_sol.strip() else voice_text
 
-    render_paper_library()
+            if st.button("Get AI Socratic Guidance"):
+                if not user_sol.strip():
+                    st.warning("Type or record your answer first!")
+                else:
+                    with st.spinner("Analyzing solution..."):
+                        prompt = f"Socratic guidance for {active_subject}:\nQUESTION: {q['text']}\nMARKING: {q['marking']}\nATTEMPT: {user_sol}"
+                        resp, err = query_exam_guidance(prompt, [q], audio_bytes=voice_bytes)
+                        if resp:
+                            st.markdown(resp)
+                        else:
+                            st.error(err)
+            render_matched_memo(q, "practice_memo")
+
+        render_paper_library()
 
 # TAB 3: Stress-Conditioned Exam Simulator
-with tab_exam:
-    st.subheader(f"🎯 Timed Mock Exam Simulator & Confidence Calibration ({active_subject})")
-    col1, col2 = st.columns([1, 2])
+if tab_exam.open:
+    with tab_exam:
+        st.subheader(f"🎯 Timed Mock Exam Simulator & Confidence Calibration ({active_subject})")
+        col1, col2 = st.columns([1, 2])
     
-    with col1:
-        num_q = st.slider("Number of Questions:", 5, 15, 5)
-        time_limit = st.selectbox("Exam Time Limit (minutes):", [15, 30, 45, 60], index=1)
-        high_pressure = st.checkbox("⚡ High-Pressure Mode (Reduce Time by 15%)")
+        with col1:
+            num_q = st.slider("Number of Questions:", 5, 15, 5)
+            time_limit = st.selectbox("Exam Time Limit (minutes):", [15, 30, 45, 60], index=1)
+            high_pressure = st.checkbox("⚡ High-Pressure Mode (Reduce Time by 15%)")
         
-        if st.button("🚀 Start Mock Exam"):
-            effective_time = time_limit * 0.85 if high_pressure else time_limit
-            questions = load_selected_questions(num_q)
-            if questions:
-                if len(questions) < num_q:
-                    st.warning(f"Only {len(questions)} usable questions are available for this subject and level.")
-                st.session_state.exam_paper = questions
-                st.session_state.exam_answers = {}
-                st.session_state.exam_confidence = {}
-                st.session_state.exam_submitted = False
-                st.session_state.exam_graded = False
-                st.session_state.exam_report = None
-                st.session_state.exam_report_err = None
-                st.session_state.exam_start_time = time.time()
-                st.session_state.exam_run_id = time.time_ns()
-                st.session_state.exam_duration = effective_time * 60
-                st.rerun()
-            elif questions is not None:
-                st.warning("No usable past-paper questions are available for this subject and level yet.")
+            if st.button("🚀 Start Mock Exam"):
+                effective_time = time_limit * 0.85 if high_pressure else time_limit
+                questions = load_selected_questions(num_q)
+                if questions:
+                    if len(questions) < num_q:
+                        st.warning(f"Only {len(questions)} usable questions are available for this subject and level.")
+                    st.session_state.exam_paper = questions
+                    st.session_state.exam_answers = {}
+                    st.session_state.exam_confidence = {}
+                    st.session_state.exam_submitted = False
+                    st.session_state.exam_graded = False
+                    st.session_state.exam_report = None
+                    st.session_state.exam_report_err = None
+                    st.session_state.exam_start_time = time.time()
+                    st.session_state.exam_run_id = time.time_ns()
+                    st.session_state.exam_duration = effective_time * 60
+                    st.rerun()
+                elif questions is not None:
+                    st.warning("No usable past-paper questions are available for this subject and level yet.")
 
-    with col2:
-        if "exam_paper" in st.session_state and st.session_state.exam_paper:
-            paper = st.session_state.exam_paper
-            timer_box = st.empty()
-            elapsed = time.time() - st.session_state.exam_start_time
-            remaining = int(st.session_state.exam_duration - elapsed)
+        with col2:
+            if "exam_paper" in st.session_state and st.session_state.exam_paper:
+                paper = st.session_state.exam_paper
+                timer_box = st.empty()
+                elapsed = time.time() - st.session_state.exam_start_time
+                remaining = int(st.session_state.exam_duration - elapsed)
 
-            if remaining > 0 and not st.session_state.get("exam_submitted", False):
-                m, s = divmod(remaining, 60)
-                total_sec = st.session_state.get("exam_duration", 1)
-                ratio = remaining / total_sec
+                if remaining > 0 and not st.session_state.get("exam_submitted", False):
+                    m, s = divmod(remaining, 60)
+                    total_sec = st.session_state.get("exam_duration", 1)
+                    ratio = remaining / total_sec
                 
-                if ratio > 0.5:
-                    v_class = "stress-vignette-cyan"
-                    time_color = "#22D3EE"
-                elif ratio > 0.2:
-                    v_class = "stress-vignette-orange"
-                    time_color = "#FF7A1A"
-                else:
-                    v_class = "stress-vignette-red"
-                    time_color = "#EF4444"
+                    if ratio > 0.5:
+                        v_class = "stress-vignette-cyan"
+                        time_color = "#22D3EE"
+                    elif ratio > 0.2:
+                        v_class = "stress-vignette-orange"
+                        time_color = "#FF7A1A"
+                    else:
+                        v_class = "stress-vignette-red"
+                        time_color = "#EF4444"
 
-                timer_box.markdown(
-                    f'<div class="{v_class}" style="text-align: center;">'
-                    f'<h3 style="color: {time_color}; margin: 0;">⏱ Time Remaining: {m:02d}:{s:02d}</h3>'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-            elif remaining <= 0 and not st.session_state.get("exam_submitted", False):
-                timer_box.error("🚨 TIME EXPIRED! Submitting paper...")
-                st.session_state.exam_submitted = True
+                    timer_box.markdown(
+                        f'<div class="{v_class}" style="text-align: center;">'
+                        f'<h3 style="color: {time_color}; margin: 0;">⏱ Time Remaining: {m:02d}:{s:02d}</h3>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+                elif remaining <= 0 and not st.session_state.get("exam_submitted", False):
+                    timer_box.error("🚨 TIME EXPIRED! Submitting paper...")
+                    st.session_state.exam_submitted = True
 
-            with st.form("mock_exam_form"):
-                for idx, item in enumerate(paper):
-                    st.markdown(f"**Question {idx + 1} · Source {item['num']} [{item['marks']} marks]**")
-                    render_selected_question(item, f"exam_pdf_{st.session_state.exam_run_id}_{idx}")
-                    st.session_state.exam_answers[idx] = st.text_area(f"Working for Q{idx+1}:", value=st.session_state.exam_answers.get(idx, ""), key=f"q_ans_{st.session_state.exam_run_id}_{idx}", height=100)
-                    st.session_state.exam_confidence[idx] = st.radio(f"Confidence Level for Q{idx+1}:", ["High Confidence", "Medium / Uncertain", "Low / Pure Guess"], key=f"conf_{st.session_state.exam_run_id}_{idx}", horizontal=True)
-                    st.divider()
-                submit_exam = st.form_submit_button("📋 Submit & Grade Exam")
+                with st.form("mock_exam_form"):
+                    for idx, item in enumerate(paper):
+                        st.markdown(f"**Question {idx + 1} · Source {item['num']} [{item['marks']} marks]**")
+                        render_selected_question(item, f"exam_pdf_{st.session_state.exam_run_id}_{idx}")
+                        st.session_state.exam_answers[idx] = st.text_area(f"Working for Q{idx+1}:", value=st.session_state.exam_answers.get(idx, ""), key=f"q_ans_{st.session_state.exam_run_id}_{idx}", height=100)
+                        st.session_state.exam_confidence[idx] = st.radio(f"Confidence Level for Q{idx+1}:", ["High Confidence", "Medium / Uncertain", "Low / Pure Guess"], key=f"conf_{st.session_state.exam_run_id}_{idx}", horizontal=True)
+                        st.divider()
+                    submit_exam = st.form_submit_button("📋 Submit & Grade Exam")
             
-            if submit_exam or st.session_state.get("exam_submitted", False):
-                st.session_state.exam_submitted = True
-                if not st.session_state.get("exam_graded", False):
-                    with st.spinner("Chief Examiner Grading Attempt..."):
-                        grading_prompt = f"Grade exam for {active_subject}."
-                        for idx, item in enumerate(paper):
-                            grading_prompt += f"\nQ{idx+1} ({item['marks']} marks): {item['text']}\nMARKING: {item['marking']}\nANSWER: {st.session_state.exam_answers.get(idx, '')}"
-                        eval_result, err = query_exam_guidance(grading_prompt, paper)
-                    st.session_state.exam_report = eval_result
-                    st.session_state.exam_report_err = err
-                    st.session_state.exam_graded = True
-                if st.session_state.get("exam_report"):
-                    st.markdown("## 📝 Assessment Report")
-                    st.markdown(st.session_state.exam_report)
-                elif st.session_state.get("exam_report_err"):
-                    st.error(st.session_state.exam_report_err)
-                    if st.button("🔁 Retry grading", key="retry_grading"):
-                        st.session_state.exam_graded = False
-                        st.rerun()
+                if submit_exam or st.session_state.get("exam_submitted", False):
+                    st.session_state.exam_submitted = True
+                    if not st.session_state.get("exam_graded", False):
+                        with st.spinner("Chief Examiner Grading Attempt..."):
+                            grading_prompt = f"Grade exam for {active_subject}."
+                            for idx, item in enumerate(paper):
+                                grading_prompt += f"\nQ{idx+1} ({item['marks']} marks): {item['text']}\nMARKING: {item['marking']}\nANSWER: {st.session_state.exam_answers.get(idx, '')}"
+                            eval_result, err = query_exam_guidance(grading_prompt, paper)
+                        st.session_state.exam_report = eval_result
+                        st.session_state.exam_report_err = err
+                        st.session_state.exam_graded = True
+                    if st.session_state.get("exam_report"):
+                        st.markdown("## 📝 Assessment Report")
+                        st.markdown(st.session_state.exam_report)
+                    elif st.session_state.get("exam_report_err"):
+                        st.error(st.session_state.exam_report_err)
+                        if st.button("🔁 Retry grading", key="retry_grading"):
+                            st.session_state.exam_graded = False
+                            st.rerun()
 
 # TAB 4: AI Tutor Notes, Simulators & Spaced-Repetition Flashcards
-with tab_tutor:
-    sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5, sub_tab6 = st.tabs([
-        "📖 Lessons",
-        "🧠 Flashcards",
-        "🎛 Simulators",
-        "📅 Exam calendar",
-        "💬 Ask tutor",
-        "🧊 3D lab",
-    ], key="tutor_section", on_change="rerun")
+if tab_tutor.open:
+    with tab_tutor:
+        sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5, sub_tab6 = st.tabs([
+            "📖 Lessons",
+            "🧠 Flashcards",
+            "🎛 Simulators",
+            "📅 Exam calendar",
+            "💬 Ask tutor",
+            "🧊 3D lab",
+        ], key="tutor_section", on_change="rerun")
     
-    with sub_tab1:
-        if active_subject == "MATH-N5":
-            st.caption("The eight module names and weights match the official DHET N5 syllabus. Detailed topic lists are transcribed from the Future Managers Lecturer Guide and await a full cross-check.")
-        elif active_subject == "INST-N5":
-            st.caption("These study groups are based on readable question papers. The detailed DHET syllabus and official weighting are not yet available.")
-        elif active_subject == "IE-N5":
-            st.caption("Topics and module weightings follow the verified DHET Industrial Electronics N5 syllabus.")
-        elif active_subject == "DIGI-N4":
-            st.caption("This is your confirmed N4 study scope: K-maps included; Memory Systems excluded. Module weights are not official.")
-        elif active_subject == "DIGI-N5":
-            st.caption("This topic map follows the 14 modules visible in your school textbook photos. The detailed DHET N5 syllabus and official weighting still need verification.")
-        modules = SUBJECT_MODULES.get(active_subject, ["General Module Overview"])
-        history = st.session_state.get("topic_quiz_history", [])
-        lab_history = st.session_state.get("lab_prediction_history", [])
-        adaptive_plan = build_adaptive_study_plan(
-            history, active_subject, modules, lab_history=lab_history
-        )
-        default_topic = adaptive_plan["topic"] if adaptive_plan["topic"] in modules else modules[0]
-        topic_widget_key = f"lesson_topic_{active_subject}"
-        focus_widget_key = f"lesson_focus_block_{active_subject}"
-
-        st.markdown("#### 🎯 Your tailored study session")
-        st.caption(
-            "ASK TX uses your recent topic checks, review dates, recurring missed concepts, "
-            "optional confidence ratings and 3D lab reflections. It does not assign a fixed learning style."
-        )
-        st.markdown(
-            f"**Next topic:** {adaptive_plan['topic'] or default_topic}  \n"
-            f"**Why:** {adaptive_plan['reason']}  \n"
-            f"**Pattern noticed:** {adaptive_plan['pattern']}  \n"
-            f"**Approach:** {adaptive_plan['method']}  \n"
-            f"**Suggested focus block:** {adaptive_plan['focus_minutes']} minutes"
-        )
-        with st.expander("See the suggested session steps", expanded=False):
-            for step in adaptive_plan["steps"]:
-                st.markdown(f"- **{step['minutes']} min** · {step['activity']}")
-            st.caption("Take a short reset after the block. You can change the focus length below.")
-        if st.button(
-            "▶ Start my tailored session",
-            key=f"start_adaptive_session_{active_subject}",
-            use_container_width=True,
-        ):
-            st.session_state[topic_widget_key] = default_topic
-            st.session_state[focus_widget_key] = adaptive_plan["focus_minutes"]
-            st.session_state[f"custom_topic_{active_subject}"] = ""
-            st.session_state["adaptive_start_lesson_subject"] = active_subject
-            st.rerun()
-
-        focus_minutes = st.select_slider(
-            "Focus block",
-            options=[15, 20, 25],
-            value=adaptive_plan["focus_minutes"],
-            format_func=lambda minutes: f"{minutes} minutes",
-            key=focus_widget_key,
-            help="A flexible starting point, not a fixed attention-span rule. Choose a shorter or longer block to suit you.",
-        )
-        quiz_minutes = max(4, round(focus_minutes * 0.25))
-        worked_minutes = max(3, round(focus_minutes * 0.25))
-        concept_minutes = focus_minutes - quiz_minutes - worked_minutes
-        st.info(
-            f"**A gentle {focus_minutes}-minute topic cycle:** {concept_minutes} min to understand the idea · "
-            f"{worked_minutes} min for a worked example or model · {quiz_minutes} min for the topic check. "
-            "Then take a 5-minute reset before starting another topic. Revisit missed ideas in later sessions."
-        )
-        selected_module = st.selectbox(
-            "Select Topic:", modules, index=modules.index(default_topic), key=topic_widget_key
-        )
-        with st.expander("📚 Course map and self-check status", expanded=False):
-            latest_for_map = latest_by_topic(
-                st.session_state.get("topic_quiz_history", []), active_subject
-            )
-            map_rows = [
-                {
-                    "Mapped topic": module,
-                    "Latest self-check": (
-                        f"{latest_for_map[(active_subject, module)]['score']}/"
-                        f"{latest_for_map[(active_subject, module)]['total']}"
-                        if (active_subject, module) in latest_for_map else "Not checked"
-                    ),
-                    "Status": topic_status(latest_for_map.get((active_subject, module))),
-                    "Review date": (
-                        latest_for_map[(active_subject, module)]["review_due"]
-                        if (active_subject, module) in latest_for_map else "—"
-                    ),
-                }
-                for module in modules
-            ]
-            st.dataframe(map_rows, hide_index=True, use_container_width=True)
-            st.caption(
-                "Status is based on your latest generated topic quiz and a gentle retrieval schedule. "
-                "The course map reflects the source notes shown above; it is not a claim that every map "
-                "has been independently verified against the current DHET syllabus."
-            )
-        custom_query = st.text_input(
-            "Or enter specific concept/formula:",
-            placeholder="e.g., Op-amp summing amplifier derivation",
-            key=f"custom_topic_{active_subject}",
-        )
-        target_topic = custom_query.strip() if custom_query.strip() else selected_module
-        adaptive_start = st.session_state.pop("adaptive_start_lesson_subject", None) == active_subject
-        if st.button("📖 Generate Lesson & Explanation") or adaptive_start:
-            local_material = extract_text_from_local_files(os.path.join(BASE_DIR, "Learning material"))
-            material_context = select_course_material(local_material, active_subject, target_topic)
-            if not material_context:
-                material_context = (
-                    "No local reference file clearly matched this selected subject and topic. "
-                    "Give a general explanation, label it as general guidance, and do not claim "
-                    "that it is verified against the official course syllabus."
+        if sub_tab1.open:
+            with sub_tab1:
+                if active_subject == "MATH-N5":
+                    st.caption("The eight module names and weights match the official DHET N5 syllabus. Detailed topic lists are transcribed from the Future Managers Lecturer Guide and await a full cross-check.")
+                elif active_subject == "INST-N5":
+                    st.caption("These study groups are based on readable question papers. The detailed DHET syllabus and official weighting are not yet available.")
+                elif active_subject == "IE-N5":
+                    st.caption("Topics and module weightings follow the verified DHET Industrial Electronics N5 syllabus.")
+                elif active_subject == "DIGI-N4":
+                    st.caption("This is your confirmed N4 study scope: K-maps included; Memory Systems excluded. Module weights are not official.")
+                elif active_subject == "DIGI-N5":
+                    st.caption("This topic map follows the 14 modules visible in your school textbook photos. The detailed DHET N5 syllabus and official weighting still need verification.")
+                modules = SUBJECT_MODULES.get(active_subject, ["General Module Overview"])
+                history = st.session_state.get("topic_quiz_history", [])
+                lab_history = st.session_state.get("lab_prediction_history", [])
+                adaptive_plan = build_adaptive_study_plan(
+                    history, active_subject, modules, lab_history=lab_history
                 )
+                default_topic = adaptive_plan["topic"] if adaptive_plan["topic"] in modules else modules[0]
+                topic_widget_key = f"lesson_topic_{active_subject}"
+                focus_widget_key = f"lesson_focus_block_{active_subject}"
 
-            lesson_minutes = focus_minutes - quiz_minutes
-            prompt = (
-                f"Write a focused, learner-friendly NATED {active_subject} lesson on {target_topic}. "
-                f"Structure it for about {lesson_minutes} minutes of study, with 3–4 short sections. "
-                f"Recent practice pattern: {adaptive_plan['pattern']}. Suggested teaching move: {adaptive_plan['method']} "
-                "Use this evidence to tune the scaffolding: show explicit steps when recent checks reveal gaps, "
-                "and use retrieval without notes when accuracy is good but the learner reports uncertainty. "
-                "Do not label the learner with a fixed learning style or imply a diagnosis. "
-                "Include a plain-language explanation, one worked engineering example, one brief learner try-it prompt, "
-                "and a short recap. Aim for roughly 350–500 words; prioritize the worked example over a long introduction. "
-                "Keep each section easy to finish before moving on. Avoid a textbook-length dump "
-                "and do not use inline ASCII box diagrams. Use only the selected course source below where relevant. "
-                "Distinguish sourced facts from general explanation and never claim an official syllabus match unless the source states it.\n"
-                f"{material_context}"
-            )
-            with st.spinner(f"Writing a focused lesson on '{target_topic}'..."):
-                notes, err = cached_query_gemini(prompt, active_subject)
-                if notes:
-                    st.session_state["active_topic_lesson"] = {
-                        "subject": active_subject,
-                        "topic": target_topic,
-                        "notes": notes,
-                        "quiz": None,
-                        "quiz_error": None,
-                    }
-                else:
-                    st.session_state["active_topic_lesson"] = {
-                        "subject": active_subject,
-                        "topic": target_topic,
-                        "notes": None,
-                        "quiz": None,
-                        "quiz_error": None,
-                        "lesson_error": err,
-                    }
-
-        lesson_state = st.session_state.get("active_topic_lesson", {})
-        if lesson_state.get("subject") == active_subject and lesson_state.get("topic") == target_topic:
-            if lesson_state.get("notes"):
-                st.markdown("### 🎨 Engineering Vector Schematic")
-                render_topic_diagram(target_topic)
-                st.divider()
-                st.markdown(lesson_state["notes"])
-                st.divider()
-                if lesson_state.get("quiz"):
-                    render_topic_quiz(lesson_state["quiz"], active_subject, target_topic)
-                else:
-                    st.markdown("### 🧠 Quick topic check")
-                    st.info("Your lesson is open. Generate the optional topic quiz whenever you're ready.")
-                    quiz_button_id = re.sub(r"[^A-Za-z0-9]+", "_", target_topic)[:40]
-                    if st.button("Generate this topic's quiz", key=f"generate_topic_quiz_{active_subject}_{quiz_button_id}"):
-                        with st.spinner("Creating five gentle questions from this lesson..."):
-                            quiz, quiz_err = request_topic_quiz(active_subject, target_topic, lesson_state["notes"])
-                        if quiz:
-                            lesson_state["quiz"] = quiz
-                            lesson_state["quiz_error"] = None
-                            st.session_state["active_topic_lesson"] = lesson_state
-                            st.rerun()
-                        else:
-                            st.error(quiz_err or "The quiz could not be created. Please try again.")
-            else:
-                st.error(lesson_state.get("lesson_error", "The lesson could not be generated. Please try again."))
-
-    with sub_tab2:
-        st.markdown("### 🧠 Active Recall Flashcard Deck")
-        cards = FLASHCARDS_DATA.get(active_subject, [])
-        if not cards:
-            st.info("Flashcards for this subject have not been integrated yet.")
-        else:
-            if "card_idx" not in st.session_state:
-                st.session_state.card_idx = 0
-                st.session_state.show_answer = False
-
-            current_card = cards[st.session_state.card_idx % len(cards)]
-            st.info(f"**Flashcard {st.session_state.card_idx % len(cards) + 1} of {len(cards)}**\n\n### ❓ Question:\n{current_card['q']}")
-
-            if st.button("👁️ Flip Card / Reveal Answer"):
-                st.session_state.show_answer = not st.session_state.show_answer
-
-            if st.session_state.show_answer:
-                st.success(f"**💡 Answer:**\n\n{current_card['a']}")
-                col_a, col_b = st.columns(2)
-                if col_a.button("✅ Got It Right (+1 Score)"):
-                    st.session_state.card_idx += 1
-                    st.session_state.show_answer = False
+                st.markdown("#### 🎯 Your tailored study session")
+                st.caption(
+                    "Tex uses your recent topic checks, review dates, recurring missed concepts, "
+                    "optional confidence ratings and 3D lab reflections. It does not assign a fixed learning style."
+                )
+                st.markdown(
+                    f"**Next topic:** {adaptive_plan['topic'] or default_topic}  \n"
+                    f"**Why:** {adaptive_plan['reason']}  \n"
+                    f"**Pattern noticed:** {adaptive_plan['pattern']}  \n"
+                    f"**Approach:** {adaptive_plan['method']}  \n"
+                    f"**Suggested focus block:** {adaptive_plan['focus_minutes']} minutes"
+                )
+                with st.expander("See the suggested session steps", expanded=False):
+                    for step in adaptive_plan["steps"]:
+                        st.markdown(f"- **{step['minutes']} min** · {step['activity']}")
+                    st.caption("Take a short reset after the block. You can change the focus length below.")
+                if st.button(
+                    "▶ Start my tailored session",
+                    key=f"start_adaptive_session_{active_subject}",
+                    width="stretch",
+                ):
+                    st.session_state[topic_widget_key] = default_topic
+                    st.session_state[focus_widget_key] = adaptive_plan["focus_minutes"]
+                    st.session_state[f"custom_topic_{active_subject}"] = ""
+                    st.session_state["adaptive_start_lesson_subject"] = active_subject
                     st.rerun()
-                if col_b.button("❌ Need Review"):
-                    st.session_state.show_answer = False
-                    st.warning("Flagged for review!")
 
-    with sub_tab3:
-        st.markdown("### 🎛 Interactive Parameter Simulation Sandbox")
-        sim_type = st.selectbox("Select Hardware Simulator:", ["Operational Amplifier Gain & Clipping", "Venturi Flow Meter & Pressure Head"])
-        
-        if sim_type == "Operational Amplifier Gain & Clipping":
-            c1, c2 = st.columns([1, 2])
-            with c1:
-                r1 = st.slider("Input Resistor R1 (kΩ):", 1.0, 50.0, 10.0)
-                rf = st.slider("Feedback Resistor Rf (kΩ):", 10.0, 200.0, 50.0)
-                vin_peak = st.slider("Input Voltage Vin (Peak Volts):", 0.1, 5.0, 2.0)
-                v_supply = st.slider("Op-Amp Supply Rails Vcc (±Volts):", 5.0, 18.0, 12.0)
-            with c2:
-                gain = - (rf / r1)
-                vout_calc = gain * vin_peak
-                st.metric("Theoretical Gain (Av)", f"{gain:.1f}")
-                st.metric("Calculated Vout Peak", f"{vout_calc:.2f} V")
-                
-                t = np.linspace(0, 2*np.pi, 200)
-                vin_wave = vin_peak * np.sin(t)
-                vout_wave = np.clip(gain * vin_wave, -v_supply, v_supply)
-                
-                if plt:
-                    fig, ax = plt.subplots(figsize=(7, 3), dpi=100)
-                    fig.patch.set_facecolor("#0A0D12")
-                    ax.set_facecolor("#0A0D12")
-                    ax.plot(t, vin_wave, label="Input (Vin)", color="#22D3EE", lw=2)
-                    ax.plot(t, vout_wave, label="Output (Vout)", color="#FF7A1A", lw=2.5)
-                    ax.axhline(v_supply, color="red", ls="--")
-                    ax.axhline(-v_supply, color="red", ls="--")
-                    ax.tick_params(colors="white")
-                    ax.legend(facecolor="#0A0D12", labelcolor="white")
-                    st.pyplot(fig)
-
-        elif sim_type == "Venturi Flow Meter & Pressure Head":
-            c1, c2 = st.columns([1, 2])
-            with c1:
-                v1 = st.slider("Inlet Velocity V1 (m/s):", 1.0, 10.0, 2.0)
-                area_ratio = st.slider("Pipe-to-Throat Area Ratio (A1/A2):", 1.5, 5.0, 2.0)
-                rho = st.number_input("Fluid Density (kg/m³):", value=1000)
-            with c2:
-                v2 = v1 * area_ratio
-                delta_p = 0.5 * rho * (v2**2 - v1**2)
-                st.metric("Throat Velocity V2", f"{v2:.2f} m/s")
-                st.metric("Differential Pressure (ΔP)", f"{delta_p/1000:.2f} kPa")
-
-    with sub_tab4:
-        st.subheader("📅 College exam and study calendar")
-        timetable_path = os.path.join(BASE_DIR, "data", "timetables", "n5_exam_timetable.json")
-        try:
-            with open(timetable_path, "r", encoding="utf-8") as timetable_file:
-                exam_timetable = json.load(timetable_file)
-        except (OSError, json.JSONDecodeError) as exc:
-            exam_timetable = None
-            st.error(f"The exam timetable could not be loaded: {exc}")
-
-        if exam_timetable:
-            st.caption(f"{exam_timetable.get('examination_body', 'College')} · {exam_timetable.get('trimester', 'Exam cycle')} · {exam_timetable.get('level', 'N-level')} · South African time")
-            source_label = exam_timetable.get("source_name", "Schedule source")
-            source_url = exam_timetable.get("source_url")
-            source_updated = exam_timetable.get("source_updated_at")
-            if source_url:
-                source_text = f"[Schedule source: {source_label}]({source_url})"
-                if source_updated:
-                    source_text += f" · updated {source_updated}"
-                st.markdown(source_text)
-            source_note = exam_timetable.get(
-                "source_note",
-                "Confirm these dates against your current college exam schedule before relying on them.",
-            )
-            if exam_timetable.get("source_status") == "verified":
-                st.info(source_note)
-            else:
-                st.warning(source_note)
-            st.info("This calendar currently contains Berea ColTech N5 entries only. N4 and N6 exam dates are not loaded yet.")
-            exam_rows = [
-                {
-                    "Date": item.get("exam_date", ""),
-                    "Session": item.get("session", ""),
-                    "Subject": item.get("subject_name", ""),
-                }
-                for item in exam_timetable.get("exams", [])
-            ]
-            if exam_rows:
-                st.table(exam_rows)
-                calendar_confirmed = st.checkbox(
-                    "I checked these dates against my current college timetable and registered subjects.",
-                    key=f"confirm_exam_calendar_{exam_timetable.get('trimester', 'current')}",
+                focus_minutes = st.select_slider(
+                    "Focus block",
+                    options=[15, 20, 25],
+                    value=adaptive_plan["focus_minutes"],
+                    format_func=lambda minutes: f"{minutes} minutes",
+                    key=focus_widget_key,
+                    help="A flexible starting point, not a fixed attention-span rule. Choose a shorter or longer block to suit you.",
                 )
-                st.download_button(
-                    "Add to my system calendar (.ics)",
-                    data=build_exam_calendar_ics(exam_timetable, learner_verified=calendar_confirmed),
-                    file_name=f"trentox_{exam_timetable.get('trimester', 'exams').lower()}_exams.ics",
-                    mime="text/calendar",
-                    disabled=not calendar_confirmed,
-                    help="After checking the dates, download and open the .ics file in Google Calendar, Outlook, Apple Calendar, or Windows Calendar.",
-                    key=f"download_exam_calendar_{exam_timetable.get('trimester', 'current')}",
+                quiz_minutes = max(4, round(focus_minutes * 0.25))
+                worked_minutes = max(3, round(focus_minutes * 0.25))
+                concept_minutes = focus_minutes - quiz_minutes - worked_minutes
+                st.info(
+                    f"**A gentle {focus_minutes}-minute topic cycle:** {concept_minutes} min to understand the idea · "
+                    f"{worked_minutes} min for a worked example or model · {quiz_minutes} min for the topic check. "
+                    "Then take a 5-minute reset before starting another topic. Revisit missed ideas in later sessions."
                 )
-                st.caption("A browser cannot write silently to a device calendar. This calendar file is a one-time import; download it again if the timetable changes.")
-            else:
-                st.info("No exam events are listed in the timetable file yet.")
-
-        st.divider()
-        st.markdown("#### Suggested study spacing")
-        timetable_data = [
-            {"When": "Today", "Focus": f"One {active_subject} topic", "Activities": "Start with one flexible 15–25 minute focus cycle; finish with its short topic check."},
-            {"When": "Next study day", "Focus": "Retrieve, then continue", "Activities": "Spend 5 minutes recalling yesterday's key idea without notes, then start one new topic."},
-            {"When": "About 3 days later", "Focus": "Close a knowledge gap", "Activities": "Retry the quiz for any missed concept, then apply it in a worked example or model."},
-            {"When": "About 1 week later", "Focus": "Mix and connect", "Activities": "Use a short cumulative check across earlier topics before choosing the next lesson."},
-            {"When": "Before an assessment", "Focus": "Build confidence", "Activities": "Practise a small set of exam-style questions, review feedback, and schedule another light retrieval pass."}
-        ]
-        st.caption("Suggested spacing, not a rigid timetable. Move the review points to fit your course and confirmed exam date.")
-        st.table(timetable_data)
-
-    with sub_tab5:
-        render_ai_tutor_chat(widget_prefix="tutor_tab")
-
-    with sub_tab6:
-        if sub_tab6.open:
-            st.markdown("### 🧊 Interactive 3D engineering lab")
-            st.caption("How to operate a 3D model: drag empty space to rotate · scroll or pinch to zoom · right-drag to pan where supported · hover or click a labelled component to inspect it · adjust sliders or input switches, then use Reset.")
-
-            from ui.diagram_engine import render_diagram3d
-            from ui.diagram_registry import get_spec, title_of
-
-            lab_profiles = {
-                "Mathematics N5": ["derivative", "riemann", "revolve", "second_moment", "ode_decay", "unit_circle", "pascal"],
-                "Digital Electronics N4": ["logic_gate_board", "kmap4", "full_adder_3d"],
-                "Digital Electronics N5 — visualization preview": ["weighted_dac_3d", "flash_adc_3d"],
-                "Industrial Electronics N5": ["phasor", "rc_response", "bridge_rectifier_3d", "rectifier", "bjt_structure", "load_line", "opamp_inv", "opamp_noninv", "timer555", "wheatstone", "lvdt", "scr_structure", "scr_waveform", "cro", "lc_tank", "lcd_cell"],
-                "Industrial Instruments N5": ["rotameter", "venturi", "orifice", "weir", "target_flow", "manometer", "bourdon", "strain_gauge", "rtd_tc", "tank_level", "ph_probe", "pid_loop", "step_response"],
-            }
-            lab_default_by_code = {
-                "MATH-N5": "Mathematics N5",
-                "DIGI-N4": "Digital Electronics N4",
-                "DIGI-N5": "Digital Electronics N5 — visualization preview",
-                "IE-N5": "Industrial Electronics N5",
-                "INST-N5": "Industrial Instruments N5",
-            }
-            lab_subjects = list(lab_profiles)
-            preferred_lab_subject = lab_default_by_code.get(active_subject, "Digital Electronics N5 — visualization preview")
-            lab_subject = st.selectbox(
-                "Lab subject:",
-                lab_subjects,
-                index=lab_subjects.index(preferred_lab_subject),
-                key="interactive_3d_lab_subject",
-            )
-
-            if lab_subject == "Digital Electronics N5 — visualization preview":
-                st.warning("This DAC scene is an interactive study aid. The standalone Digital Electronics N5 curriculum map still needs authoritative syllabus verification.")
-            elif lab_subject == "Digital Electronics N4":
-                st.caption("N4 lab scope includes logic gates, full adders and K-maps. Memory Systems are excluded from your confirmed N4 scope.")
-
-            if lab_subject == "Industrial Electronics N5":
-                st.markdown("#### Guided 3D engineering diagrams")
-
-            diagram_ids = lab_profiles[lab_subject]
-            diagram_id = st.selectbox(
-                "Interactive model:",
-                diagram_ids,
-                format_func=title_of,
-                key=f"interactive_3d_lab_diagram_{lab_subject}",
-            )
-            lab_challenges = {
-                "rotameter": "Predict where the float will sit. Raise flow, then change specific gravity while holding flow steady. Explain why the water-calibrated indication shifts.",
-                "logic_gate_board": "Try A/B = 00, 01, 10 and 11. Record AND, OR, XOR and NAND; explain why XOR differs from OR.",
-                "kmap4": "Set four edge-adjacent minterms to 1. Identify the largest valid group, including wraparound adjacency.",
-                "full_adder_3d": "Set A = 1, B = 1 and Cin = 1. Predict SUM and CARRY before toggling the inputs.",
-                "weighted_dac_3d": "Set D3D2D1D0 = 1010. Calculate Vout from the resistor weights, then compare with the readout.",
-                "flash_adc_3d": "Move Vin just below and above a comparator threshold. Observe the thermometer count, binary code and quantization error.",
-                "derivative": "Keep the point fixed and reduce h. Compare the secant slope with the exact tangent slope.",
-                "riemann": "Increase the number of strips. Observe how the sum approaches the area under the curve.",
-                "opamp_inv": "Double Rf while keeping R1 and Vin fixed. Predict the gain and check whether the output clips.",
-                "opamp_noninv": "Change Rf and R1. Relate the measured gain to 1 + Rf/R1.",
-                "rectifier": "Compare half-wave and full-wave output, then increase the filter size and observe ripple.",
-                "bridge_rectifier_3d": "Move phase through both half-cycles and identify the conducting diode pair. Then change C and RLoad; predict the ripple change.",
-                "scr_structure": "Apply forward anode voltage with the gate off, then trigger the gate. Describe the state change.",
-                "scr_waveform": "Increase firing angle α. Predict how the conduction angle and average output change.",
-                "venturi": "Increase inlet velocity. Compare throat velocity with the change in differential pressure.",
-                "bourdon": "Increase pressure and follow the tube tip, linkage and pointer response.",
-                "rtd_tc": "Change process temperature. Compare how the RTD resistance and thermocouple EMF are represented.",
-                "pid_loop": "Change the error and controller gains. Observe how P, I and D terms contribute to the control-valve output.",
-            }
-            lab_challenge = lab_challenges.get(
-                diagram_id,
-                "Rotate the model, hover each labelled part, then change one control at a time and explain the updated readouts.",
-            )
-            lab_code = LAB_SUBJECT_CODES.get(lab_subject)
-            lab_topic = LAB_TOPIC_BY_DIAGRAM.get(diagram_id)
-            prediction_key = "lab_prediction_" + re.sub(r"[^A-Za-z0-9_-]+", "_", f"{lab_subject}_{diagram_id}")
-            locked_key = f"{prediction_key}_locked"
-            saved_key = f"{prediction_key}_saved"
-            locked_prediction = bool(st.session_state.get(locked_key, False))
-
-            st.markdown("#### 🧠 Predict → explore → explain")
-            if not locked_prediction:
-                st.info("Make a brief prediction before opening the model. Then change one control and compare what happens.")
-                st.caption("**Topic challenge:** " + lab_challenge)
-                prediction_text = st.text_area(
-                    "What do you expect the model to show?",
-                    key=f"{prediction_key}_text",
-                    max_chars=600,
-                    height=90,
-                    placeholder="State the direction of change, expected output, or component behaviour.",
+                selected_module = st.selectbox(
+                    "Select Topic:", modules, index=modules.index(default_topic), key=topic_widget_key
                 )
-                prediction_confidence = st.radio(
-                    "How sure are you?",
-                    ["Unsure", "Somewhat sure", "Very sure"],
-                    index=1,
-                    horizontal=True,
-                    key=f"{prediction_key}_confidence",
+                with st.expander("📚 Course map and self-check status", expanded=False):
+                    latest_for_map = latest_by_topic(
+                        st.session_state.get("topic_quiz_history", []), active_subject
+                    )
+                    map_rows = [
+                        {
+                            "Mapped topic": module,
+                            "Latest self-check": (
+                                f"{latest_for_map[(active_subject, module)]['score']}/"
+                                f"{latest_for_map[(active_subject, module)]['total']}"
+                                if (active_subject, module) in latest_for_map else "Not checked"
+                            ),
+                            "Status": topic_status(latest_for_map.get((active_subject, module))),
+                            "Review date": (
+                                latest_for_map[(active_subject, module)]["review_due"]
+                                if (active_subject, module) in latest_for_map else "—"
+                            ),
+                        }
+                        for module in modules
+                    ]
+                    st.dataframe(map_rows, hide_index=True, width="stretch")
+                    st.caption(
+                        "Status is based on your latest generated topic quiz and a gentle retrieval schedule. "
+                        "The course map reflects the source notes shown above; it is not a claim that every map "
+                        "has been independently verified against the current DHET syllabus."
+                    )
+                custom_query = st.text_input(
+                    "Or enter specific concept/formula:",
+                    placeholder="e.g., Op-amp summing amplifier derivation",
+                    key=f"custom_topic_{active_subject}",
                 )
-                if st.button("Lock prediction and open the model", key=f"{prediction_key}_lock_button"):
-                    if not prediction_text.strip():
-                        st.warning("Write a short prediction first. One sentence is enough.")
+                target_topic = custom_query.strip() if custom_query.strip() else selected_module
+                adaptive_start = st.session_state.pop("adaptive_start_lesson_subject", None) == active_subject
+                if st.button("📖 Generate Lesson & Explanation") or adaptive_start:
+                    local_material = extract_text_from_local_files(os.path.join(BASE_DIR, "Learning material"))
+                    material_context = select_course_material(local_material, active_subject, target_topic)
+                    if not material_context:
+                        material_context = (
+                            "No local reference file clearly matched this selected subject and topic. "
+                            "Give a general explanation, label it as general guidance, and do not claim "
+                            "that it is verified against the official course syllabus."
+                        )
+
+                    lesson_minutes = focus_minutes - quiz_minutes
+                    prompt = (
+                        f"Write a focused, learner-friendly NATED {active_subject} lesson on {target_topic}. "
+                        f"Structure it for about {lesson_minutes} minutes of study, with 3–4 short sections. "
+                        f"Recent practice pattern: {adaptive_plan['pattern']}. Suggested teaching move: {adaptive_plan['method']} "
+                        "Use this evidence to tune the scaffolding: show explicit steps when recent checks reveal gaps, "
+                        "and use retrieval without notes when accuracy is good but the learner reports uncertainty. "
+                        "Do not label the learner with a fixed learning style or imply a diagnosis. "
+                        "Include a plain-language explanation, one worked engineering example, one brief learner try-it prompt, "
+                        "and a short recap. Aim for roughly 350–500 words; prioritize the worked example over a long introduction. "
+                        "Keep each section easy to finish before moving on. Avoid a textbook-length dump "
+                        "and do not use inline ASCII box diagrams. Use only the selected course source below where relevant. "
+                        "Distinguish sourced facts from general explanation and never claim an official syllabus match unless the source states it.\n"
+                        f"{material_context}"
+                    )
+                    with st.spinner(f"Writing a focused lesson on '{target_topic}'..."):
+                        notes, err = cached_query_gemini(prompt, active_subject)
+                        if notes:
+                            st.session_state["active_topic_lesson"] = {
+                                "subject": active_subject,
+                                "topic": target_topic,
+                                "notes": notes,
+                                "quiz": None,
+                                "quiz_error": None,
+                            }
+                        else:
+                            st.session_state["active_topic_lesson"] = {
+                                "subject": active_subject,
+                                "topic": target_topic,
+                                "notes": None,
+                                "quiz": None,
+                                "quiz_error": None,
+                                "lesson_error": err,
+                            }
+
+                lesson_state = st.session_state.get("active_topic_lesson", {})
+                if lesson_state.get("subject") == active_subject and lesson_state.get("topic") == target_topic:
+                    if lesson_state.get("notes"):
+                        st.markdown("### 🎨 Engineering Vector Schematic")
+                        render_topic_diagram(target_topic)
+                        st.divider()
+                        st.markdown(lesson_state["notes"])
+                        st.divider()
+                        if lesson_state.get("quiz"):
+                            render_topic_quiz(lesson_state["quiz"], active_subject, target_topic)
+                        else:
+                            st.markdown("### 🧠 Quick topic check")
+                            st.info("Your lesson is open. Generate the optional topic quiz whenever you're ready.")
+                            quiz_button_id = re.sub(r"[^A-Za-z0-9]+", "_", target_topic)[:40]
+                            if st.button("Generate this topic's quiz", key=f"generate_topic_quiz_{active_subject}_{quiz_button_id}"):
+                                with st.spinner("Creating five gentle questions from this lesson..."):
+                                    quiz, quiz_err = request_topic_quiz(active_subject, target_topic, lesson_state["notes"])
+                                if quiz:
+                                    lesson_state["quiz"] = quiz
+                                    lesson_state["quiz_error"] = None
+                                    st.session_state["active_topic_lesson"] = lesson_state
+                                    st.rerun()
+                                else:
+                                    st.error(quiz_err or "The quiz could not be created. Please try again.")
                     else:
-                        st.session_state[locked_key] = True
-                        st.session_state[f"{prediction_key}_confidence_value"] = {
-                            "Unsure": 1, "Somewhat sure": 2, "Very sure": 3
-                        }[prediction_confidence]
-                        st.rerun()
-            else:
-                st.success("Prediction locked. Now inspect the model, change one control, and compare the result.")
-                st.caption("**Topic challenge:** " + lab_challenge)
-                if st.button("Start a new prediction", key=f"{prediction_key}_reset_button"):
-                    for state_key in (
-                        locked_key, saved_key, f"{prediction_key}_text",
-                        f"{prediction_key}_confidence", f"{prediction_key}_confidence_value",
-                        f"{prediction_key}_reflection",
-                    ):
-                        st.session_state.pop(state_key, None)
-                    st.rerun()
-                diagram_spec = get_spec(diagram_id)
-                if diagram_spec:
-                    render_diagram3d(diagram_spec, height=680)
+                        st.error(lesson_state.get("lesson_error", "The lesson could not be generated. Please try again."))
+
+        if sub_tab2.open:
+            with sub_tab2:
+                st.markdown("### 🧠 Active Recall Flashcard Deck")
+                cards = FLASHCARDS_DATA.get(active_subject, [])
+                if not cards:
+                    st.info("Flashcards for this subject have not been integrated yet.")
                 else:
-                    st.error("This model could not be loaded. Check the diagram registry and its source module.")
+                    if "card_idx" not in st.session_state:
+                        st.session_state.card_idx = 0
+                        st.session_state.show_answer = False
 
-                st.caption("After you adjust a control, compare the readout with your prediction.")
-                reflection = st.radio(
-                    "How did the result compare?",
-                    ["It matched", "It partly matched", "It was different"],
-                    index=None,
-                    horizontal=True,
-                    key=f"{prediction_key}_reflection",
-                )
-                if not st.session_state.get(saved_key):
-                    if st.button("Save this lab reflection", key=f"{prediction_key}_save_button"):
-                        if reflection is None:
-                            st.info("Choose the reflection that best describes what you observed.")
-                        elif lab_code and lab_topic:
-                            lab_records = st.session_state.get("lab_prediction_history", [])
-                            lab_records.append({
-                                "subject": lab_code,
-                                "topic": lab_topic,
-                                "matched": reflection == "It matched",
-                                "confidence": st.session_state.get(f"{prediction_key}_confidence_value", 2),
-                                "attempted_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                            })
-                            st.session_state["lab_prediction_history"] = lab_records[-300:]
-                            st.session_state[saved_key] = True
-                            st.success("Reflection saved for this browser session. It can guide your next study suggestion.")
-                        else:
-                            st.session_state[saved_key] = True
-                            st.success("Reflection saved for this browser session.")
-                elif st.session_state.get(saved_key):
-                    st.success("Saved. Your lab reflection stays in this browser session and is not included in the progress export.")
+                    current_card = cards[st.session_state.card_idx % len(cards)]
+                    st.info(f"**Flashcard {st.session_state.card_idx % len(cards) + 1} of {len(cards)}**\n\n### ❓ Question:\n{current_card['q']}")
 
-            if lab_subject == "Industrial Electronics N5":
+                    if st.button("👁️ Flip Card / Reveal Answer"):
+                        st.session_state.show_answer = not st.session_state.show_answer
+
+                    if st.session_state.show_answer:
+                        st.success(f"**💡 Answer:**\n\n{current_card['a']}")
+                        col_a, col_b = st.columns(2)
+                        if col_a.button("✅ Got It Right (+1 Score)"):
+                            st.session_state.card_idx += 1
+                            st.session_state.show_answer = False
+                            st.rerun()
+                        if col_b.button("❌ Need Review"):
+                            st.session_state.show_answer = False
+                            st.warning("Flagged for review!")
+
+        if sub_tab3.open:
+            with sub_tab3:
+                st.markdown("### 🎛 Interactive Parameter Simulation Sandbox")
+                sim_type = st.selectbox("Select Hardware Simulator:", ["Operational Amplifier Gain & Clipping", "Venturi Flow Meter & Pressure Head"])
+        
+                if sim_type == "Operational Amplifier Gain & Clipping":
+                    c1, c2 = st.columns([1, 2])
+                    with c1:
+                        r1 = st.slider("Input Resistor R1 (kΩ):", 1.0, 50.0, 10.0)
+                        rf = st.slider("Feedback Resistor Rf (kΩ):", 10.0, 200.0, 50.0)
+                        vin_peak = st.slider("Input Voltage Vin (Peak Volts):", 0.1, 5.0, 2.0)
+                        v_supply = st.slider("Op-Amp Supply Rails Vcc (±Volts):", 5.0, 18.0, 12.0)
+                    with c2:
+                        gain = - (rf / r1)
+                        vout_calc = gain * vin_peak
+                        st.metric("Theoretical Gain (Av)", f"{gain:.1f}")
+                        st.metric("Calculated Vout Peak", f"{vout_calc:.2f} V")
+                
+                        t = np.linspace(0, 2*np.pi, 200)
+                        vin_wave = vin_peak * np.sin(t)
+                        vout_wave = np.clip(gain * vin_wave, -v_supply, v_supply)
+                
+                        if plt:
+                            fig, ax = plt.subplots(figsize=(7, 3), dpi=100)
+                            fig.patch.set_facecolor("#0A0D12")
+                            ax.set_facecolor("#0A0D12")
+                            ax.plot(t, vin_wave, label="Input (Vin)", color="#22D3EE", lw=2)
+                            ax.plot(t, vout_wave, label="Output (Vout)", color="#FF7A1A", lw=2.5)
+                            ax.axhline(v_supply, color="red", ls="--")
+                            ax.axhline(-v_supply, color="red", ls="--")
+                            ax.tick_params(colors="white")
+                            ax.legend(facecolor="#0A0D12", labelcolor="white")
+                            st.pyplot(fig)
+
+                elif sim_type == "Venturi Flow Meter & Pressure Head":
+                    c1, c2 = st.columns([1, 2])
+                    with c1:
+                        v1 = st.slider("Inlet Velocity V1 (m/s):", 1.0, 10.0, 2.0)
+                        area_ratio = st.slider("Pipe-to-Throat Area Ratio (A1/A2):", 1.5, 5.0, 2.0)
+                        rho = st.number_input("Fluid Density (kg/m³):", value=1000)
+                    with c2:
+                        v2 = v1 * area_ratio
+                        delta_p = 0.5 * rho * (v2**2 - v1**2)
+                        st.metric("Throat Velocity V2", f"{v2:.2f} m/s")
+                        st.metric("Differential Pressure (ΔP)", f"{delta_p/1000:.2f} kPa")
+
+        if sub_tab4.open:
+            with sub_tab4:
+                st.subheader("📅 College exam and study calendar")
+                timetable_path = os.path.join(BASE_DIR, "data", "timetables", "n5_exam_timetable.json")
+                try:
+                    with open(timetable_path, "r", encoding="utf-8") as timetable_file:
+                        exam_timetable = json.load(timetable_file)
+                except (OSError, json.JSONDecodeError) as exc:
+                    exam_timetable = None
+                    st.error(f"The exam timetable could not be loaded: {exc}")
+
+                if exam_timetable:
+                    st.caption(f"{exam_timetable.get('examination_body', 'College')} · {exam_timetable.get('trimester', 'Exam cycle')} · {exam_timetable.get('level', 'N-level')} · South African time")
+                    source_label = exam_timetable.get("source_name", "Schedule source")
+                    source_url = exam_timetable.get("source_url")
+                    source_updated = exam_timetable.get("source_updated_at")
+                    if source_url:
+                        source_text = f"[Schedule source: {source_label}]({source_url})"
+                        if source_updated:
+                            source_text += f" · updated {source_updated}"
+                        st.markdown(source_text)
+                    source_note = exam_timetable.get(
+                        "source_note",
+                        "Confirm these dates against your current college exam schedule before relying on them.",
+                    )
+                    if exam_timetable.get("source_status") == "verified":
+                        st.info(source_note)
+                    else:
+                        st.warning(source_note)
+                    st.info("This calendar currently contains Berea ColTech N5 entries only. N4 and N6 exam dates are not loaded yet.")
+                    exam_rows = [
+                        {
+                            "Date": item.get("exam_date", ""),
+                            "Session": item.get("session", ""),
+                            "Subject": item.get("subject_name", ""),
+                        }
+                        for item in exam_timetable.get("exams", [])
+                    ]
+                    if exam_rows:
+                        st.table(exam_rows)
+                        calendar_confirmed = st.checkbox(
+                            "I checked these dates against my current college timetable and registered subjects.",
+                            key=f"confirm_exam_calendar_{exam_timetable.get('trimester', 'current')}",
+                        )
+                        st.download_button(
+                            "Add to my system calendar (.ics)",
+                            data=build_exam_calendar_ics(exam_timetable, learner_verified=calendar_confirmed),
+                            file_name=f"trentox_{exam_timetable.get('trimester', 'exams').lower()}_exams.ics",
+                            mime="text/calendar",
+                            disabled=not calendar_confirmed,
+                            help="After checking the dates, download and open the .ics file in Google Calendar, Outlook, Apple Calendar, or Windows Calendar.",
+                            key=f"download_exam_calendar_{exam_timetable.get('trimester', 'current')}",
+                        )
+                        st.caption("A browser cannot write silently to a device calendar. This calendar file is a one-time import; download it again if the timetable changes.")
+                    else:
+                        st.info("No exam events are listed in the timetable file yet.")
+
                 st.divider()
-                st.markdown("#### 🧰 Build and simulate this topic")
-                st.caption(f"Use the interactive {title_of(diagram_id)} model above, then build a matching circuit below. Add components, connect breadboard holes and Arduino pins, run the built-in Blink sketch or load a supported .ino sketch, and compare your predicted values with the DC meter.")
-                from ui.circuit_lab import render_circuit_lab
-                render_circuit_lab(height=1030, focus_topic=title_of(diagram_id))
+                st.markdown("#### Suggested study spacing")
+                timetable_data = [
+                    {"When": "Today", "Focus": f"One {active_subject} topic", "Activities": "Start with one flexible 15–25 minute focus cycle; finish with its short topic check."},
+                    {"When": "Next study day", "Focus": "Retrieve, then continue", "Activities": "Spend 5 minutes recalling yesterday's key idea without notes, then start one new topic."},
+                    {"When": "About 3 days later", "Focus": "Close a knowledge gap", "Activities": "Retry the quiz for any missed concept, then apply it in a worked example or model."},
+                    {"When": "About 1 week later", "Focus": "Mix and connect", "Activities": "Use a short cumulative check across earlier topics before choosing the next lesson."},
+                    {"When": "Before an assessment", "Focus": "Build confidence", "Activities": "Practise a small set of exam-style questions, review feedback, and schedule another light retrieval pass."}
+                ]
+                st.caption("Suggested spacing, not a rigid timetable. Move the review points to fit your course and confirmed exam date.")
+                st.table(timetable_data)
+
+        if sub_tab5.open:
+            with sub_tab5:
+                render_ai_tutor_chat(widget_prefix="tutor_tab")
+
+        if sub_tab6.open:
+            with sub_tab6:
+                if sub_tab6.open:
+                    st.markdown("### 🧊 Interactive 3D engineering lab")
+                    st.caption("How to operate a 3D model: drag empty space to rotate · scroll or pinch to zoom · right-drag to pan where supported · hover or click a labelled component to inspect it · adjust sliders or input switches, then use Reset.")
+
+                    from ui.diagram_engine import render_diagram3d
+                    from ui.diagram_registry import get_spec, title_of
+
+                    lab_profiles = {
+                        "Mathematics N5": ["derivative", "riemann", "revolve", "second_moment", "ode_decay", "unit_circle", "pascal"],
+                        "Digital Electronics N4": ["logic_gate_board", "kmap4", "full_adder_3d"],
+                        "Digital Electronics N5 — visualization preview": ["weighted_dac_3d", "flash_adc_3d"],
+                        "Industrial Electronics N5": ["phasor", "rc_response", "bridge_rectifier_3d", "rectifier", "bjt_structure", "load_line", "opamp_inv", "opamp_noninv", "timer555", "wheatstone", "lvdt", "scr_structure", "scr_waveform", "cro", "lc_tank", "lcd_cell"],
+                        "Industrial Instruments N5": ["rotameter", "venturi", "orifice", "weir", "target_flow", "manometer", "bourdon", "strain_gauge", "rtd_tc", "tank_level", "ph_probe", "pid_loop", "step_response"],
+                    }
+                    lab_default_by_code = {
+                        "MATH-N5": "Mathematics N5",
+                        "DIGI-N4": "Digital Electronics N4",
+                        "DIGI-N5": "Digital Electronics N5 — visualization preview",
+                        "IE-N5": "Industrial Electronics N5",
+                        "INST-N5": "Industrial Instruments N5",
+                    }
+                    lab_subjects = list(lab_profiles)
+                    preferred_lab_subject = lab_default_by_code.get(active_subject, "Digital Electronics N5 — visualization preview")
+                    lab_subject = st.selectbox(
+                        "Lab subject:",
+                        lab_subjects,
+                        index=lab_subjects.index(preferred_lab_subject),
+                        key="interactive_3d_lab_subject",
+                    )
+
+                    if lab_subject == "Digital Electronics N5 — visualization preview":
+                        st.warning("This DAC scene is an interactive study aid. The standalone Digital Electronics N5 curriculum map still needs authoritative syllabus verification.")
+                    elif lab_subject == "Digital Electronics N4":
+                        st.caption("N4 lab scope includes logic gates, full adders and K-maps. Memory Systems are excluded from your confirmed N4 scope.")
+
+                    if lab_subject == "Industrial Electronics N5":
+                        st.markdown("#### Guided 3D engineering diagrams")
+
+                    diagram_ids = lab_profiles[lab_subject]
+                    diagram_id = st.selectbox(
+                        "Interactive model:",
+                        diagram_ids,
+                        format_func=title_of,
+                        key=f"interactive_3d_lab_diagram_{lab_subject}",
+                    )
+                    lab_challenges = {
+                        "rotameter": "Predict where the float will sit. Raise flow, then change specific gravity while holding flow steady. Explain why the water-calibrated indication shifts.",
+                        "logic_gate_board": "Try A/B = 00, 01, 10 and 11. Record AND, OR, XOR and NAND; explain why XOR differs from OR.",
+                        "kmap4": "Set four edge-adjacent minterms to 1. Identify the largest valid group, including wraparound adjacency.",
+                        "full_adder_3d": "Set A = 1, B = 1 and Cin = 1. Predict SUM and CARRY before toggling the inputs.",
+                        "weighted_dac_3d": "Set D3D2D1D0 = 1010. Calculate Vout from the resistor weights, then compare with the readout.",
+                        "flash_adc_3d": "Move Vin just below and above a comparator threshold. Observe the thermometer count, binary code and quantization error.",
+                        "derivative": "Keep the point fixed and reduce h. Compare the secant slope with the exact tangent slope.",
+                        "riemann": "Increase the number of strips. Observe how the sum approaches the area under the curve.",
+                        "opamp_inv": "Double Rf while keeping R1 and Vin fixed. Predict the gain and check whether the output clips.",
+                        "opamp_noninv": "Change Rf and R1. Relate the measured gain to 1 + Rf/R1.",
+                        "rectifier": "Compare half-wave and full-wave output, then increase the filter size and observe ripple.",
+                        "bridge_rectifier_3d": "Move phase through both half-cycles and identify the conducting diode pair. Then change C and RLoad; predict the ripple change.",
+                        "scr_structure": "Apply forward anode voltage with the gate off, then trigger the gate. Describe the state change.",
+                        "scr_waveform": "Increase firing angle α. Predict how the conduction angle and average output change.",
+                        "venturi": "Increase inlet velocity. Compare throat velocity with the change in differential pressure.",
+                        "bourdon": "Increase pressure and follow the tube tip, linkage and pointer response.",
+                        "rtd_tc": "Change process temperature. Compare how the RTD resistance and thermocouple EMF are represented.",
+                        "pid_loop": "Change the error and controller gains. Observe how P, I and D terms contribute to the control-valve output.",
+                    }
+                    lab_challenge = lab_challenges.get(
+                        diagram_id,
+                        "Rotate the model, hover each labelled part, then change one control at a time and explain the updated readouts.",
+                    )
+                    lab_code = LAB_SUBJECT_CODES.get(lab_subject)
+                    lab_topic = LAB_TOPIC_BY_DIAGRAM.get(diagram_id)
+                    prediction_key = "lab_prediction_" + re.sub(r"[^A-Za-z0-9_-]+", "_", f"{lab_subject}_{diagram_id}")
+                    locked_key = f"{prediction_key}_locked"
+                    saved_key = f"{prediction_key}_saved"
+                    locked_prediction = bool(st.session_state.get(locked_key, False))
+
+                    st.markdown("#### 🧠 Predict → explore → explain")
+                    if not locked_prediction:
+                        st.info("Make a brief prediction before opening the model. Then change one control and compare what happens.")
+                        st.caption("**Topic challenge:** " + lab_challenge)
+                        prediction_text = st.text_area(
+                            "What do you expect the model to show?",
+                            key=f"{prediction_key}_text",
+                            max_chars=600,
+                            height=90,
+                            placeholder="State the direction of change, expected output, or component behaviour.",
+                        )
+                        prediction_confidence = st.radio(
+                            "How sure are you?",
+                            ["Unsure", "Somewhat sure", "Very sure"],
+                            index=1,
+                            horizontal=True,
+                            key=f"{prediction_key}_confidence",
+                        )
+                        if st.button("Lock prediction and open the model", key=f"{prediction_key}_lock_button"):
+                            if not prediction_text.strip():
+                                st.warning("Write a short prediction first. One sentence is enough.")
+                            else:
+                                st.session_state[locked_key] = True
+                                st.session_state[f"{prediction_key}_confidence_value"] = {
+                                    "Unsure": 1, "Somewhat sure": 2, "Very sure": 3
+                                }[prediction_confidence]
+                                st.rerun()
+                    else:
+                        st.success("Prediction locked. Now inspect the model, change one control, and compare the result.")
+                        st.caption("**Topic challenge:** " + lab_challenge)
+                        if st.button("Start a new prediction", key=f"{prediction_key}_reset_button"):
+                            for state_key in (
+                                locked_key, saved_key, f"{prediction_key}_text",
+                                f"{prediction_key}_confidence", f"{prediction_key}_confidence_value",
+                                f"{prediction_key}_reflection",
+                            ):
+                                st.session_state.pop(state_key, None)
+                            st.rerun()
+                        diagram_spec = get_spec(diagram_id)
+                        if diagram_spec:
+                            render_diagram3d(diagram_spec, height=680)
+                        else:
+                            st.error("This model could not be loaded. Check the diagram registry and its source module.")
+
+                        st.caption("After you adjust a control, compare the readout with your prediction.")
+                        reflection = st.radio(
+                            "How did the result compare?",
+                            ["It matched", "It partly matched", "It was different"],
+                            index=None,
+                            horizontal=True,
+                            key=f"{prediction_key}_reflection",
+                        )
+                        if not st.session_state.get(saved_key):
+                            if st.button("Save this lab reflection", key=f"{prediction_key}_save_button"):
+                                if reflection is None:
+                                    st.info("Choose the reflection that best describes what you observed.")
+                                elif lab_code and lab_topic:
+                                    lab_records = st.session_state.get("lab_prediction_history", [])
+                                    lab_records.append({
+                                        "subject": lab_code,
+                                        "topic": lab_topic,
+                                        "matched": reflection == "It matched",
+                                        "confidence": st.session_state.get(f"{prediction_key}_confidence_value", 2),
+                                        "attempted_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                                    })
+                                    st.session_state["lab_prediction_history"] = lab_records[-300:]
+                                    st.session_state[saved_key] = True
+                                    st.success("Reflection saved for this browser session. It can guide your next study suggestion.")
+                                else:
+                                    st.session_state[saved_key] = True
+                                    st.success("Reflection saved for this browser session.")
+                        elif st.session_state.get(saved_key):
+                            st.success("Saved. Your lab reflection stays in this browser session and is not included in the progress export.")
+
+                    if lab_subject == "Industrial Electronics N5":
+                        st.divider()
+                        st.markdown("#### 🧰 Build and simulate this topic")
+                        st.caption(f"Use the interactive {title_of(diagram_id)} model above, then build a matching circuit below. Add components, connect breadboard holes and Arduino pins, run the built-in Blink sketch or load a supported .ino sketch, and compare your predicted values with the DC meter.")
+                        from ui.circuit_lab import render_circuit_lab
+                        render_circuit_lab(height=1030, focus_topic=title_of(diagram_id))
 
 # TAB 5: Formula & Reference Hub
-with tab_formulas:
-    st.subheader(f"📐 Comprehensive Formula & Reference Hub: {active_subject}")
-    st.markdown("Official NATED TVET engineering formulas, standard constants, and mathematical derivations.")
+if tab_formulas.open:
+    with tab_formulas:
+        st.subheader(f"📐 Comprehensive Formula & Reference Hub: {active_subject}")
+        st.markdown("Official NATED TVET engineering formulas, standard constants, and mathematical derivations.")
     
-    if active_subject == "INST-N5":
-        st.markdown("### Instrumentation N5 Reference Equations")
-        st.latex(r"Q = \frac{8}{15}\tan\left(\frac{\theta}{2}\right)\sqrt{2g}H^{5/2}")
-        st.latex(r"Q = C_d A_2 \sqrt{\frac{2\Delta P}{\rho(1 - \beta^4)}}")
-        st.latex(r"R_t = R_0(1 + \alpha \cdot \Delta T)")
-        st.markdown("**Core Principles:** Bernoulli's theorem, differential head flow metering, RTD temperature coefficients, and thermocouple reference junction compensation.")
-    elif active_subject == "MATH-N5":
-        st.markdown("### Mathematics N5 Reference Equations")
-        st.latex(r"\frac{dy}{dx} = u\frac{dv}{dx} + v\frac{du}{dx}")
-        st.latex(r"\int u \, dv = uv - \int v \, du")
-        st.latex(r"V_x = \pi \int_{a}^{b} y^2 dx")
-        st.markdown("**Core Principles:** Integration by parts, trigonometric substitution, L'Hôpital's rule, and first/second-order linear differential equations.")
-    elif active_subject == "IE-N5":
-        st.markdown("### Industrial Electronics N5 Reference Equations")
-        st.latex(r"V_{out} = -\left(\frac{R_f}{R_1}V_1 + \frac{R_f}{R_2}V_2\right)")
-        st.latex(r"V_{dc} = \frac{V_m}{\pi}(1 + \cos\alpha)")
-        st.markdown("**Core Principles:** Op-amp feedback networks, thyristor firing angles, and transistor biasing.")
-    else:
-        st.markdown("### Digital Electronics N4/N5 Reference Equations")
-        st.latex(r"N_{states} = 2^n")
-        st.latex(r"f_{max} = \frac{1}{n \cdot t_{pd}}")
-        st.markdown("**Core Principles:** Boolean algebraic laws, Karnaugh map minimization, asynchronous ripple counters, and synchronous state machines.")
+        if active_subject == "INST-N5":
+            st.markdown("### Instrumentation N5 Reference Equations")
+            st.latex(r"Q = \frac{8}{15}\tan\left(\frac{\theta}{2}\right)\sqrt{2g}H^{5/2}")
+            st.latex(r"Q = C_d A_2 \sqrt{\frac{2\Delta P}{\rho(1 - \beta^4)}}")
+            st.latex(r"R_t = R_0(1 + \alpha \cdot \Delta T)")
+            st.markdown("**Core Principles:** Bernoulli's theorem, differential head flow metering, RTD temperature coefficients, and thermocouple reference junction compensation.")
+        elif active_subject == "MATH-N5":
+            st.markdown("### Mathematics N5 Reference Equations")
+            st.latex(r"\frac{dy}{dx} = u\frac{dv}{dx} + v\frac{du}{dx}")
+            st.latex(r"\int u \, dv = uv - \int v \, du")
+            st.latex(r"V_x = \pi \int_{a}^{b} y^2 dx")
+            st.markdown("**Core Principles:** Integration by parts, trigonometric substitution, L'Hôpital's rule, and first/second-order linear differential equations.")
+        elif active_subject == "IE-N5":
+            st.markdown("### Industrial Electronics N5 Reference Equations")
+            st.latex(r"V_{out} = -\left(\frac{R_f}{R_1}V_1 + \frac{R_f}{R_2}V_2\right)")
+            st.latex(r"V_{dc} = \frac{V_m}{\pi}(1 + \cos\alpha)")
+            st.markdown("**Core Principles:** Op-amp feedback networks, thyristor firing angles, and transistor biasing.")
+        else:
+            st.markdown("### Digital Electronics N4/N5 Reference Equations")
+            st.latex(r"N_{states} = 2^n")
+            st.latex(r"f_{max} = \frac{1}{n \cdot t_{pd}}")
+            st.markdown("**Core Principles:** Boolean algebraic laws, Karnaugh map minimization, asynchronous ripple counters, and synchronous state machines.")
 
 # TAB 6: Measured Learning Analytics and Portable Progress
-with tab_analytics:
-    st.subheader(f"Learning insights: {active_subject}")
-    import_message = st.session_state.pop("progress_import_message", None)
-    if import_message:
-        st.success(import_message)
-    history = st.session_state.get("topic_quiz_history", [])
-    summary = summarize_progress(history, active_subject)
-    modules = SUBJECT_MODULES.get(active_subject, [])
-    latest = summary["latest_by_topic"]
-    mapped_checked = sum((active_subject, module) in latest for module in modules)
-    avg = summary["average_latest_percent"]
+if tab_analytics.open:
+    with tab_analytics:
+        st.subheader(f"Learning insights: {active_subject}")
+        import_message = st.session_state.pop("progress_import_message", None)
+        if import_message:
+            st.success(import_message)
+        history = st.session_state.get("topic_quiz_history", [])
+        summary = summarize_progress(history, active_subject)
+        modules = SUBJECT_MODULES.get(active_subject, [])
+        latest = summary["latest_by_topic"]
+        mapped_checked = sum((active_subject, module) in latest for module in modules)
+        avg = summary["average_latest_percent"]
 
-    adaptive_plan = build_adaptive_study_plan(
-        history, active_subject, modules,
-        lab_history=st.session_state.get("lab_prediction_history", []),
-    )
-    st.caption(
-        "These suggestions use your own topic-check results and optional lab reflections from this browser session. "
-        "They describe practice evidence only; they do not diagnose learning style or estimate exam results."
-    )
-    st.info(
-        f"**Suggested next:** {adaptive_plan['topic'] or 'Choose a topic'} · "
-        f"{adaptive_plan['focus_minutes']} minutes. {adaptive_plan['reason']} "
-        f"Pattern: {adaptive_plan['pattern']}."
-    )
-    metric_cols = st.columns(4)
-    metric_cols[0].metric("Topics checked", f"{mapped_checked} / {len(modules)}")
-    metric_cols[1].metric("Average latest check", f"{avg:.0f}%" if avg is not None else "—")
-    metric_cols[2].metric("Review queue", len(summary["due_reviews"]))
-    metric_cols[3].metric("Study streak", f"{study_streak(history)} days")
-
-    st.markdown("### 📍 Topic map")
-    if modules:
-        topic_rows = []
-        for module in modules:
-            record = latest.get((active_subject, module))
-            topic_rows.append({
-                "Topic": module,
-                "Latest result": (
-                    f"{record['score']}/{record['total']} ({record['score'] / record['total'] * 100:.0f}%)"
-                    if record else "Not checked"
-                ),
-                "Status": topic_status(record),
-                "Review due": record["review_due"] if record else "—",
-            })
-        st.dataframe(topic_rows, hide_index=True, use_container_width=True)
-    else:
-        st.info("A topic map has not been added for this subject yet.")
-
-    if summary["due_reviews"]:
-        st.markdown("### 🔁 Review next")
-        for review in summary["due_reviews"][:8]:
-            st.markdown(
-                f"- **{review['topic']}** · last check {review['score']}/{review['total']} · "
-                f"due {review['review_due']}"
-            )
-    else:
-        st.info("No spaced reviews are due today. Keep learning at a pace that feels manageable.")
-
-    if summary["gap_counts"]:
-        st.markdown("### 🧩 Concepts to revisit most often")
-        gap_rows = [
-            {"Missed concept": concept, "Quiz attempts flagging it": count}
-            for concept, count in summary["gap_counts"].most_common(8)
-        ]
-        st.dataframe(gap_rows, hide_index=True, use_container_width=True)
-    else:
-        st.caption("After a quiz, missed concept labels will appear here as a practical review guide.")
-
-    st.divider()
-    with st.expander("Save or move progress to another session", expanded=False):
+        adaptive_plan = build_adaptive_study_plan(
+            history, active_subject, modules,
+            lab_history=st.session_state.get("lab_prediction_history", []),
+        )
         st.caption(
-            "Progress is session-only. Export a small JSON file to keep a copy or move it to another browser. "
-            "It contains subject, topic, score, review date, missed-concept labels and your optional confidence rating; "
-            "it excludes answers, uploaded work, tutor conversations and lab prediction text/reflections."
+            "These suggestions use your own topic-check results and optional lab reflections from this browser session. "
+            "They describe practice evidence only; they do not diagnose learning style or estimate exam results."
         )
-        st.download_button(
-            "⬇️ Export my progress (.json)",
-            data=export_progress(history),
-            file_name="trentox-tutor-progress.json",
-            mime="application/json",
-            key="export_topic_progress",
-            use_container_width=True,
+        st.info(
+            f"**Suggested next:** {adaptive_plan['topic'] or 'Choose a topic'} · "
+            f"{adaptive_plan['focus_minutes']} minutes. {adaptive_plan['reason']} "
+            f"Pattern: {adaptive_plan['pattern']}."
         )
-        progress_file = st.file_uploader(
-            "Import a Trentox Tutor AI progress file",
-            type=["json"],
-            key="import_topic_progress_file",
-            help="Only progress JSON exported by Trentox Tutor AI is accepted.",
-        )
-        if st.button(
-            "Import and merge progress",
-            key="import_topic_progress_button",
-            disabled=progress_file is None,
-            use_container_width=True,
-        ):
-            try:
-                raw_progress = progress_file.getvalue()
-                if len(raw_progress) > 1_000_000:
-                    raise ValueError("Progress files must be smaller than 1 MB.")
-                imported_history = import_progress(raw_progress.decode("utf-8-sig"))
-                before = len(history)
-                merged_history = merge_progress(history, imported_history)
-                added_count = max(0, len(merged_history) - before)
-                st.session_state["topic_quiz_history"] = merged_history
-                st.session_state["progress_import_message"] = (
-                    f"Progress merged. {added_count} new quiz record(s) added."
-                )
-                st.rerun()
-            except (UnicodeDecodeError, ValueError) as exc:
-                st.error(str(exc))
+        metric_cols = st.columns(4)
+        metric_cols[0].metric("Topics checked", f"{mapped_checked} / {len(modules)}")
+        metric_cols[1].metric("Average latest check", f"{avg:.0f}%" if avg is not None else "—")
+        metric_cols[2].metric("Review queue", len(summary["due_reviews"]))
+        metric_cols[3].metric("Study streak", f"{study_streak(history)} days")
 
-    report_lines = [
-        "TRENTOX TUTOR AI — LEARNING PROGRESS",
-        f"Subject: {active_subject}",
-        f"Created: {datetime.now().astimezone().strftime('%Y-%m-%d %H:%M %Z')}",
-        "This report summarizes practice checks; it does not predict an examination result.",
-        "",
-    ]
-    if latest:
-        for (subject, topic), record in sorted(latest.items(), key=lambda item: item[0][1].casefold()):
-            status = topic_status(record)
-            report_lines.append(
-                f"{topic}: {record['score']}/{record['total']} "
-                f"({record['score'] / record['total'] * 100:.0f}%), "
-                f"status {status}, next review {record['review_due']}"
+        st.markdown("### 📍 Topic map")
+        if modules:
+            topic_rows = []
+            for module in modules:
+                record = latest.get((active_subject, module))
+                topic_rows.append({
+                    "Topic": module,
+                    "Latest result": (
+                        f"{record['score']}/{record['total']} ({record['score'] / record['total'] * 100:.0f}%)"
+                        if record else "Not checked"
+                    ),
+                    "Status": topic_status(record),
+                    "Review due": record["review_due"] if record else "—",
+                })
+            st.dataframe(topic_rows, hide_index=True, width="stretch")
+        else:
+            st.info("A topic map has not been added for this subject yet.")
+
+        if summary["due_reviews"]:
+            st.markdown("### 🔁 Review next")
+            for review in summary["due_reviews"][:8]:
+                st.markdown(
+                    f"- **{review['topic']}** · last check {review['score']}/{review['total']} · "
+                    f"due {review['review_due']}"
+                )
+        else:
+            st.info("No spaced reviews are due today. Keep learning at a pace that feels manageable.")
+
+        if summary["gap_counts"]:
+            st.markdown("### 🧩 Concepts to revisit most often")
+            gap_rows = [
+                {"Missed concept": concept, "Quiz attempts flagging it": count}
+                for concept, count in summary["gap_counts"].most_common(8)
+            ]
+            st.dataframe(gap_rows, hide_index=True, width="stretch")
+        else:
+            st.caption("After a quiz, missed concept labels will appear here as a practical review guide.")
+
+        st.divider()
+        with st.expander("Save or move progress to another session", expanded=False):
+            st.caption(
+                "Progress is session-only. Export a small JSON file to keep a copy or move it to another browser. "
+                "It contains subject, topic, score, review date, missed-concept labels and your optional confidence rating; "
+                "it excludes answers, uploaded work, tutor conversations and lab prediction text/reflections."
             )
-    else:
-        report_lines.append("No topic checks recorded for this subject in the current session.")
-    report_text = "\n".join(report_lines) + "\n"
-    st.download_button(
-        "📄 Download this subject's learning summary (.txt)",
-        data=report_text,
-        file_name=f"Trentox_Learning_Summary_{active_subject}.txt",
-        mime="text/plain",
-        use_container_width=True,
-    )
+            st.download_button(
+                "⬇️ Export my progress (.json)",
+                data=export_progress(history),
+                file_name="trentox-tutor-progress.json",
+                mime="application/json",
+                key="export_topic_progress",
+                width="stretch",
+            )
+            progress_file = st.file_uploader(
+                "Import a Trentox Tutor AI progress file",
+                type=["json"],
+                key="import_topic_progress_file",
+                help="Only progress JSON exported by Trentox Tutor AI is accepted.",
+            )
+            if st.button(
+                "Import and merge progress",
+                key="import_topic_progress_button",
+                disabled=progress_file is None,
+                width="stretch",
+            ):
+                try:
+                    raw_progress = progress_file.getvalue()
+                    if len(raw_progress) > 1_000_000:
+                        raise ValueError("Progress files must be smaller than 1 MB.")
+                    imported_history = import_progress(raw_progress.decode("utf-8-sig"))
+                    before = len(history)
+                    merged_history = merge_progress(history, imported_history)
+                    added_count = max(0, len(merged_history) - before)
+                    st.session_state["topic_quiz_history"] = merged_history
+                    st.session_state["progress_import_message"] = (
+                        f"Progress merged. {added_count} new quiz record(s) added."
+                    )
+                    st.rerun()
+                except (UnicodeDecodeError, ValueError) as exc:
+                    st.error(str(exc))
+
+        report_lines = [
+            "TRENTOX TUTOR AI — LEARNING PROGRESS",
+            f"Subject: {active_subject}",
+            f"Created: {datetime.now().astimezone().strftime('%Y-%m-%d %H:%M %Z')}",
+            "This report summarizes practice checks; it does not predict an examination result.",
+            "",
+        ]
+        if latest:
+            for (subject, topic), record in sorted(latest.items(), key=lambda item: item[0][1].casefold()):
+                status = topic_status(record)
+                report_lines.append(
+                    f"{topic}: {record['score']}/{record['total']} "
+                    f"({record['score'] / record['total'] * 100:.0f}%), "
+                    f"status {status}, next review {record['review_due']}"
+                )
+        else:
+            report_lines.append("No topic checks recorded for this subject in the current session.")
+        report_text = "\n".join(report_lines) + "\n"
+        st.download_button(
+            "📄 Download this subject's learning summary (.txt)",
+            data=report_text,
+            file_name=f"Trentox_Learning_Summary_{active_subject}.txt",
+            mime="text/plain",
+            width="stretch",
+        )
 

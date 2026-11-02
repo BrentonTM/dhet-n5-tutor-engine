@@ -2,9 +2,26 @@
 
 This repository contains the Streamlit application for the Trentox Tutor AI engineering study workspace.
 
+## Student entry and home
+
+Students sign in with Google, then choose the username Tex uses in conversation.
+Configure the Google OAuth client and Cloud Secrets using [Google sign-in setup](docs/google-sign-in.md)
+before releasing this version. Incomplete authentication configuration keeps the workspace closed.
+Never commit real credentials; `.streamlit/secrets.toml.example` contains unusable placeholders only.
+
+Home puts Tex, the current lesson and course shortcuts first. Layouts stack on phones.
+Tex keeps a separate conversation per course in the current study session and supports
+Hint, Check and Explain modes, answer uploads, typed messages and recorded WAV audio sent
+to Gemini. Names and history are session-based; cross-device profile sync is not included.
+
+Home also includes a legal 3×3 Rubik cube with face turns, drag/touch view controls,
+scramble, undo and guided retracing, plus a four-level Logic Builder with real gate wiring
+and exhaustive truth-table checks. Puzzle state survives navigation within the session.
+The cube guide reverses recorded moves; it is not a shortest-solution solver.
+
 ## Cloud AI setup
 
-The app interface and its AI requests run from Streamlit Community Cloud. **ASK TX sends requests directly to Google Gemini; it does not need OmniRoute or a process running on your laptop.**
+The app interface and its AI requests run from Streamlit Community Cloud. **Tex sends requests directly to Google Gemini; it does not need OmniRoute or a process running on your laptop.**
 
 Add this key in the deployed app's **Manage app → Settings → Secrets**:
 
@@ -55,4 +72,5 @@ GEMINI_FALLBACK_MODELS = "gemini-3.6-flash,gemini-3.1-flash-lite"
 See Google's [model catalogue](https://aistudio.google.com/docs/models) and [troubleshooting guide](https://aistudio.google.com/docs/troubleshooting). A deployment's actual key permissions and quota must be checked in its Google AI Studio project; the tests use a fake client and do not make billable API calls.
 
 Run regression checks with `python -m unittest discover -s tests -v`.
+Run the cube engine checks with `node tests/test_rubik_cube.mjs`.
 
