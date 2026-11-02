@@ -168,6 +168,19 @@ class SourceQuestionTests(unittest.TestCase):
         st.write.assert_not_called()
         self.assertIn(question["num"], st.caption.call_args.args[0])
 
+    def test_practice_and_library_memo_expanders_can_render_together(self):
+        from streamlit.testing.v1 import AppTest
+
+        tree = ast.parse((ROOT / "app.py").read_text(encoding="utf-8"))
+        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "render_matched_memo")
+        script = "import streamlit as st\n" + ast.unparse(function) + "\n"
+        script += "question = {'id': 'paper-q2', 'memo_file': 'memo.pdf'}\n"
+        script += "render_matched_memo(question, 'practice')\n"
+        script += "render_matched_memo(question, 'library_memo')\n"
+        result = AppTest.from_string(script).run()
+        self.assertEqual(len(result.exception), 0)
+        self.assertEqual(len(result.expander), 2)
+
     def test_guidance_sends_real_question_pdf_to_model(self):
         question = self.questions[0]
         requests = []
