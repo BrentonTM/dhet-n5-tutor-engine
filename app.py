@@ -1791,7 +1791,7 @@ with tab_practice:
                 with sqlite3.connect(past_db) as conn:
                     try:
                         cursor = conn.execute(
-                            "SELECT question_number, topic_name, question_text, marking_guideline, marks FROM past_paper_questions WHERE subject_code = ? ORDER BY RANDOM() LIMIT 1",
+                            "SELECT question_number, topic_name, question_text, marking_guideline, marks FROM paper_questions WHERE subject_code = ? ORDER BY RANDOM() LIMIT 1",
                             (active_subject,)
                         )
                         row = cursor.fetchone()
