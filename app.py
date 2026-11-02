@@ -101,7 +101,7 @@ def render_matched_memo(question, widget_prefix):
     if not question.get("memo_file"):
         st.caption(question.get("memo_status") or "No marking memo with the same printed cover date is attached to this question.")
         return
-    with st.expander("Show matched marking memo", on_change="rerun") as memo_view:
+    with st.expander("Show matched marking memo", key=f"{widget_prefix}_memo_view_{question['id']}", on_change="rerun") as memo_view:
         if memo_view.open:
             st.caption(f"Matched by subject and printed cover date: {question['memo_date']}")
             st.pdf(
