@@ -1,0 +1,1098 @@
+{
+  "version": 1,
+  "subjects": [
+    "DIGI-N4"
+  ],
+  "questions": [
+    {
+      "id": "1f37a73ac388-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 24,
+      "text": "Answer original Q1 in N4-Digital-Electronics-2019-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2019-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2019-April-QP",
+      "source_pages": [
+        3,
+        4
+      ],
+      "source_sha256": "1f37a73ac38807a955f2dfce251035937956ae7cd7b569b07405bf1a3c59454d"
+    },
+    {
+      "id": "1f37a73ac388-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 24,
+      "text": "Answer original Q2 in N4-Digital-Electronics-2019-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2019-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2019-April-QP",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "1f37a73ac38807a955f2dfce251035937956ae7cd7b569b07405bf1a3c59454d"
+    },
+    {
+      "id": "1f37a73ac388-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 12,
+      "text": "Answer original Q3 in N4-Digital-Electronics-2019-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2019-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2019-April-QP",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "1f37a73ac38807a955f2dfce251035937956ae7cd7b569b07405bf1a3c59454d"
+    },
+    {
+      "id": "1f37a73ac388-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 20,
+      "text": "Answer original Q4 in N4-Digital-Electronics-2019-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2019-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2019-April-QP",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "1f37a73ac38807a955f2dfce251035937956ae7cd7b569b07405bf1a3c59454d"
+    },
+    {
+      "id": "1f37a73ac388-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 20,
+      "text": "Answer original Q5 in N4-Digital-Electronics-2019-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2019-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2019-April-QP",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "1f37a73ac38807a955f2dfce251035937956ae7cd7b569b07405bf1a3c59454d"
+    },
+    {
+      "id": "08486168dd8d-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q1 in N4-Digital-Electronics-2020-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2020-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2020-April-QP",
+      "source_pages": [
+        3,
+        4,
+        5
+      ],
+      "source_sha256": "08486168dd8d2098c0702a072935cafccf89f97b5789f6c298363d18fefa8b4a"
+    },
+    {
+      "id": "08486168dd8d-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q2 in N4-Digital-Electronics-2020-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2020-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2020-April-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "08486168dd8d2098c0702a072935cafccf89f97b5789f6c298363d18fefa8b4a"
+    },
+    {
+      "id": "08486168dd8d-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 16,
+      "text": "Answer original Q3 in N4-Digital-Electronics-2020-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2020-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2020-April-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "08486168dd8d2098c0702a072935cafccf89f97b5789f6c298363d18fefa8b4a"
+    },
+    {
+      "id": "08486168dd8d-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 14,
+      "text": "Answer original Q4 in N4-Digital-Electronics-2020-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2020-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2020-April-QP",
+      "source_pages": [
+        7
+      ],
+      "source_sha256": "08486168dd8d2098c0702a072935cafccf89f97b5789f6c298363d18fefa8b4a"
+    },
+    {
+      "id": "08486168dd8d-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q5 in N4-Digital-Electronics-2020-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2020-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2020-April-QP",
+      "source_pages": [
+        7
+      ],
+      "source_sha256": "08486168dd8d2098c0702a072935cafccf89f97b5789f6c298363d18fefa8b4a"
+    },
+    {
+      "id": "eb5186b2c874-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q1 in N4-Digital-Electronics-2020-November-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2020-November-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2020-November-QP",
+      "source_pages": [
+        3,
+        4,
+        5
+      ],
+      "source_sha256": "eb5186b2c874bb46f3ecccc9ba63abd85f726289440d774f7b97392d1d972ea6"
+    },
+    {
+      "id": "eb5186b2c874-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q2 in N4-Digital-Electronics-2020-November-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2020-November-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2020-November-QP",
+      "source_pages": [
+        5,
+        6
+      ],
+      "source_sha256": "eb5186b2c874bb46f3ecccc9ba63abd85f726289440d774f7b97392d1d972ea6"
+    },
+    {
+      "id": "eb5186b2c874-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 16,
+      "text": "Answer original Q3 in N4-Digital-Electronics-2020-November-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2020-November-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2020-November-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "eb5186b2c874bb46f3ecccc9ba63abd85f726289440d774f7b97392d1d972ea6"
+    },
+    {
+      "id": "eb5186b2c874-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 14,
+      "text": "Answer original Q4 in N4-Digital-Electronics-2020-November-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2020-November-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2020-November-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "eb5186b2c874bb46f3ecccc9ba63abd85f726289440d774f7b97392d1d972ea6"
+    },
+    {
+      "id": "eb5186b2c874-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q5 in N4-Digital-Electronics-2020-November-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2020-November-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2020-November-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "eb5186b2c874bb46f3ecccc9ba63abd85f726289440d774f7b97392d1d972ea6"
+    },
+    {
+      "id": "c60a237412ff-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q1 in N4-Digital-Electronics-2021-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-April-QP",
+      "source_pages": [
+        3,
+        4,
+        5
+      ],
+      "source_sha256": "c60a237412ff3e7816eee37cfac3beb0c33db947324e82be206647a0eedc0f37"
+    },
+    {
+      "id": "c60a237412ff-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q2 in N4-Digital-Electronics-2021-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-April-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "c60a237412ff3e7816eee37cfac3beb0c33db947324e82be206647a0eedc0f37"
+    },
+    {
+      "id": "c60a237412ff-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 16,
+      "text": "Answer original Q3 in N4-Digital-Electronics-2021-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-April-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "c60a237412ff3e7816eee37cfac3beb0c33db947324e82be206647a0eedc0f37"
+    },
+    {
+      "id": "c60a237412ff-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 14,
+      "text": "Answer original Q4 in N4-Digital-Electronics-2021-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-April-QP",
+      "source_pages": [
+        7
+      ],
+      "source_sha256": "c60a237412ff3e7816eee37cfac3beb0c33db947324e82be206647a0eedc0f37"
+    },
+    {
+      "id": "c60a237412ff-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q5 in N4-Digital-Electronics-2021-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-April-QP",
+      "source_pages": [
+        7
+      ],
+      "source_sha256": "c60a237412ff3e7816eee37cfac3beb0c33db947324e82be206647a0eedc0f37"
+    },
+    {
+      "id": "33049ccf30ef-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q1 in N4-Digital-Electronics-2021-August-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-August-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-August-QP",
+      "source_pages": [
+        3
+      ],
+      "source_sha256": "33049ccf30efa9acaed78a7e12dbb939d405e03869ff3e399abafb5def47e3fa"
+    },
+    {
+      "id": "33049ccf30ef-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 8,
+      "text": "Answer original Q2 in N4-Digital-Electronics-2021-August-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-August-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-August-QP",
+      "source_pages": [
+        4
+      ],
+      "source_sha256": "33049ccf30efa9acaed78a7e12dbb939d405e03869ff3e399abafb5def47e3fa"
+    },
+    {
+      "id": "33049ccf30ef-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 7,
+      "text": "Answer original Q3 in N4-Digital-Electronics-2021-August-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-August-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-August-QP",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "33049ccf30efa9acaed78a7e12dbb939d405e03869ff3e399abafb5def47e3fa"
+    },
+    {
+      "id": "33049ccf30ef-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 20,
+      "text": "Answer original Q4 in N4-Digital-Electronics-2021-August-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-August-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-August-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "33049ccf30efa9acaed78a7e12dbb939d405e03869ff3e399abafb5def47e3fa"
+    },
+    {
+      "id": "33049ccf30ef-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 15,
+      "text": "Answer original Q5 in N4-Digital-Electronics-2021-August-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-August-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-August-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "33049ccf30efa9acaed78a7e12dbb939d405e03869ff3e399abafb5def47e3fa"
+    },
+    {
+      "id": "33049ccf30ef-Q6",
+      "subject": "DIGI-N4",
+      "num": "Q6",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q6 in N4-Digital-Electronics-2021-August-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-August-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-August-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "33049ccf30efa9acaed78a7e12dbb939d405e03869ff3e399abafb5def47e3fa"
+    },
+    {
+      "id": "33049ccf30ef-Q7",
+      "subject": "DIGI-N4",
+      "num": "Q7",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q7 in N4-Digital-Electronics-2021-August-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2021-August-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2021-August-QP",
+      "source_pages": [
+        7
+      ],
+      "source_sha256": "33049ccf30efa9acaed78a7e12dbb939d405e03869ff3e399abafb5def47e3fa"
+    },
+    {
+      "id": "c4b7678a722e-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q1 in N4-Digital-Electronics-2022-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2022-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2022-April-QP",
+      "source_pages": [
+        3
+      ],
+      "source_sha256": "c4b7678a722e6478cd5fd2eed39caaeffd2c57b6629eeac68a08e9313ed2c1af"
+    },
+    {
+      "id": "c4b7678a722e-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 8,
+      "text": "Answer original Q2 in N4-Digital-Electronics-2022-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2022-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2022-April-QP",
+      "source_pages": [
+        4
+      ],
+      "source_sha256": "c4b7678a722e6478cd5fd2eed39caaeffd2c57b6629eeac68a08e9313ed2c1af"
+    },
+    {
+      "id": "c4b7678a722e-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 7,
+      "text": "Answer original Q3 in N4-Digital-Electronics-2022-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2022-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2022-April-QP",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "c4b7678a722e6478cd5fd2eed39caaeffd2c57b6629eeac68a08e9313ed2c1af"
+    },
+    {
+      "id": "c4b7678a722e-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 20,
+      "text": "Answer original Q4 in N4-Digital-Electronics-2022-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2022-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2022-April-QP",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "c4b7678a722e6478cd5fd2eed39caaeffd2c57b6629eeac68a08e9313ed2c1af"
+    },
+    {
+      "id": "c4b7678a722e-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 15,
+      "text": "Answer original Q5 in N4-Digital-Electronics-2022-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2022-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2022-April-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "c4b7678a722e6478cd5fd2eed39caaeffd2c57b6629eeac68a08e9313ed2c1af"
+    },
+    {
+      "id": "c4b7678a722e-Q6",
+      "subject": "DIGI-N4",
+      "num": "Q6",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q6 in N4-Digital-Electronics-2022-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2022-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2022-April-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "c4b7678a722e6478cd5fd2eed39caaeffd2c57b6629eeac68a08e9313ed2c1af"
+    },
+    {
+      "id": "c4b7678a722e-Q7",
+      "subject": "DIGI-N4",
+      "num": "Q7",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q7 in N4-Digital-Electronics-2022-April-QP.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/N4-Digital-Electronics-2022-April-QP.pdf",
+      "source_label": "N4-Digital-Electronics-2022-April-QP",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "c4b7678a722e6478cd5fd2eed39caaeffd2c57b6629eeac68a08e9313ed2c1af"
+    },
+    {
+      "id": "049002334f98-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q1 in T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024",
+      "source_pages": [
+        3
+      ],
+      "source_sha256": "049002334f98cf379b4f99e00f76f82187a68011267f35943c8903f75b6fc451"
+    },
+    {
+      "id": "049002334f98-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 8,
+      "text": "Answer original Q2 in T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024",
+      "source_pages": [
+        4
+      ],
+      "source_sha256": "049002334f98cf379b4f99e00f76f82187a68011267f35943c8903f75b6fc451"
+    },
+    {
+      "id": "049002334f98-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 7,
+      "text": "Answer original Q3 in T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "049002334f98cf379b4f99e00f76f82187a68011267f35943c8903f75b6fc451"
+    },
+    {
+      "id": "049002334f98-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 20,
+      "text": "Answer original Q4 in T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "049002334f98cf379b4f99e00f76f82187a68011267f35943c8903f75b6fc451"
+    },
+    {
+      "id": "049002334f98-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 15,
+      "text": "Answer original Q5 in T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "049002334f98cf379b4f99e00f76f82187a68011267f35943c8903f75b6fc451"
+    },
+    {
+      "id": "049002334f98-Q6",
+      "subject": "DIGI-N4",
+      "num": "Q6",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q6 in T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "049002334f98cf379b4f99e00f76f82187a68011267f35943c8903f75b6fc451"
+    },
+    {
+      "id": "049002334f98-Q7",
+      "subject": "DIGI-N4",
+      "num": "Q7",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q7 in T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-APR-QP-2024",
+      "source_pages": [
+        7
+      ],
+      "source_sha256": "049002334f98cf379b4f99e00f76f82187a68011267f35943c8903f75b6fc451"
+    },
+    {
+      "id": "d7bb818387a0-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q1 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022",
+      "source_pages": [
+        3
+      ],
+      "source_sha256": "d7bb818387a0987dce3b28daef53ccf54ec8c2810d877fa090310e19d1ac86fe"
+    },
+    {
+      "id": "d7bb818387a0-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 8,
+      "text": "Answer original Q2 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022",
+      "source_pages": [
+        4
+      ],
+      "source_sha256": "d7bb818387a0987dce3b28daef53ccf54ec8c2810d877fa090310e19d1ac86fe"
+    },
+    {
+      "id": "d7bb818387a0-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 7,
+      "text": "Answer original Q3 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "d7bb818387a0987dce3b28daef53ccf54ec8c2810d877fa090310e19d1ac86fe"
+    },
+    {
+      "id": "d7bb818387a0-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 20,
+      "text": "Answer original Q4 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "d7bb818387a0987dce3b28daef53ccf54ec8c2810d877fa090310e19d1ac86fe"
+    },
+    {
+      "id": "d7bb818387a0-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 15,
+      "text": "Answer original Q5 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "d7bb818387a0987dce3b28daef53ccf54ec8c2810d877fa090310e19d1ac86fe"
+    },
+    {
+      "id": "d7bb818387a0-Q6",
+      "subject": "DIGI-N4",
+      "num": "Q6",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q6 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "d7bb818387a0987dce3b28daef53ccf54ec8c2810d877fa090310e19d1ac86fe"
+    },
+    {
+      "id": "d7bb818387a0-Q7",
+      "subject": "DIGI-N4",
+      "num": "Q7",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q7 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2022",
+      "source_pages": [
+        7
+      ],
+      "source_sha256": "d7bb818387a0987dce3b28daef53ccf54ec8c2810d877fa090310e19d1ac86fe"
+    },
+    {
+      "id": "3b0889a7a2a4-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q1 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025",
+      "source_pages": [
+        4,
+        5
+      ],
+      "source_sha256": "3b0889a7a2a4b565995bc44633b688d28468c1bfe68c39d53abaf87b4d5110b4"
+    },
+    {
+      "id": "3b0889a7a2a4-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 24,
+      "text": "Answer original Q2 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "3b0889a7a2a4b565995bc44633b688d28468c1bfe68c39d53abaf87b4d5110b4"
+    },
+    {
+      "id": "3b0889a7a2a4-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 26,
+      "text": "Answer original Q3 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "3b0889a7a2a4b565995bc44633b688d28468c1bfe68c39d53abaf87b4d5110b4"
+    },
+    {
+      "id": "3b0889a7a2a4-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 20,
+      "text": "Answer original Q4 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "3b0889a7a2a4b565995bc44633b688d28468c1bfe68c39d53abaf87b4d5110b4"
+    },
+    {
+      "id": "3b0889a7a2a4-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 20,
+      "text": "Answer original Q5 in T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-APRIL-2025",
+      "source_pages": [
+        7
+      ],
+      "source_sha256": "3b0889a7a2a4b565995bc44633b688d28468c1bfe68c39d53abaf87b4d5110b4"
+    },
+    {
+      "id": "da41479735c6-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 16,
+      "text": "Answer original Q1 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed",
+      "source_pages": [
+        3
+      ],
+      "source_sha256": "da41479735c6fc43414b3b4cb47c93ddfffbc3c7b15b63da90db518b23196f0f"
+    },
+    {
+      "id": "da41479735c6-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 24,
+      "text": "Answer original Q2 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed",
+      "source_pages": [
+        3
+      ],
+      "source_sha256": "da41479735c6fc43414b3b4cb47c93ddfffbc3c7b15b63da90db518b23196f0f"
+    },
+    {
+      "id": "da41479735c6-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 22,
+      "text": "Answer original Q3 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed",
+      "source_pages": [
+        4
+      ],
+      "source_sha256": "da41479735c6fc43414b3b4cb47c93ddfffbc3c7b15b63da90db518b23196f0f"
+    },
+    {
+      "id": "da41479735c6-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 18,
+      "text": "Answer original Q4 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed",
+      "source_pages": [
+        4
+      ],
+      "source_sha256": "da41479735c6fc43414b3b4cb47c93ddfffbc3c7b15b63da90db518b23196f0f"
+    },
+    {
+      "id": "da41479735c6-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 20,
+      "text": "Answer original Q5 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2022-ed",
+      "source_pages": [
+        4
+      ],
+      "source_sha256": "da41479735c6fc43414b3b4cb47c93ddfffbc3c7b15b63da90db518b23196f0f"
+    },
+    {
+      "id": "80aeacd44abc-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q1 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024",
+      "source_pages": [
+        3
+      ],
+      "source_sha256": "80aeacd44abc11aff2d74bddd5387164b9bfec336e91bb77e6866dc50c5b70da"
+    },
+    {
+      "id": "80aeacd44abc-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 8,
+      "text": "Answer original Q2 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024",
+      "source_pages": [
+        4
+      ],
+      "source_sha256": "80aeacd44abc11aff2d74bddd5387164b9bfec336e91bb77e6866dc50c5b70da"
+    },
+    {
+      "id": "80aeacd44abc-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 7,
+      "text": "Answer original Q3 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "80aeacd44abc11aff2d74bddd5387164b9bfec336e91bb77e6866dc50c5b70da"
+    },
+    {
+      "id": "80aeacd44abc-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 20,
+      "text": "Answer original Q4 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "80aeacd44abc11aff2d74bddd5387164b9bfec336e91bb77e6866dc50c5b70da"
+    },
+    {
+      "id": "80aeacd44abc-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 15,
+      "text": "Answer original Q5 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "80aeacd44abc11aff2d74bddd5387164b9bfec336e91bb77e6866dc50c5b70da"
+    },
+    {
+      "id": "80aeacd44abc-Q6",
+      "subject": "DIGI-N4",
+      "num": "Q6",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q6 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "80aeacd44abc11aff2d74bddd5387164b9bfec336e91bb77e6866dc50c5b70da"
+    },
+    {
+      "id": "80aeacd44abc-Q7",
+      "subject": "DIGI-N4",
+      "num": "Q7",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q7 in T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-AUG-2024",
+      "source_pages": [
+        7
+      ],
+      "source_sha256": "80aeacd44abc11aff2d74bddd5387164b9bfec336e91bb77e6866dc50c5b70da"
+    },
+    {
+      "id": "553eec7e70d5-Q1",
+      "subject": "DIGI-N4",
+      "num": "Q1",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q1 in T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024",
+      "source_pages": [
+        3
+      ],
+      "source_sha256": "553eec7e70d57030e0e0f37efea8f7e351d3afe8114e6b5ea70172ed35148a3b"
+    },
+    {
+      "id": "553eec7e70d5-Q2",
+      "subject": "DIGI-N4",
+      "num": "Q2",
+      "topic": "Original past paper",
+      "marks": 8,
+      "text": "Answer original Q2 in T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024",
+      "source_pages": [
+        4
+      ],
+      "source_sha256": "553eec7e70d57030e0e0f37efea8f7e351d3afe8114e6b5ea70172ed35148a3b"
+    },
+    {
+      "id": "553eec7e70d5-Q3",
+      "subject": "DIGI-N4",
+      "num": "Q3",
+      "topic": "Original past paper",
+      "marks": 7,
+      "text": "Answer original Q3 in T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024",
+      "source_pages": [
+        5
+      ],
+      "source_sha256": "553eec7e70d57030e0e0f37efea8f7e351d3afe8114e6b5ea70172ed35148a3b"
+    },
+    {
+      "id": "553eec7e70d5-Q4",
+      "subject": "DIGI-N4",
+      "num": "Q4",
+      "topic": "Original past paper",
+      "marks": 20,
+      "text": "Answer original Q4 in T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "553eec7e70d57030e0e0f37efea8f7e351d3afe8114e6b5ea70172ed35148a3b"
+    },
+    {
+      "id": "553eec7e70d5-Q5",
+      "subject": "DIGI-N4",
+      "num": "Q5",
+      "topic": "Original past paper",
+      "marks": 15,
+      "text": "Answer original Q5 in T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024",
+      "source_pages": [
+        6
+      ],
+      "source_sha256": "553eec7e70d57030e0e0f37efea8f7e351d3afe8114e6b5ea70172ed35148a3b"
+    },
+    {
+      "id": "553eec7e70d5-Q6",
+      "subject": "DIGI-N4",
+      "num": "Q6",
+      "topic": "Original past paper",
+      "marks": 10,
+      "text": "Answer original Q6 in T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024",
+      "source_pages": [
+        6,
+        7
+      ],
+      "source_sha256": "553eec7e70d57030e0e0f37efea8f7e351d3afe8114e6b5ea70172ed35148a3b"
+    },
+    {
+      "id": "553eec7e70d5-Q7",
+      "subject": "DIGI-N4",
+      "num": "Q7",
+      "topic": "Original past paper",
+      "marks": 30,
+      "text": "Answer original Q7 in T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf; use the attached original PDF pages.",
+      "marking": "No verified marking memo is attached. Assess against the original question and its printed marks; do not invent an official memo.",
+      "source_file": "data/past_papers/sources/DIGI-N4/T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024.pdf",
+      "source_label": "T460-DIGITAL-ELECTRONICS-N4-QP-NOV-2024",
+      "source_pages": [
+        8
+      ],
+      "source_sha256": "553eec7e70d57030e0e0f37efea8f7e351d3afe8114e6b5ea70172ed35148a3b"
+    }
+  ]
+}
