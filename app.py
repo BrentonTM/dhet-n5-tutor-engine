@@ -72,6 +72,7 @@ from ui.tex_partner import MODES, conversation_context, partner_instruction, rec
 from ui.rubik_cube import render_rubik_cube
 from ui.logic_builder import render_logic_builder
 from ui.home_showcase import LAB_SUBJECTS, model_discussion_prompt, render_home_model
+from ui.brand import render_wordmark
 
 @st.cache_data(show_spinner=False, max_entries=128)
 def cached_question_pdf(question_id, source_file, source_pages):
@@ -1541,7 +1542,7 @@ selected_subject_label = st.sidebar.selectbox(
 selected_subject, active_subject = subject_by_label[selected_subject_label]
 
 with st.container(horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"):
-    st.markdown("**:green[●] T R E N T O X**")
+    render_wordmark()
     render_student_menu(student)
 st.caption(f"{selected_subject['subject_name']} · {selected_level} · Change your course in Study path.")
 
