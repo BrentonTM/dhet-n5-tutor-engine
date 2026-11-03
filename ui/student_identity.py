@@ -69,6 +69,48 @@ def google_auth_ready(secrets):
         return False
 
 
+def google_auth_configuration_issues(secrets):
+    """Explain setup failures using fixed labels only, never credential values."""
+    try:
+        auth = secrets.get("auth", {})
+        if not isinstance(auth, Mapping) or not auth:
+            return ["missing [auth] table"]
+        provider = auth.get("google", {})
+        if not isinstance(provider, Mapping) or not provider:
+            return ["missing [auth.google] table"]
+        issues = []
+        for name, value in (
+            ("auth.redirect_uri", auth.get("redirect_uri")),
+            ("auth.cookie_secret", auth.get("cookie_secret")),
+            ("auth.google.client_id", provider.get("client_id")),
+            ("auth.google.client_secret", provider.get("client_secret")),
+        ):
+            if not isinstance(value, str) or not value.strip():
+                issues.append(name + " is missing or is not a nonempty string")
+            elif value.strip().upper().startswith(("REPLACE", "YOUR_", "CHANGE_")):
+                issues.append(name + " is still a placeholder")
+        cookie = auth.get("cookie_secret")
+        if isinstance(cookie, str) and cookie and len(cookie) < 32:
+            issues.append("auth.cookie_secret must have at least 32 characters")
+        if provider.get("server_metadata_url") != GOOGLE_METADATA_URL:
+            issues.append("auth.google.server_metadata_url is missing or does not match Google")
+        redirect_value = auth.get("redirect_uri")
+        if isinstance(redirect_value, str) and redirect_value.strip():
+            try:
+                redirect = urlsplit(redirect_value)
+                valid_origin = redirect.scheme == "https" or (
+                    redirect.scheme == "http" and redirect.hostname in {"localhost", "127.0.0.1"}
+                )
+                if (not valid_origin or redirect.path != "/oauth2callback"
+                        or redirect.query or redirect.fragment):
+                    issues.append("auth.redirect_uri must be an absolute app URL ending in /oauth2callback")
+            except ValueError:
+                issues.append("auth.redirect_uri is not a valid URL")
+        return issues
+    except (FileNotFoundError, KeyError, TypeError, ValueError):
+        return ["Secrets configuration could not be read"]
+
+
 def student_id_from_claims(claims):
     """Pseudonymous app ID from Google's verified issuer and subject claims."""
     issuer = claims.get("iss")
@@ -143,6 +185,9 @@ def require_student():
     data loads. No configured provider or valid verified identity means stop.
     """
     ready = google_auth_ready(st.secrets)
+    if not ready:
+        logger.warning("Google sign-in configuration incomplete: %s",
+                       "; ".join(google_auth_configuration_issues(st.secrets)))
     url = str(st.context.url or "")
     embedded = bool(st.context.is_embedded)
     runtime_view = urlsplit(url).path.startswith("/~/+/")
