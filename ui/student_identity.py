@@ -134,11 +134,15 @@ def _configuration_reference(issues):
     return ", ".join(dict.fromkeys(codes))
 
 
+STUDY_SESSION_SECONDS = 12 * 60 * 60
+
+
 def student_id_from_claims(claims, *, client_id=None, now=None):
     """Check trusted st.user claims, then derive a pseudonymous learner ID.
 
     Streamlit/Authlib validate the OIDC signature, state and nonce at login.
-    Recheck expiry on every app run: Streamlit's cookie can outlive the ID token.
+    Use a fixed study session measured from the verified Google issuance time.
+    Streamlit validates token expiry at login and signs its own identity cookie.
     This function never authenticates raw tokens or user-supplied claim data.
     """
     issuer = claims.get("iss")
@@ -149,12 +153,13 @@ def student_id_from_claims(claims, *, client_id=None, now=None):
         raise ValueError("Google identity has no subject claim.")
     if claims.get("email_verified") is not True:
         raise ValueError("A verified Google account is required.")
-    expires = claims.get("exp")
-    if (isinstance(expires, bool) or not isinstance(expires, (int, float))
-            or not math.isfinite(expires)):
-        raise ValueError("Google identity has no valid expiry.")
-    if expires <= (time.time() if now is None else now):
-        raise ValueError("Google identity has expired.")
+    issued, expires = claims.get("iat"), claims.get("exp")
+    if any(type(value) not in (int, float) or not math.isfinite(value)
+           for value in (issued, expires)) or not 0 < issued < expires:
+        raise ValueError("Google identity has invalid timestamps.")
+    current_time = time.time() if now is None else now
+    if issued > current_time + 60 or current_time >= issued + STUDY_SESSION_SECONDS:
+        raise ValueError("Trentox study session is outside its allowed lifetime.")
     if client_id is not None:
         audience = claims.get("aud")
         if isinstance(audience, str):

@@ -73,6 +73,7 @@ from ui.rubik_cube import render_rubik_cube
 from ui.logic_builder import render_logic_builder
 from ui.home_showcase import LAB_SUBJECTS, model_discussion_prompt, render_home_model
 from ui.brand import render_wordmark
+from ui.exam_readiness import render_exam_readiness
 
 @st.cache_data(show_spinner=False, max_entries=128)
 def cached_question_pdf(question_id, source_file, source_pages):
@@ -1945,6 +1946,7 @@ if tab_practice.open:
 if tab_exam.open:
     with tab_exam:
         st.subheader(f"🎯 Timed Mock Exam Simulator & Confidence Calibration ({active_subject})")
+        render_exam_readiness()
         col1, col2 = st.columns([1, 2])
     
         with col1:

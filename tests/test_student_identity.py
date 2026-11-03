@@ -39,8 +39,9 @@ def default_auth_settings():
 
 
 def verified_claims(subject="google-subject-123"):
+    issued = time.time()
     return VerifiedClaims(iss="https://accounts.google.com", sub=subject,
-                          aud=auth_settings()["auth"]["google"]["client_id"], exp=time.time() + 3600,
+                          aud=auth_settings()["auth"]["google"]["client_id"], iat=issued, exp=issued + 3600,
                           email_verified=True, email="not-sent-to-model@example.test")
 
 
@@ -214,15 +215,22 @@ class StudentIdentityTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 identity.student_id_from_claims(claims)
 
-    def test_expired_missing_or_malformed_token_expiry_is_rejected(self):
-        for expiry in (None, True, "2000", float("inf"), float("nan"), 999, 1000):
-            with self.subTest(expiry=expiry):
+    def test_invalid_signed_identity_timestamps_are_rejected(self):
+        for changes in ({"iat": None}, {"iat": 1061}, {"exp": True}, {"exp": "2000"},
+                        {"exp": float("inf")}, {"iat": float("nan")}, {"exp": 999}):
+            with self.subTest(changes=changes):
                 claims = verified_claims()
-                claims["exp"] = expiry
+                claims.update(iat=1000, exp=4600)
+                claims.update(changes)
                 with self.assertRaises(ValueError):
                     identity.student_id_from_claims(claims, now=1000)
-        claims["exp"] = 1001
-        self.assertEqual(len(identity.student_id_from_claims(claims, now=1000)), 64)
+
+    def test_signed_session_outlasts_google_token_but_expires_after_twelve_hours(self):
+        claims = verified_claims()
+        claims.update(iat=1000, exp=4600)
+        self.assertEqual(len(identity.student_id_from_claims(claims, now=4601)), 64)
+        with self.assertRaises(ValueError):
+            identity.student_id_from_claims(claims, now=1000 + 12 * 3600)
 
     def test_token_must_belong_to_the_configured_google_client(self):
         client = auth_settings()["auth"]["google"]["client_id"]
@@ -452,7 +460,7 @@ class StudentIdentityTests(unittest.TestCase):
         app = AppTest.from_string(script)
         app.secrets["auth"] = auth_settings()["auth"]
         claims = verified_claims()
-        claims["exp"] = 1
+        claims.update(iat=1, exp=3601)
         with patch.object(identity.st, "user", claims), patch.object(identity.st, "logout") as logout:
             app.run(timeout=10)
             app.session_state["tutor_chat"] = ["private work"]

@@ -69,12 +69,13 @@ Names, conversations and study state are session-scoped; this change does not ad
 a database or promise cross-device profile/history sync. Students can change the
 Tex username through the account menu.
 
-Streamlit's identity cookie can persist for 30 days. Trentox additionally checks
-the Google identity's `exp` on every full app run and requires sign-in again once
-it expires. It also checks that `aud` (and `azp` when present or required) match
-the configured Google Web client. These checks supplement Streamlit/Authlib's
-signature, state and nonce validation at the callback; no raw token is accepted
-from a URL, form or session-state value.
+Streamlit/Authlib validates the Google token at the sign-in callback. Trentox
+uses Streamlit's signed identity cookie for a fixed 12-hour study session,
+measured from Google's token issuance time (`iat`). The original ID token can
+expire during that session. Every full app run checks the session lifetime,
+verified identity, and that `aud` (and `azp` when present or required) match the
+configured Google Web client. No raw token is accepted from a URL, form or
+session-state value.
 
 Loss of authentication, an invalid/expired identity, account changes and logout
 clear the current session's learner data before any learning modules load. There
