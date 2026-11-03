@@ -93,6 +93,39 @@ class StudentIdentityTests(unittest.TestCase):
         unavailable.get.side_effect = FileNotFoundError
         self.assertFalse(identity.google_auth_ready(unavailable))
 
+    def test_setup_diagnostic_accepts_streamlit_secrets_tables(self):
+        from streamlit.runtime.secrets import AttrDict
+        settings = AttrDict(auth_settings())
+        self.assertTrue(identity.google_auth_ready(settings))
+        self.assertEqual(identity.google_auth_configuration_issues(settings), [])
+
+    def test_server_log_identifies_setup_problem_without_leaking_values(self):
+        settings = auth_settings()
+        settings["auth"]["cookie_secret"] = "PRIVATE-short-cookie"
+        settings["auth"]["google"]["client_secret"] = "REPLACE_PRIVATE_GOOGLE_SECRET"
+        settings["auth"]["redirect_uri"] = "https://private-client.example.test/wrong?token=PRIVATE_TOKEN"
+        ui = ui_stub()
+        ui.secrets = settings
+        with patch.object(identity, "st", ui), self.assertLogs(identity.logger, level="WARNING") as captured:
+            with self.assertRaises(StopExecution):
+                identity.require_student()
+        logged = "\n".join(captured.output)
+        for name in ("auth.cookie_secret", "auth.google.client_secret", "auth.redirect_uri"):
+            self.assertIn(name, logged)
+        for secret_value in ("PRIVATE", "private-client", "test-client-id"):
+            self.assertNotIn(secret_value, logged)
+        ui.login.assert_not_called()
+        self.assertTrue(ui.button.call_args.kwargs["disabled"])
+
+    def test_setup_diagnostic_handles_missing_sections_and_unreadable_secrets(self):
+        self.assertEqual(identity.google_auth_configuration_issues({}), ["missing [auth] table"])
+        self.assertEqual(identity.google_auth_configuration_issues({"auth": {"cookie_secret": "private"}}),
+                         ["missing [auth.google] table"])
+        unavailable = Mock()
+        unavailable.get.side_effect = FileNotFoundError("PRIVATE_EXCEPTION_MESSAGE")
+        self.assertEqual(identity.google_auth_configuration_issues(unavailable),
+                         ["Secrets configuration could not be read"])
+
     def test_stable_pseudonym_uses_verified_subject_not_email(self):
         claims = verified_claims()
         original = identity.student_id_from_claims(claims)
