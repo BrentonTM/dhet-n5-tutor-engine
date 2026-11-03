@@ -429,6 +429,38 @@ class StudentIdentityTests(unittest.TestCase):
         self.assertFalse(any("Support reference:" in element.value for element in result.info))
         self.assertFalse(any(element.value == "PROTECTED WORKSPACE" for element in result.markdown))
 
+    def test_real_login_click_survives_private_state_cleanup(self):
+        script = "from ui.student_identity import require_student\nimport streamlit as st\nrequire_student()\nst.markdown('PROTECTED WORKSPACE')"
+        for settings, expected_args in ((default_auth_settings(), ()), (auth_settings(), ("google",))):
+            with self.subTest(expected_args=expected_args):
+                app = AppTest.from_string(script)
+                app.secrets["auth"] = settings["auth"]
+                with patch.object(identity.st, "user", SimpleNamespace(is_logged_in=False)), \
+                        patch.object(identity.st, "login") as login:
+                    app.run(timeout=10)
+                    app.session_state["tutor_chat"] = ["private work"]
+                    app.session_state["_student_display_name"] = "Previous learner"
+                    app.button(key="student_google_login").click().run(timeout=10)
+                self.assertEqual(len(app.exception), 0)
+                login.assert_called_once_with(*expected_args)
+                self.assertNotIn("tutor_chat", app.session_state)
+                self.assertNotIn("_student_display_name", app.session_state)
+                self.assertFalse(any(element.value == "PROTECTED WORKSPACE" for element in app.markdown))
+
+    def test_real_expired_identity_logout_click_survives_state_cleanup(self):
+        script = "from ui.student_identity import require_student\nrequire_student()"
+        app = AppTest.from_string(script)
+        app.secrets["auth"] = auth_settings()["auth"]
+        claims = verified_claims()
+        claims["exp"] = 1
+        with patch.object(identity.st, "user", claims), patch.object(identity.st, "logout") as logout:
+            app.run(timeout=10)
+            app.session_state["tutor_chat"] = ["private work"]
+            app.button(key="student_invalid_logout").click().run(timeout=10)
+        self.assertEqual(len(app.exception), 0)
+        logout.assert_called_once_with()
+        self.assertNotIn("tutor_chat", app.session_state)
+
 
 if __name__ == "__main__":
     unittest.main()

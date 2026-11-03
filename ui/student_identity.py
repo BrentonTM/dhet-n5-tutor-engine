@@ -169,10 +169,16 @@ def student_id_from_claims(claims, *, client_id=None, now=None):
     return hashlib.sha256(("https://accounts.google.com\0" + subject).encode("utf-8")).hexdigest()
 
 
-def reset_student_state():
-    """Clear this browser session's learner data before account changes/logout."""
+def reset_student_state(*, preserve=()):
+    """Clear learner data, optionally keeping a fixed entry widget's click.
+
+    Clearing a button's widget state before rendering it discards its current
+    click. The entry gate preserves only its own non-private control; logout
+    and account changes still use the default full reset.
+    """
     for key in list(st.session_state):
-        del st.session_state[key]
+        if key not in preserve:
+            del st.session_state[key]
 
 
 def logout_student():
@@ -211,7 +217,7 @@ def _render_login(ready, embedded, runtime_view=False, configuration_reference="
                 st.link_button("Open secure sign-in", APP_URL, type="primary", width="stretch")
             else:
                 if st.button("Continue with Google", type="primary", width="stretch",
-                             disabled=not ready, key="student_google_login"):
+                             disabled=not ready, key="student_google_login") and ready:
                     try:
                         provider_name, _, _ = _google_provider_settings(st.secrets["auth"])
                         if provider_name is None:
@@ -247,7 +253,7 @@ def require_student():
     embedded = bool(st.context.is_embedded)
     runtime_view = urlsplit(url).path.startswith("/~/+/")
     if not ready or embedded or not st.user.is_logged_in:
-        reset_student_state()
+        reset_student_state(preserve=("student_google_login",))
         _render_login(ready, embedded, runtime_view, _configuration_reference(issues))
         st.stop()
 
@@ -255,7 +261,7 @@ def require_student():
         _, provider, _ = _google_provider_settings(st.secrets["auth"])
         student_id = student_id_from_claims(st.user, client_id=provider["client_id"])
     except ValueError:
-        reset_student_state()
+        reset_student_state(preserve=("student_invalid_logout",))
         st.error("Your sign-in has expired or could not be verified. Please sign in again.")
         if st.button("Sign in again", key="student_invalid_logout"):
             logout_student()
