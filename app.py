@@ -1,4 +1,5 @@
 import logging
+import hashlib
 import json
 import html
 import importlib
@@ -67,7 +68,10 @@ from ui import exam_questions as _exam_questions
 if not hasattr(_exam_questions, "guidance_documents"):
     _exam_questions = importlib.reload(_exam_questions)
 from ui.exam_questions import CONTENT_VERSION, guidance_documents, list_documents, original_pdf, question_pdf, select_questions
-from ui.gemini_client import configured_models, generate_reply
+from ui.gemini_client import (
+    LEARNER_LANGUAGE_INSTRUCTION, VOICE_TRANSCRIPTION_PROMPT,
+    configured_models, generate_reply, parse_voice_transcript,
+)
 from ui.tex_partner import MODES, conversation_context, partner_instruction, recent_turns
 from ui.rubik_cube import render_rubik_cube
 from ui.logic_builder import render_logic_builder
@@ -1074,7 +1078,53 @@ def query_gemini_with_attachment(prompt, file_bytes, mime_type):
     return _call_gemini([prompt, attachment])
 
 
-def query_exam_guidance(prompt, questions, audio_bytes=None):
+def render_practice_voice(scope, *, disabled=False):
+    """Turn one recording into editable text before sending it for feedback."""
+    recording = st.audio_input("Record a voice explanation", key=f"practice_voice_{scope}", disabled=disabled)
+    if disabled:
+        st.caption("Start a practice set to record an answer to a question.")
+    if recording is None:
+        st.session_state.pop("practice_transcript", None)
+        return "", False
+
+    audio = recording.getvalue()
+    clip_id = (scope, hashlib.sha256(audio).hexdigest())
+    saved = st.session_state.get("practice_transcript", {})
+    if saved.get("clip_id") != clip_id:
+        saved = {}
+        st.session_state.pop("practice_transcript", None)
+    st.caption("Speak in your preferred language. Transcribe sends the recording to Google Gemini.")
+    if not saved and st.button("Transcribe and translate", key=f"practice_transcribe_{scope}"):
+        if len(audio) > 8 * 1024 * 1024:
+            st.warning("Record a shorter explanation (up to 8 MB).")
+        else:
+            with st.spinner("Listening and translating…"):
+                reply, error = query_gemini_with_attachment(VOICE_TRANSCRIPTION_PROMPT, audio, "audio/wav")
+            transcript = parse_voice_transcript(reply)
+            if error or not transcript:
+                st.warning(error or "Tex couldn’t get a usable transcript. Try a clearer recording or type your answer.")
+            else:
+                saved = {"clip_id": clip_id, **transcript}
+                st.session_state.practice_transcript = saved
+    if not saved:
+        return "", True
+
+    st.caption("Check the transcript before requesting feedback, especially numbers, signs and units.")
+    if saved["language"]:
+        st.text(f"Detected language: {saved['language'][:120]}")
+    key_suffix = f"{scope}_{clip_id[1]}"
+    transcript = st.text_area("Your transcript", value=saved["transcript"], key=f"practice_transcript_{key_suffix}")
+    translation = st.text_area("English translation", value=saved["english"], key=f"practice_translation_{key_suffix}",
+                               help="Optional. Correct or clear it if you edit the transcript.")
+    if not transcript.strip():
+        return "", True
+    answer = f"Spoken answer, reviewed transcript:\n{transcript.strip()}"
+    if translation.strip():
+        answer += f"\nEnglish translation for reference (use the original for meaning and reply language):\n{translation.strip()}"
+    return answer, False
+
+
+def query_exam_guidance(prompt, questions):
     """Send original question, formula and matched memo pages without transcription."""
     contents = [
         prompt + "\nRead the original question pages as the authority for notation, diagrams, tables and marks. "
@@ -1088,12 +1138,6 @@ def query_exam_guidance(prompt, questions, audio_bytes=None):
     documents = guidance_documents(questions)
     if documents and genai_types is None:
         return None, "Original-paper guidance needs the Google GenAI package installed in this deployment."
-    if audio_bytes:
-        if len(audio_bytes) > 8 * 1024 * 1024:
-            return None, "Record a shorter explanation (up to 8 MB)."
-        if genai_types is None:
-            return None, "Voice guidance needs the Google GenAI package installed in this deployment."
-        contents.append(genai_types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"))
     for document in documents:
         contents.append(f"Source document: {document['label']}.")
         try:
@@ -1924,11 +1968,7 @@ if tab_practice.open:
         else:
             mode = st.radio("Select Practice Mode:", ["Exam Past Paper Guidance", "🚨 Plant Fault Diagnosis Scenario"], horizontal=True)
     
-        st.caption("🎙️ You can type your solution or record a brief spoken explanation below:")
-        voice_note = st.audio_input("Record a voice explanation", key="practice_voice")
-        voice_bytes = voice_note.getvalue() if voice_note else None
-        voice_text = "Listen to my attached voice explanation." if voice_bytes else ""
-        st.caption("Submitting sends your written work and recording to Google Gemini for feedback.")
+        st.caption("Type or record your answer in your preferred language. Requesting feedback sends your answer to Google Gemini.")
 
         if mode == "🚨 Plant Fault Diagnosis Scenario":
             st.markdown("### Industrial Troubleshooting & Fault Diagnosis")
@@ -1939,22 +1979,20 @@ if tab_practice.open:
             }
             selected_scenario = fault_scenarios.get(active_subject, "A 4-20mA pressure transducer signal is noisy and tripping the relay switch.")
             st.error(f"**SCENARIO:** {selected_scenario}")
+            voice_text, voice_pending = render_practice_voice(f"{active_subject}_diagnosis")
         
             typed_diag = st.text_area("Your Step-by-Step Fault Diagnosis & Repair Strategy:", placeholder="e.g., Step 1: Check impulse line blockage...")
-            user_diag = typed_diag if typed_diag.strip() else voice_text
+            user_diag = "\n\n".join(part for part in (typed_diag.strip(), voice_text) if part)
         
             if st.button("Submit Fault Diagnosis"):
-                if not user_diag.strip():
+                if voice_pending:
+                    st.warning("Transcribe your recording first, or remove it to submit just your typed answer.")
+                elif not user_diag:
                     st.warning("Type or record your diagnostic process first!")
                 else:
                     with st.spinner("Senior Engineering Technician reviewing your strategy..."):
                         diag_prompt = f"Evaluate troubleshooting steps for {active_subject}.\nSCENARIO: {selected_scenario}\nDIAGNOSIS: {user_diag}"
-                        if voice_bytes and len(voice_bytes) > 8 * 1024 * 1024:
-                            resp, err = None, "Record a shorter explanation (up to 8 MB)."
-                        elif voice_bytes:
-                            resp, err = query_gemini_with_attachment(diag_prompt, voice_bytes, "audio/wav")
-                        else:
-                            resp, err = query_gemini_with_fallback(diag_prompt)
+                        resp, err = _call_gemini(diag_prompt, system_instruction=LEARNER_LANGUAGE_INSTRUCTION)
                         if resp:
                             st.markdown("### 🛠 Senior Technician Feedback")
                             st.markdown(resp)
@@ -1985,21 +2023,26 @@ if tab_practice.open:
         if q and mode != "🚨 Plant Fault Diagnosis Scenario":
             st.markdown(f"**{q['num']} · {q['marks']} marks** — {q['topic']}")
             render_selected_question(q, "practice_pdf")
+            voice_text, voice_pending = render_practice_voice(f"{active_subject}_{q['id']}")
             typed_sol = st.text_area("Your Working / Answer Attempt:", height=140, key=f"practice_work_{q['id']}")
-            user_sol = typed_sol if typed_sol.strip() else voice_text
+            user_sol = "\n\n".join(part for part in (typed_sol.strip(), voice_text) if part)
 
             if st.button("Get AI Socratic Guidance"):
-                if not user_sol.strip():
+                if voice_pending:
+                    st.warning("Transcribe your recording first, or remove it to submit just your typed answer.")
+                elif not user_sol:
                     st.warning("Type or record your answer first!")
                 else:
                     with st.spinner("Analyzing solution..."):
                         prompt = f"Socratic guidance for {active_subject}:\nQUESTION: {q['text']}\nMARKING: {q['marking']}\nATTEMPT: {user_sol}"
-                        resp, err = query_exam_guidance(prompt, [q], audio_bytes=voice_bytes)
+                        resp, err = query_exam_guidance(LEARNER_LANGUAGE_INSTRUCTION + "\n" + prompt, [q])
                         if resp:
                             st.markdown(resp)
                         else:
                             st.error(err)
             render_matched_memo(q, "practice_memo")
+        elif mode != "🚨 Plant Fault Diagnosis Scenario":
+            render_practice_voice(active_subject, disabled=True)
 
         render_paper_library()
 

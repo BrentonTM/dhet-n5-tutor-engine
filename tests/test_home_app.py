@@ -4,6 +4,7 @@ The production entry gate is tested separately; no bypass ships in the app.
 """
 import unittest
 from pathlib import Path
+from io import BytesIO
 from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
@@ -39,6 +40,24 @@ class HomeAppTests(unittest.TestCase):
         self.assertEqual(len(app.audio_input), 1)
         self.assertFalse(any("Live engineering model:" in node.proto.alt for node in app.get("iframe")))
         app.button[0]  # Native controls remain present after navigation.
+
+    def test_practice_voice_feedback_uses_edited_multilingual_transcript(self):
+        app = self.home()
+        next(box for box in app.selectbox if box.label == "N-level:").select("N4").run()
+        app.button(key="home_shortcut_📝 Practice_None").click().run()
+        next(b for b in app.button if b.label == "Start a 7-question practice set").click().run()
+        self.model.return_value = ('{"language":"isiZulu and English","transcript":"Ngithole 12 volts",'
+                                   '"english":"I got 12 volts"}', None)
+        with patch("streamlit.audio_input", return_value=BytesIO(b"mock recording")):
+            app.run()
+            next(b for b in app.button if b.label == "Transcribe and translate").click().run()
+            self.assertEqual(self.model.call_args.args[0][1].inline_data.mime_type, "audio/wav")
+            next(w for w in app.text_area if w.label == "Your transcript").set_value("Ngithole 15 volts").run()
+            next(b for b in app.button if b.label == "Get AI Socratic Guidance").click().run()
+            feedback_request = self.model.call_args.args[0]
+            self.assertTrue(all(isinstance(part, str) for part in feedback_request))
+            self.assertIn("Ngithole 15 volts", feedback_request[0])
+            self.assertFalse(app.exception)
 
     def test_live_model_and_tips_are_restored_and_full_lab_keeps_selected_model(self):
         app = self.home()
