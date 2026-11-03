@@ -1,3 +1,4 @@
+import time
 import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock, patch
@@ -33,6 +34,7 @@ def auth_settings():
 
 def verified_claims(subject="google-subject-123"):
     return VerifiedClaims(iss="https://accounts.google.com", sub=subject,
+                          aud=auth_settings()["auth"]["google"]["client_id"], exp=time.time() + 3600,
                           email_verified=True, email="not-sent-to-model@example.test")
 
 
@@ -45,7 +47,7 @@ def ui_stub(claims=None, state=None):
     )
     for command in ("container", "form", "popover"):
         setattr(ui, command, MagicMock())
-    for command in ("title", "caption", "markdown", "info", "error", "link_button", "login", "logout"):
+    for command in ("title", "badge", "caption", "markdown", "info", "error", "link_button", "login", "logout"):
         setattr(ui, command, Mock())
     ui.button = Mock(return_value=False)
     ui.text_input = Mock(return_value="")
@@ -76,17 +78,30 @@ class StudentIdentityTests(unittest.TestCase):
             ("redirect_uri", "https://example.test/~/+/oauth2callback"),
             ("redirect_uri", "https://example.test/oauth2callback?next=anything"),
             ("redirect_uri", "http://example.test/oauth2callback"),
+            ("redirect_uri", "https://example.test/oauth2callback"),
+            ("redirect_uri", "https:///oauth2callback"),
+            ("redirect_uri", identity.APP_URL.replace("https://", "https://user:password@") + "oauth2callback"),
+            ("redirect_uri", identity.APP_URL + "oauth2callback\n"),
+            ("redirect_uri", "http://localhost:99999/oauth2callback"),
         ]
         for field, value in cases:
             settings = auth_settings()
             settings["auth"][field] = value
             self.assertFalse(identity.google_auth_ready(settings))
+
         for field, value in [("client_id", "REPLACE_WITH_GOOGLE_ID"),
                              ("client_secret", ""),
                              ("server_metadata_url", "https://untrusted.test/discovery")]:
             settings = auth_settings()
             settings["auth"]["google"][field] = value
             self.assertFalse(identity.google_auth_ready(settings))
+
+    def test_local_callback_and_readiness_diagnostics_agree(self):
+        for redirect in ("http://localhost:8501/oauth2callback", "http://127.0.0.1:8502/oauth2callback"):
+            settings = auth_settings()
+            settings["auth"]["redirect_uri"] = redirect
+            self.assertTrue(identity.google_auth_ready(settings))
+            self.assertEqual(identity.google_auth_configuration_issues(settings), [])
 
     def test_missing_secrets_file_is_not_a_crash_or_a_bypass(self):
         unavailable = Mock()
@@ -142,6 +157,59 @@ class StudentIdentityTests(unittest.TestCase):
             claims[field] = value
             with self.assertRaises(ValueError):
                 identity.student_id_from_claims(claims)
+
+    def test_expired_missing_or_malformed_token_expiry_is_rejected(self):
+        for expiry in (None, True, "2000", float("inf"), float("nan"), 999, 1000):
+            with self.subTest(expiry=expiry):
+                claims = verified_claims()
+                claims["exp"] = expiry
+                with self.assertRaises(ValueError):
+                    identity.student_id_from_claims(claims, now=1000)
+        claims["exp"] = 1001
+        self.assertEqual(len(identity.student_id_from_claims(claims, now=1000)), 64)
+
+    def test_token_must_belong_to_the_configured_google_client(self):
+        client = auth_settings()["auth"]["google"]["client_id"]
+        for audience, party in ((None, None), ("other-client", None),
+                                ([client, "other-client"], None),
+                                ([client, "other-client"], "other-client"),
+                                (client, "other-client"), ([client, 123], client)):
+            with self.subTest(audience=audience, party=party):
+                claims = verified_claims()
+                claims.update(aud=audience, azp=party)
+                with self.assertRaises(ValueError):
+                    identity.student_id_from_claims(claims, client_id=client)
+        claims = verified_claims()
+        claims.update(aud=[client, "other-client"], azp=client)
+        self.assertEqual(len(identity.student_id_from_claims(claims, client_id=client)), 64)
+
+    def test_invalid_identity_immediately_clears_previous_learner_data(self):
+        for changes in ({"exp": 1}, {"aud": "another-app"}, {"email_verified": False}):
+            with self.subTest(changes=changes):
+                claims = verified_claims()
+                claims.update(changes)
+                state = {"tutor_chat": ["private"], "_student_display_name": "Breezy"}
+                ui = ui_stub(claims=claims, state=state)
+                with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
+                    identity.require_student()
+                self.assertEqual(state, {})
+                ui.error.assert_called_once()
+
+    def test_lost_authentication_clears_private_state_before_showing_login(self):
+        ui = ui_stub(claims=SimpleNamespace(is_logged_in=False), state={"tutor_chat": ["private"]})
+        with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
+            identity.require_student()
+        self.assertEqual(ui.session_state, {})
+
+    def test_reauthentication_clears_cookie_through_native_logout(self):
+        claims = verified_claims()
+        claims["exp"] = 1
+        ui = ui_stub(claims=claims, state={"tutor_chat": ["private"]})
+        ui.button.return_value = True
+        with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
+            identity.require_student()
+        ui.logout.assert_called_once()
+        self.assertEqual(ui.session_state, {})
 
     def test_session_and_username_values_cannot_bypass_google_login(self):
         ui = ui_stub(claims=SimpleNamespace(is_logged_in=False),
@@ -254,6 +322,7 @@ class StudentIdentityTests(unittest.TestCase):
         script = "from ui.student_identity import require_student\nimport streamlit as st\nrequire_student()\nst.markdown('PROTECTED WORKSPACE')"
         result = AppTest.from_string(script).run(timeout=10)
         self.assertEqual(len(result.exception), 0)
+        self.assertEqual(result.title[0].value, "Trentox Tutor AI")
         self.assertTrue(result.button(key="student_google_login").disabled)
         self.assertFalse(any(element.value == "PROTECTED WORKSPACE" for element in result.markdown))
 

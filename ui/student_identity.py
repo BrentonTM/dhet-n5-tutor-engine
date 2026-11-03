@@ -8,6 +8,8 @@ import hashlib
 import html
 import json
 import logging
+import math
+import time
 import unicodedata
 from collections.abc import Mapping
 from urllib.parse import urlsplit
@@ -42,31 +44,27 @@ def validate_display_name(value):
 
 def google_auth_ready(secrets):
     """Check configuration presence without returning or logging credentials."""
-    try:
-        auth = secrets.get("auth", {})
-        if not isinstance(auth, Mapping):
-            return False
-        provider = auth.get("google", {})
-        if not isinstance(provider, Mapping):
-            return False
-        values = [auth.get("redirect_uri"), auth.get("cookie_secret"),
-                  provider.get("client_id"), provider.get("client_secret")]
-        if not all(isinstance(value, str) and value.strip() for value in values):
-            return False
-        if any(value.strip().upper().startswith(("REPLACE", "YOUR_", "CHANGE_")) for value in values):
-            return False
-        redirect = urlsplit(auth["redirect_uri"])
-        valid_origin = redirect.scheme == "https" or (
-            redirect.scheme == "http" and redirect.hostname in {"localhost", "127.0.0.1"}
-        )
-        return bool(
-            valid_origin and redirect.path == "/oauth2callback"
-            and not redirect.query and not redirect.fragment
-            and len(auth["cookie_secret"]) >= 32
-            and provider.get("server_metadata_url") == GOOGLE_METADATA_URL
-        )
-    except (FileNotFoundError, KeyError, TypeError, ValueError):
+    return not google_auth_configuration_issues(secrets)
+
+
+def _valid_redirect_uri(value):
+    """Allow this deployment's callback, or an explicit local HTTP callback."""
+    if any(char.isspace() or ord(char) < 32 for char in value):
         return False
+    redirect = urlsplit(value)
+    production = urlsplit(APP_URL)
+    valid_origin = (
+        redirect.scheme == production.scheme
+        and redirect.hostname == production.hostname
+        and redirect.port in {None, 443}
+    ) or (
+        redirect.scheme == "http"
+        and redirect.hostname in {"localhost", "127.0.0.1"}
+        and (redirect.port is None or 1 <= redirect.port <= 65535)
+    )
+    return bool(valid_origin and redirect.netloc and redirect.username is None
+                and redirect.password is None and redirect.path == "/oauth2callback"
+                and not redirect.query and not redirect.fragment)
 
 
 def google_auth_configuration_issues(secrets):
@@ -97,13 +95,8 @@ def google_auth_configuration_issues(secrets):
         redirect_value = auth.get("redirect_uri")
         if isinstance(redirect_value, str) and redirect_value.strip():
             try:
-                redirect = urlsplit(redirect_value)
-                valid_origin = redirect.scheme == "https" or (
-                    redirect.scheme == "http" and redirect.hostname in {"localhost", "127.0.0.1"}
-                )
-                if (not valid_origin or redirect.path != "/oauth2callback"
-                        or redirect.query or redirect.fragment):
-                    issues.append("auth.redirect_uri must be an absolute app URL ending in /oauth2callback")
+                if not _valid_redirect_uri(redirect_value):
+                    issues.append("auth.redirect_uri must use the canonical app callback or a local HTTP callback")
             except ValueError:
                 issues.append("auth.redirect_uri is not a valid URL")
         return issues
@@ -111,8 +104,13 @@ def google_auth_configuration_issues(secrets):
         return ["Secrets configuration could not be read"]
 
 
-def student_id_from_claims(claims):
-    """Pseudonymous app ID from Google's verified issuer and subject claims."""
+def student_id_from_claims(claims, *, client_id=None, now=None):
+    """Check trusted st.user claims, then derive a pseudonymous learner ID.
+
+    Streamlit/Authlib validate the OIDC signature, state and nonce at login.
+    Recheck expiry on every app run: Streamlit's cookie can outlive the ID token.
+    This function never authenticates raw tokens or user-supplied claim data.
+    """
     issuer = claims.get("iss")
     subject = claims.get("sub")
     if issuer not in {"accounts.google.com", "https://accounts.google.com"}:
@@ -121,6 +119,23 @@ def student_id_from_claims(claims):
         raise ValueError("Google identity has no subject claim.")
     if claims.get("email_verified") is not True:
         raise ValueError("A verified Google account is required.")
+    expires = claims.get("exp")
+    if (isinstance(expires, bool) or not isinstance(expires, (int, float))
+            or not math.isfinite(expires)):
+        raise ValueError("Google identity has no valid expiry.")
+    if expires <= (time.time() if now is None else now):
+        raise ValueError("Google identity has expired.")
+    if client_id is not None:
+        audience = claims.get("aud")
+        if isinstance(audience, str):
+            audience = [audience]
+        if (not isinstance(audience, list) or client_id not in audience
+                or not all(isinstance(value, str) for value in audience)):
+            raise ValueError("Google identity is for a different app.")
+        authorized_party = claims.get("azp")
+        if ((len(audience) > 1 or authorized_party is not None)
+                and authorized_party != client_id):
+            raise ValueError("Google identity has an unexpected authorized party.")
     return hashlib.sha256(("https://accounts.google.com\0" + subject).encode("utf-8")).hexdigest()
 
 
@@ -149,16 +164,18 @@ def student_prompt_context(student):
 
 
 def _entry_card(title, subtitle):
-    st.caption("TRENTOX · YOUR ENGINEERING THINKING PARTNER")
-    st.title(title)
-    st.markdown(subtitle)
+    st.badge("Your engineering thinking partner", icon=":material/school:", color="green")
+    st.title(title, anchor=False, text_alignment="center")
+    st.markdown(subtitle, text_alignment="center")
 
 
 def _render_login(ready, embedded, runtime_view=False):
     with st.container(horizontal_alignment="center"):
-        with st.container(width=540, border=True, key="student_entry"):
-            _entry_card("Welcome to Trentox", "Meet **Tex**, your thinking partner for engineering studies.")
-            st.markdown("Work through a problem, test an idea and make the next step your own.")
+        with st.container(width=560, border=True, key="student_entry",
+                          horizontal_alignment="center", gap="small"):
+            _entry_card("Trentox Tutor AI", "Build understanding, one step at a time.")
+            st.markdown("Meet **Tex**, your AI study partner for engineering.",
+                        text_alignment="center")
             if embedded:
                 st.info("Open Trentox directly to sign in securely with Google.")
                 st.link_button("Open secure sign-in", APP_URL, type="primary", width="stretch")
@@ -171,11 +188,11 @@ def _render_login(ready, embedded, runtime_view=False):
                         logger.warning("Google sign-in could not start: %s", type(exc).__name__)
                         st.error("Google sign-in could not start. Please try again or contact the app owner.")
                 if not ready:
-                    st.info("Secure Google sign-in is not connected yet. Please contact the app owner.")
+                    st.info("Google sign-in is being set up. Please check back soon.", icon=":material/info:")
                 if runtime_view:
                     st.link_button("Open the main Trentox app", APP_URL, width="stretch")
-            st.caption("After sign-in, choose the username Tex will use when talking with you.")
-            st.caption("Trentox never asks for your Google password.")
+            st.caption("Sign in, choose your Tex username and start learning.", text_alignment="center")
+            st.caption(":material/lock: Your Google password stays with Google.", text_alignment="center")
 
 
 def require_student():
@@ -192,14 +209,16 @@ def require_student():
     embedded = bool(st.context.is_embedded)
     runtime_view = urlsplit(url).path.startswith("/~/+/")
     if not ready or embedded or not st.user.is_logged_in:
+        reset_student_state()
         _render_login(ready, embedded, runtime_view)
         st.stop()
 
     try:
-        student_id = student_id_from_claims(st.user)
+        student_id = student_id_from_claims(st.user, client_id=st.secrets["auth"]["google"]["client_id"])
     except ValueError:
-        st.error("This Google identity could not be verified. Please sign out and try again.")
-        if st.button("Sign out", key="student_invalid_logout"):
+        reset_student_state()
+        st.error("Your sign-in has expired or could not be verified. Please sign in again.")
+        if st.button("Sign in again", key="student_invalid_logout"):
             logout_student()
         st.stop()
 

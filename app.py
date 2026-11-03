@@ -41,6 +41,12 @@ st.set_page_config(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
+from ui.student_identity import require_student, render_student_menu
+
+# Verify identity before loading learning modules, data or AI workspaces.
+student = require_student()
+student_name = student["display_name"]
+
 DATABASE_DIR = os.path.join(BASE_DIR, "data", "databases")
 os.makedirs(DATABASE_DIR, exist_ok=True)
 from ui.learning_progress import (
@@ -63,14 +69,8 @@ if not hasattr(_exam_questions, "guidance_documents"):
 from ui.exam_questions import CONTENT_VERSION, guidance_documents, list_documents, original_pdf, question_pdf, select_questions
 from ui.gemini_client import configured_models, generate_reply
 from ui.tex_partner import MODES, conversation_context, partner_instruction, recent_turns
-from ui.student_identity import require_student, render_student_menu
 from ui.rubik_cube import render_rubik_cube
 from ui.logic_builder import render_logic_builder
-
-# Verify Google identity before rendering any learning content or calling AI.
-student = require_student()
-student_name = student["display_name"]
-
 
 @st.cache_data(show_spinner=False, max_entries=128)
 def cached_question_pdf(question_id, source_file, source_pages):
