@@ -8,6 +8,8 @@ from contextlib import closing
 from io import BytesIO
 from pathlib import Path
 
+from ui.n4_courses import starter_questions
+
 CONTENT_VERSION = "all-subject-papers-and-memos-v2"
 
 
@@ -76,6 +78,10 @@ def select_questions(base_dir, subject_code, limit=1, rng=None):
                 if not (root / question["source_file"]).is_file():
                     raise FileNotFoundError("An original question paper is missing from the deployment")
             return (rng or random).sample(candidates, min(limit, len(candidates)))
+
+    starter = starter_questions(subject_code)
+    if starter:
+        return (rng or random).sample(starter, min(limit, len(starter)))
 
     database = root / "data" / "databases" / "past_papers.db"
     if not database.is_file():

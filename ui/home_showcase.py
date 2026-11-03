@@ -4,9 +4,11 @@ import streamlit as st
 
 from ui.diagram_engine import build_html
 from ui.diagram_registry import get_spec, title_of
+from ui.n4_courses import N4_LAB_TOPICS, N4_NAMES
 
 
 HOME_MODELS = {
+    **{code: tuple(topics) for code, topics in N4_LAB_TOPICS.items()},
     "INST-N5": ("rotameter", "venturi", "bourdon", "pid_loop"),
     "IE-N5": ("bridge_rectifier_3d", "opamp_inv", "bjt_structure"),
     "MATH-N5": ("derivative", "riemann", "revolve"),
@@ -15,6 +17,7 @@ HOME_MODELS = {
 }
 
 LAB_SUBJECTS = {
+    **N4_NAMES,
     "INST-N5": "Industrial Instruments N5",
     "IE-N5": "Industrial Electronics N5",
     "MATH-N5": "Mathematics N5",

@@ -74,6 +74,7 @@ from ui.logic_builder import render_logic_builder
 from ui.home_showcase import LAB_SUBJECTS, model_discussion_prompt, render_home_model
 from ui.brand import render_wordmark
 from ui.exam_readiness import render_exam_readiness
+from ui.n4_courses import N4_CODES, N4_LAB_TOPICS, N4_MODULES, N4_NAMES, starter_questions, syllabus_url
 
 @st.cache_data(show_spinner=False, max_entries=128)
 def cached_question_pdf(question_id, source_file, source_pages):
@@ -81,7 +82,10 @@ def cached_question_pdf(question_id, source_file, source_pages):
 
 
 def render_selected_question(question, widget_prefix):
-    if question.get("source_file"):
+    if question.get("original_practice"):
+        st.caption("Original Trentox practice")
+        st.write(question["text"])
+    elif question.get("source_file"):
         pages = ", ".join(str(page) for page in question["source_pages"])
         st.caption(f"Original {question['num']} · {question['source_label']} · source pages {pages}")
         st.pdf(
@@ -109,6 +113,10 @@ def cached_original_pdf(source_file):
 
 
 def render_matched_memo(question, widget_prefix):
+    if question.get("original_practice"):
+        with st.expander("Show worked answer and marking guide"):
+            st.write(question["marking"])
+        return
     if not question.get("memo_file"):
         st.caption(question.get("memo_status") or "No marking memo with the same printed cover date is attached to this question.")
         return
@@ -640,6 +648,12 @@ def render_3d_scene(scene_file, height=200):
 def render_home_slideshow(subject_code, subject_name, height=262):
     """Show rotating course-aware reminders beside the live engineering model."""
     formula_cards = {
+        "IE-N4": {
+            "title": "Ohm’s law",
+            "formula": "V = IR",
+            "terms": [("V", "voltage"), ("I", "current"), ("R", "resistance")],
+            "note": "Use amperes and ohms to get volts.",
+        },
         "MATH-N5": {
             "title": "Power rule for differentiation",
             "formula": "d(xⁿ) / dx = n xⁿ⁻¹",
@@ -695,6 +709,11 @@ def render_home_slideshow(subject_code, subject_name, height=262):
             "visual": "rotameter",
         },
     }
+    formula_cards["MATH-N4"] = formula_cards["MATH-N5"]
+    for code, related in (("MATH-N4", "MATH-N5"), ("IE-N4", "IE-N5")):
+        concept_cards[code] = {
+            **concept_cards[related], "eyebrow": f"COURSE CONCEPT · {N4_NAMES[code].upper()}",
+        }
     formula = formula_cards.get(subject_code, {
         "title": "Binary-weight reminder",
         "formula": "8 : 4 : 2 : 1",
@@ -1237,6 +1256,7 @@ def render_topic_quiz(quiz, subject_code, topic_name):
 
 
 SUBJECT_MODULES = {
+    **{code: [row[0] for row in rows] for code, rows in N4_MODULES.items()},
     "INST-N5": [
         "General Instrumentation Concepts and Terminology",
         "Flow Measurement",
@@ -1293,6 +1313,7 @@ SUBJECT_MODULES = {
 
 
 LAB_SUBJECT_CODES = {
+    **{name: code for code, name in N4_NAMES.items()},
     "Mathematics N5": "MATH-N5",
     "Digital Electronics N4": "DIGI-N4",
     "Digital Electronics N5 — visualization preview": "DIGI-N5",
@@ -1344,6 +1365,8 @@ LAB_TOPIC_BY_DIAGRAM = {
 }
 
 FLASHCARDS_DATA = {
+    **{code: [{"q": row[2], "a": row[3]} for row in rows]
+       for code, rows in N4_MODULES.items()},
     "INST-N5": [
         {
             "q": "What is the discharge formula for a V-notch (triangular) weir?",
@@ -1485,6 +1508,8 @@ except (OSError, json.JSONDecodeError) as exc:
     st.stop()
 
 integrated_subject_codes = {
+    ("mathematics", "N4"): "MATH-N4",
+    ("industrial_electronics", "N4"): "IE-N4",
     ("mathematics", "N5"): "MATH-N5",
     ("industrial_electronics", "N5"): "IE-N5",
     ("digital_electronics", "N4"): "DIGI-N4",
@@ -1512,6 +1537,8 @@ for subject in selected_programme["subjects"]:
     subject_code = integrated_subject_codes.get((subject["subject_id"], selected_level))
     if not subject_code:
         state_label = "planned"
+    elif subject_code in N4_MODULES:
+        state_label = "DHET map available"
     elif subject_code == "DIGI-N5":
         state_label = "school textbook map"
     elif subject_code in provisional_subject_codes:
@@ -1558,6 +1585,8 @@ if not active_subject:
         f"{selected_subject['subject_name']} {selected_level} is in the programme catalogue, "
         "but its curriculum map has not been integrated yet. The roadmap tracks the source review and build work."
     )
+    if selected_subject["subject_id"] == "industrial_instruments" and selected_level == "N4":
+        st.caption("DHET lists this subject as 8080194. A full N4 syllabus is needed to verify the module map.")
     st.stop()
 
 if selected_programme["programme_id"] != "electrical_instrumentation":
@@ -1570,10 +1599,14 @@ with st.sidebar.expander("Subject visual", expanded=False):
     render_subject_visual(active_subject, selected_subject["subject_name"], height=178)
 
 # Official NATED Categorized Formula Reference Sheets in Sidebar (Complete Exam Sheets Integration)
-with st.sidebar.expander("📐 Official NATED Formula Sheets", expanded=False):
+with st.sidebar.expander("📐 N4 formula quick reference" if active_subject in N4_MODULES else "📐 Official NATED Formula Sheets", expanded=False):
     st.markdown('<div style="max-height: 480px; overflow-y: auto; padding-right: 6px;">', unsafe_allow_html=True)
     
-    if active_subject == "IE-N5":
+    if active_subject in N4_MODULES:
+        for topic, formula, _, _ in N4_MODULES[active_subject]:
+            st.markdown(f"**{topic}**")
+            st.latex(formula)
+    elif active_subject == "IE-N5":
         st.markdown("### ⚡ Industrial Electronics N5")
         
         st.markdown("**1. DC Circuits, Power & Transients**")
@@ -1755,7 +1788,7 @@ if tab_home.open:
             st.caption("Turn the model into a conversation: predict, change one control, then explain what you see.")
             st.button("Explore this model with Tex", key="home_discuss_model", width="stretch",
                       icon=":material/forum:", on_click=discuss_home_model,
-                      args=(selected_subject["subject_name"], model_id))
+                      args=(N4_NAMES.get(active_subject, selected_subject["subject_name"]), model_id))
         st.subheader("Your study workspace", anchor=False)
         tex_column, action_column = st.columns([1.35, 1], gap="large")
         with tex_column:
@@ -1773,7 +1806,8 @@ if tab_home.open:
                           icon=":material/arrow_forward:", width="stretch",
                           on_click=resume_learning)
             destinations = [
-                ("Practice", "Past papers and original memos", ":material/edit:", "📝 Practice", None),
+                ("Practice", "Trentox questions with worked answers" if active_subject in N4_MODULES
+                 else "Past papers and original memos", ":material/edit:", "📝 Practice", None),
                 ("Mock exam", "A timed run at your pace", ":material/timer:", "⏱ Mock exam", None),
                 ("3D lab", "Rotate, inspect and experiment", ":material/deployed_code:", "🤖 Tutor & lab", "🧊 3D lab"),
                 ("Formulas", "A quick course-aware lookup", ":material/functions:", "📐 Formula hub", None),
@@ -1870,7 +1904,11 @@ if tab_practice.open:
         if "current_question" not in st.session_state:
             st.session_state.current_question = None
         st.subheader("💡 Practical Engineering Sandbox & Fault-Finding Scenarios")
-        mode = st.radio("Select Practice Mode:", ["Exam Past Paper Guidance", "🚨 Plant Fault Diagnosis Scenario"], horizontal=True)
+        if active_subject in N4_MODULES:
+            st.caption("Try original Trentox questions mapped to the N4 syllabus, with worked answers.")
+            mode = "Trentox practice"
+        else:
+            mode = st.radio("Select Practice Mode:", ["Exam Past Paper Guidance", "🚨 Plant Fault Diagnosis Scenario"], horizontal=True)
     
         st.caption("🎙️ You can type your solution or record a brief spoken explanation below:")
         voice_note = st.audio_input("Record a voice explanation", key="practice_voice")
@@ -1912,7 +1950,7 @@ if tab_practice.open:
             if "current_question" not in st.session_state:
                 st.session_state.current_question = None
 
-            if st.button("Fetch Random Exam Question"):
+            if st.button("Draw a practice question" if active_subject in N4_MODULES else "Fetch Random Exam Question"):
                 st.session_state.current_question = None
                 questions = load_selected_questions(1)
                 if questions:
@@ -1946,11 +1984,14 @@ if tab_practice.open:
 if tab_exam.open:
     with tab_exam:
         st.subheader(f"🎯 Timed Mock Exam Simulator & Confidence Calibration ({active_subject})")
+        starter_count = len(N4_MODULES.get(active_subject, ()))
+        if starter_count:
+            st.caption("Timed mini-mock using original Trentox exercises. It does not reproduce a full DHET exam.")
         render_exam_readiness()
         col1, col2 = st.columns([1, 2])
     
         with col1:
-            num_q = st.slider("Number of Questions:", 5, 15, 5)
+            num_q = st.slider("Number of Questions:", 5, starter_count or 15, 5)
             time_limit = st.selectbox("Exam Time Limit (minutes):", [15, 30, 45, 60], index=1)
             high_pressure = st.checkbox("⚡ High-Pressure Mode (Reduce Time by 15%)")
         
@@ -2008,7 +2049,9 @@ if tab_exam.open:
 
                 with st.form("mock_exam_form"):
                     for idx, item in enumerate(paper):
-                        st.markdown(f"**Question {idx + 1} · Source {item['num']} [{item['marks']} marks]**")
+                        st.markdown(f"**Question {idx + 1} · {item['topic']} [{item['marks']} marks]**"
+                                    if item.get("original_practice")
+                                    else f"**Question {idx + 1} · Source {item['num']} [{item['marks']} marks]**")
                         render_selected_question(item, f"exam_pdf_{st.session_state.exam_run_id}_{idx}")
                         st.session_state.exam_answers[idx] = st.text_area(f"Working for Q{idx+1}:", value=st.session_state.exam_answers.get(idx, ""), key=f"q_ans_{st.session_state.exam_run_id}_{idx}", height=100)
                         st.session_state.exam_confidence[idx] = st.radio(f"Confidence Level for Q{idx+1}:", ["High Confidence", "Medium / Uncertain", "Low / Pure Guess"], key=f"conf_{st.session_state.exam_run_id}_{idx}", horizontal=True)
@@ -2034,6 +2077,10 @@ if tab_exam.open:
                         if st.button("🔁 Retry grading", key="retry_grading"):
                             st.session_state.exam_graded = False
                             st.rerun()
+                    for item in paper:
+                        if item.get("original_practice"):
+                            with st.expander(f"Worked answer · {item['topic']}"):
+                                st.write(item["marking"])
 
 # TAB 4: AI Tutor Notes, Simulators & Spaced-Repetition Flashcards
 if tab_tutor.open:
@@ -2049,14 +2096,17 @@ if tab_tutor.open:
     
         if sub_tab1.open:
             with sub_tab1:
-                if active_subject == "MATH-N5":
+                if active_subject in N4_MODULES:
+                    st.caption(f"Six modules mapped to the DHET syllabus · subject code {N4_CODES[active_subject]}.")
+                    st.markdown(f"[Open the DHET syllabus]({syllabus_url(active_subject)})")
+                elif active_subject == "MATH-N5":
                     st.caption("The eight module names and weights match the official DHET N5 syllabus. Detailed topic lists are transcribed from the Future Managers Lecturer Guide and await a full cross-check.")
                 elif active_subject == "INST-N5":
                     st.caption("These study groups are based on readable question papers. The detailed DHET syllabus and official weighting are not yet available.")
                 elif active_subject == "IE-N5":
                     st.caption("Topics and module weightings follow the verified DHET Industrial Electronics N5 syllabus.")
                 elif active_subject == "DIGI-N4":
-                    st.caption("This is your confirmed N4 study scope: K-maps included; Memory Systems excluded. Module weights are not official.")
+                    st.caption("This study map includes K-maps and excludes Memory Systems. Its module order and weights have not been verified against a full DHET syllabus.")
                 elif active_subject == "DIGI-N5":
                     st.caption("This topic map follows the 14 modules visible in your school textbook photos. The detailed DHET N5 syllabus and official weighting still need verification.")
                 modules = SUBJECT_MODULES.get(active_subject, ["General Module Overview"])
@@ -2147,10 +2197,24 @@ if tab_tutor.open:
                     key=f"custom_topic_{active_subject}",
                 )
                 target_topic = custom_query.strip() if custom_query.strip() else selected_module
+                if active_subject in N4_MODULES and not custom_query.strip():
+                    example = next(item for item in starter_questions(active_subject) if item["topic"] == selected_module)
+                    with st.expander("Try a starter exercise", expanded=True):
+                        st.latex(next(row[1] for row in N4_MODULES[active_subject] if row[0] == selected_module))
+                        render_selected_question(example, "n4_lesson")
+                        if st.checkbox("Reveal the worked answer", key=f"n4_reveal_{example['id']}"):
+                            st.write(example["marking"])
                 adaptive_start = st.session_state.pop("adaptive_start_lesson_subject", None) == active_subject
                 if st.button("📖 Generate Lesson & Explanation") or adaptive_start:
-                    local_material = extract_text_from_local_files(os.path.join(BASE_DIR, "Learning material"))
-                    material_context = select_course_material(local_material, active_subject, target_topic)
+                    if active_subject in N4_MODULES:
+                        material_context = (
+                            f"DHET module headings for {N4_NAMES[active_subject]}: {'; '.join(modules)}. "
+                            "Only the module headings are provided. Do not claim the generated lesson is official "
+                            "or infer exam coverage or weightings from this list."
+                        )
+                    else:
+                        local_material = extract_text_from_local_files(os.path.join(BASE_DIR, "Learning material"))
+                        material_context = select_course_material(local_material, active_subject, target_topic)
                     if not material_context:
                         material_context = (
                             "No local reference file clearly matched this selected subject and topic. "
@@ -2377,21 +2441,15 @@ if tab_tutor.open:
                     from ui.diagram_registry import get_spec, title_of
 
                     lab_profiles = {
+                        **{N4_NAMES[code]: list(topics) for code, topics in N4_LAB_TOPICS.items()},
                         "Mathematics N5": ["derivative", "riemann", "revolve", "second_moment", "ode_decay", "unit_circle", "pascal"],
                         "Digital Electronics N4": ["logic_gate_board", "kmap4", "full_adder_3d"],
                         "Digital Electronics N5 — visualization preview": ["weighted_dac_3d", "flash_adc_3d"],
                         "Industrial Electronics N5": ["phasor", "rc_response", "bridge_rectifier_3d", "rectifier", "bjt_structure", "load_line", "opamp_inv", "opamp_noninv", "timer555", "wheatstone", "lvdt", "scr_structure", "scr_waveform", "cro", "lc_tank", "lcd_cell"],
                         "Industrial Instruments N5": ["rotameter", "venturi", "orifice", "weir", "target_flow", "manometer", "bourdon", "strain_gauge", "rtd_tc", "tank_level", "ph_probe", "pid_loop", "step_response"],
                     }
-                    lab_default_by_code = {
-                        "MATH-N5": "Mathematics N5",
-                        "DIGI-N4": "Digital Electronics N4",
-                        "DIGI-N5": "Digital Electronics N5 — visualization preview",
-                        "IE-N5": "Industrial Electronics N5",
-                        "INST-N5": "Industrial Instruments N5",
-                    }
                     lab_subjects = list(lab_profiles)
-                    preferred_lab_subject = lab_default_by_code.get(active_subject, "Digital Electronics N5 — visualization preview")
+                    preferred_lab_subject = LAB_SUBJECTS.get(active_subject, "Digital Electronics N5 — visualization preview")
                     lab_subject = st.selectbox(
                         "Lab subject:",
                         lab_subjects,
@@ -2439,7 +2497,7 @@ if tab_tutor.open:
                         "Rotate the model, hover each labelled part, then change one control at a time and explain the updated readouts.",
                     )
                     lab_code = LAB_SUBJECT_CODES.get(lab_subject)
-                    lab_topic = LAB_TOPIC_BY_DIAGRAM.get(diagram_id)
+                    lab_topic = N4_LAB_TOPICS.get(lab_code, LAB_TOPIC_BY_DIAGRAM).get(diagram_id)
                     prediction_key = "lab_prediction_" + re.sub(r"[^A-Za-z0-9_-]+", "_", f"{lab_subject}_{diagram_id}")
                     locked_key = f"{prediction_key}_locked"
                     saved_key = f"{prediction_key}_saved"
@@ -2530,7 +2588,14 @@ if tab_tutor.open:
 if tab_formulas.open:
     with tab_formulas:
         st.subheader(f"📐 Comprehensive Formula & Reference Hub: {active_subject}")
-        st.markdown("Official NATED TVET engineering formulas, standard constants, and mathematical derivations.")
+        if active_subject in N4_MODULES:
+            st.caption("Trentox quick reference for the six mapped modules.")
+            st.markdown(f"[Official DHET syllabus]({syllabus_url(active_subject)})")
+            for topic, formula, _, _ in N4_MODULES[active_subject]:
+                st.markdown(f"**{topic}**")
+                st.latex(formula)
+        else:
+            st.markdown("Official NATED TVET engineering formulas, standard constants, and mathematical derivations.")
     
         if active_subject == "INST-N5":
             st.markdown("### Instrumentation N5 Reference Equations")
@@ -2549,7 +2614,7 @@ if tab_formulas.open:
             st.latex(r"V_{out} = -\left(\frac{R_f}{R_1}V_1 + \frac{R_f}{R_2}V_2\right)")
             st.latex(r"V_{dc} = \frac{V_m}{\pi}(1 + \cos\alpha)")
             st.markdown("**Core Principles:** Op-amp feedback networks, thyristor firing angles, and transistor biasing.")
-        else:
+        elif active_subject not in N4_MODULES:
             st.markdown("### Digital Electronics N4/N5 Reference Equations")
             st.latex(r"N_{states} = 2^n")
             st.latex(r"f_{max} = \frac{1}{n \cdot t_{pd}}")

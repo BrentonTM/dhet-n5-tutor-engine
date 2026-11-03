@@ -117,3 +117,20 @@ class HomeAppTests(unittest.TestCase):
         self.assertEqual(len(app.exception), 0)
         self.assertTrue(any("not been integrated" in message.value for message in app.info))
         self.assertEqual(app.button(key="student_logout").label, "Sign out")
+
+    def test_new_n4_courses_route_to_their_own_models_and_questions(self):
+        app = self.home()
+        next(box for box in app.selectbox if box.label == "N-level:").select("N4").run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.selectbox(key="home_live_model_MATH-N4").value, "unit_circle")
+        app.button(key="home_shortcut_📝 Practice_None").click().run()
+        next(button for button in app.button if button.label == "Draw a practice question").click().run()
+        self.assertEqual(app.session_state.current_question["subject"], "MATH-N4")
+        self.assertTrue(app.session_state.current_question["original_practice"])
+
+        subject = next(box for box in app.selectbox if box.label == "Subject:")
+        subject.select(next(option for option in subject.options if option.startswith("Industrial Electronics"))).run()
+        self.assertIsNone(app.session_state.current_question)
+        next(button for button in app.button if button.label == "Draw a practice question").click().run()
+        self.assertEqual(app.session_state.current_question["subject"], "IE-N4")
+        self.assertFalse(app.exception)
