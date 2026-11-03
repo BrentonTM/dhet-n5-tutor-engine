@@ -54,7 +54,7 @@ def ui_stub(claims=None, state=None):
     )
     for command in ("container", "form", "popover"):
         setattr(ui, command, MagicMock())
-    for command in ("title", "badge", "caption", "markdown", "info", "error", "image", "link_button", "login", "logout"):
+    for command in ("title", "badge", "caption", "markdown", "info", "error", "link_button", "login", "logout"):
         setattr(ui, command, Mock())
     ui.button = Mock(return_value=False)
     ui.text_input = Mock(return_value="")
@@ -380,8 +380,8 @@ class StudentIdentityTests(unittest.TestCase):
         ui.context = SimpleNamespace(url=identity.APP_URL, is_embedded=True)
         with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
             identity.require_student()
-        self.assertIn(identity.APP_URL, [call.args[1] for call in ui.link_button.call_args_list])
-        self.assertIn(identity.PRIVACY_URL, [call.args[1] for call in ui.link_button.call_args_list])
+        ui.link_button.assert_called_once()
+        self.assertEqual(ui.link_button.call_args.args[1], identity.APP_URL)
         ui.login.assert_not_called()
 
     def test_runtime_path_is_not_an_embedding_or_authentication_signal(self):
@@ -399,7 +399,7 @@ class StudentIdentityTests(unittest.TestCase):
         ui.context.url = identity.APP_URL + "~/+/"
         with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
             identity.require_student()
-        self.assertIn(identity.APP_URL, [call.args[1] for call in ui.link_button.call_args_list])
+        ui.link_button.assert_called_once()
         self.assertFalse(ui.button.call_args.kwargs["disabled"])
 
     def test_logout_clears_all_learner_data_before_native_logout(self):

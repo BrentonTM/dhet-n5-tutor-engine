@@ -45,12 +45,20 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 from ui.student_identity import APP_URL, require_student, render_student_menu
 
+PRIVACY_URL = APP_URL + "?privacy=1"
 if st.query_params.get("privacy") == "1":
     with st.container(horizontal_alignment="center"):
         with st.container(width=760):
             st.markdown((Path(BASE_DIR) / "docs" / "privacy-policy.md").read_text(encoding="utf-8"))
             st.link_button("Back to Trentox", APP_URL)
     st.stop()
+
+if not getattr(st.user, "is_logged_in", False) or st.context.is_embedded:
+    with st.container(horizontal_alignment="center", gap="small"):
+        with st.container(width=560, horizontal_alignment="center", gap="small"):
+            st.image(Path(BASE_DIR) / "assets" / "trentox-cover.jpg", width="stretch",
+                     alt="Trentox Tutor AI cover with a turbine and circuit board")
+            st.link_button("Privacy policy and data requests", PRIVACY_URL)
 
 # Verify identity before loading learning modules, data or AI workspaces.
 student = require_student()
@@ -1620,6 +1628,7 @@ selected_subject, active_subject = subject_by_label[selected_subject_label]
 with st.container(horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"):
     render_wordmark()
     render_student_menu(student)
+st.sidebar.link_button("Privacy policy and data requests", PRIVACY_URL)
 st.caption(f"{selected_subject['subject_name']} · {selected_level} · Change your course in Study path.")
 
 # Old extracted questions must not survive a content update or subject change.

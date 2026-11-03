@@ -12,15 +12,12 @@ import math
 import time
 import unicodedata
 from collections.abc import Mapping
-from pathlib import Path
 from urllib.parse import urlsplit
 
 import streamlit as st
 
 logger = logging.getLogger(__name__)
 APP_URL = "https://dhet-n5-tutor-engine-rxogmong3h45cfoqv7t6sq.streamlit.app/"
-PRIVACY_URL = APP_URL + "?privacy=1"
-COVER_PATH = Path(__file__).resolve().parents[1] / "assets" / "trentox-cover.jpg"
 GOOGLE_METADATA_URL = "https://accounts.google.com/.well-known/openid-configuration"
 _OWNER_KEY = "_student_identity_owner"
 _NAME_KEY = "_student_display_name"
@@ -217,8 +214,6 @@ def _render_login(ready, embedded, runtime_view=False, configuration_reference="
     with st.container(horizontal_alignment="center"):
         with st.container(width=560, border=True, key="student_entry",
                           horizontal_alignment="center", gap="small"):
-            if COVER_PATH.is_file():
-                st.image(COVER_PATH, width="stretch", alt="Trentox Tutor AI cover with a turbine and circuit board")
             _entry_card("Trentox Tutor AI", "Build understanding, one step at a time.")
             st.markdown("Meet **Tex**, your AI study partner for engineering.",
                         text_alignment="center")
@@ -246,7 +241,6 @@ def _render_login(ready, embedded, runtime_view=False, configuration_reference="
                     st.link_button("Open the main Trentox app", APP_URL, width="stretch")
             st.caption("Sign in, choose your Tex username and start learning.", text_alignment="center")
             st.caption(":material/lock: Your Google password stays with Google.", text_alignment="center")
-            st.link_button("Privacy policy and data requests", PRIVACY_URL)
 
 
 def require_student():
@@ -311,7 +305,6 @@ def render_student_menu(student):
         st.caption("Signed in with Google")
         st.markdown(f"Tex calls you **{html.escape(student['display_name'])}**.")
         st.caption("Your study session is private to this browser session.")
-        st.link_button("Privacy policy and data requests", PRIVACY_URL, width="stretch")
         if st.button("Change Tex username", key="student_change_name", width="stretch"):
             st.session_state.pop(_NAME_KEY, None)
             st.session_state.pop("student_name_entry", None)
