@@ -12,6 +12,7 @@ import unicodedata
 import zipfile
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
+from pathlib import Path
 from xml.etree import ElementTree
 
 import numpy as np
@@ -42,7 +43,14 @@ st.set_page_config(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
-from ui.student_identity import require_student, render_student_menu
+from ui.student_identity import APP_URL, require_student, render_student_menu
+
+if st.query_params.get("privacy") == "1":
+    with st.container(horizontal_alignment="center"):
+        with st.container(width=760):
+            st.markdown((Path(BASE_DIR) / "docs" / "privacy-policy.md").read_text(encoding="utf-8"))
+            st.link_button("Back to Trentox", APP_URL)
+    st.stop()
 
 # Verify identity before loading learning modules, data or AI workspaces.
 student = require_student()
@@ -354,7 +362,7 @@ def render_ai_tutor_chat(
         with st.expander("📄 Upload an answer for feedback", expanded=False):
             st.caption(
                 "Upload a PDF, Word document, text file, or clear answer image. "
-                "Tex will identify strengths, corrections, and a useful next step."
+                "Review sends the file or extracted text to Google Gemini for feedback."
             )
             answer_file = st.file_uploader(
                 "Your worked answer",
@@ -420,9 +428,9 @@ def render_ai_tutor_chat(
         if st.session_state.tutor_chat and st.session_state.tutor_chat[-1]["role"] == "user":
             if st.button("Try that message again", key=f"{widget_prefix}_retry"):
                 _submit_tutor_message(retry=True)
+    st.caption("When you send a message, its text or recording and recent chat context go to Google Gemini.")
     submission = st.chat_input("Ask Tex anything…", key=f"{widget_prefix}_chat_input",
                                max_chars=6000, accept_audio=True, max_upload_size=8, submit_mode="disable")
-    st.caption("Type or record a message. Messages and recordings are sent to Google Gemini for a reply and kept in this study session.")
     if submission:
         if isinstance(submission, str):
             _submit_tutor_message(submission)
@@ -1049,22 +1057,6 @@ def _call_gemini(prompt, *, system_instruction=None):
     )
 
 
-@st.cache_data(show_spinner=False)
-def _cached_gemini_success(prompt_text, subject_code):
-    """Raises on failure so st.cache_data only ever stores successful replies."""
-    reply, err = _call_gemini(prompt_text)
-    if err:
-        raise RuntimeError(err)
-    return reply
-
-
-def cached_query_gemini(prompt_text, subject_code):
-    try:
-        return _cached_gemini_success(prompt_text, subject_code), None
-    except Exception as exc:
-        return None, str(exc)
-
-
 def query_gemini_with_fallback(prompt):
     """Use the hosted Gemini API, with model fallback for availability."""
     return _call_gemini(prompt)
@@ -1212,7 +1204,7 @@ Return only valid JSON in this exact shape:
 
 Lesson:
 {lesson_notes[:9000]}"""
-    raw_quiz, error = cached_query_gemini(prompt, subject_code)
+    raw_quiz, error = _call_gemini(prompt)
     if error:
         return None, error
     return parse_topic_quiz_response(raw_quiz)
@@ -2302,7 +2294,7 @@ if tab_tutor.open:
                         f"{material_context}"
                     )
                     with st.spinner(f"Writing a focused lesson on '{target_topic}'..."):
-                        notes, err = cached_query_gemini(prompt, active_subject)
+                        notes, err = _call_gemini(prompt)
                         if notes:
                             st.session_state["active_topic_lesson"] = {
                                 "subject": active_subject,
