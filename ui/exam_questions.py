@@ -10,7 +10,7 @@ from pathlib import Path
 
 from ui.n4_courses import starter_questions
 
-CONTENT_VERSION = "all-subject-papers-and-memos-v2"
+CONTENT_VERSION = "all-subject-papers-and-memos-v3"
 
 
 def list_documents(base_dir, subject_code):

@@ -124,13 +124,29 @@ class HomeAppTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertEqual(app.selectbox(key="home_live_model_MATH-N4").value, "unit_circle")
         app.button(key="home_shortcut_📝 Practice_None").click().run()
-        next(button for button in app.button if button.label == "Draw a practice question").click().run()
+        next(button for button in app.button if button.label == "Start a 7-question practice set").click().run()
         self.assertEqual(app.session_state.current_question["subject"], "MATH-N4")
         self.assertTrue(app.session_state.current_question["original_practice"])
+        seen = {app.session_state.current_question["id"]}
+        for _ in range(6):
+            next(button for button in app.button if button.label == "Next practice question").click().run()
+            seen.add(app.session_state.current_question["id"])
+        self.assertEqual(len(seen), 7)
 
         subject = next(box for box in app.selectbox if box.label == "Subject:")
         subject.select(next(option for option in subject.options if option.startswith("Industrial Electronics"))).run()
         self.assertIsNone(app.session_state.current_question)
-        next(button for button in app.button if button.label == "Draw a practice question").click().run()
+        next(button for button in app.button if button.label == "Start a 7-question practice set").click().run()
         self.assertEqual(app.session_state.current_question["subject"], "IE-N4")
+        self.assertFalse(app.exception)
+        app.session_state["learning_workspace"] = "Home"
+        app.run()
+        app.button(key="home_shortcut_⏱ Mock exam_None").click().run()
+        count = next(slider for slider in app.slider if slider.label == "Number of Questions:")
+        self.assertEqual(count.value, 7)
+        count.set_value(12).run()
+        next(button for button in app.button if "Start Mock Exam" in button.label).click().run()
+        paper = app.session_state.exam_paper
+        self.assertEqual(len({item["id"] for item in paper}), 12)
+        self.assertEqual({item["subject"] for item in paper}, {"IE-N4"})
         self.assertFalse(app.exception)

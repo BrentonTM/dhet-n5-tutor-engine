@@ -107,6 +107,18 @@ def load_selected_questions(limit):
         return None
 
 
+MIN_QUESTION_SET = 7
+
+
+def load_question_set(limit):
+    questions = load_selected_questions(limit)
+    if questions is not None and len(questions) < MIN_QUESTION_SET:
+        st.warning(f"This subject needs at least {MIN_QUESTION_SET} usable questions to start a set. "
+                   f"There are {len(questions)} available.")
+        return None
+    return questions
+
+
 @st.cache_data(show_spinner=False, max_entries=16)
 def cached_original_pdf(source_file):
     return original_pdf(BASE_DIR, source_file)
@@ -1578,6 +1590,8 @@ st.caption(f"{selected_subject['subject_name']} · {selected_level} · Change yo
 exam_context = (active_subject, CONTENT_VERSION)
 if st.session_state.get("exam_content_context") != exam_context:
     st.session_state.current_question = None
+    st.session_state.pop("practice_set", None)
+    st.session_state.pop("practice_position", None)
     st.session_state.exam_paper = []
     st.session_state.exam_content_context = exam_context
 if not active_subject:
@@ -1947,22 +1961,31 @@ if tab_practice.open:
                         else:
                             st.error(err)
         else:
-            if "current_question" not in st.session_state:
-                st.session_state.current_question = None
-
-            if st.button("Draw a practice question" if active_subject in N4_MODULES else "Fetch Random Exam Question"):
-                st.session_state.current_question = None
-                questions = load_selected_questions(1)
-                if questions:
-                    st.session_state.current_question = questions[0]
-                elif questions is not None:
-                    st.warning("No usable past-paper questions are available for this subject and level yet.")
+            practice_set = st.session_state.get("practice_set", [])
+            position = st.session_state.get("practice_position", 0)
+            if not practice_set or position == len(practice_set) - 1:
+                if st.button(f"Start a {MIN_QUESTION_SET}-question practice set"):
+                    questions = load_question_set(MIN_QUESTION_SET)
+                    if questions:
+                        practice_set = questions
+                        position = 0
+                        st.session_state.practice_set = practice_set
+                        st.session_state.practice_position = position
+                        st.session_state.current_question = practice_set[position]
+                        st.rerun()
+            elif st.button("Next practice question"):
+                position += 1
+                st.session_state.practice_position = position
+                st.session_state.current_question = practice_set[position]
+                st.rerun()
+            if practice_set:
+                st.caption(f"Practice question {position + 1} of {len(practice_set)}")
 
         q = st.session_state.current_question
-        if q:
+        if q and mode != "🚨 Plant Fault Diagnosis Scenario":
             st.markdown(f"**{q['num']} · {q['marks']} marks** — {q['topic']}")
             render_selected_question(q, "practice_pdf")
-            typed_sol = st.text_area("Your Working / Answer Attempt:", height=140)
+            typed_sol = st.text_area("Your Working / Answer Attempt:", height=140, key=f"practice_work_{q['id']}")
             user_sol = typed_sol if typed_sol.strip() else voice_text
 
             if st.button("Get AI Socratic Guidance"):
@@ -1984,20 +2007,20 @@ if tab_practice.open:
 if tab_exam.open:
     with tab_exam:
         st.subheader(f"🎯 Timed Mock Exam Simulator & Confidence Calibration ({active_subject})")
-        starter_count = len(N4_MODULES.get(active_subject, ()))
+        starter_count = len(starter_questions(active_subject))
         if starter_count:
             st.caption("Timed mini-mock using original Trentox exercises. It does not reproduce a full DHET exam.")
         render_exam_readiness()
         col1, col2 = st.columns([1, 2])
     
         with col1:
-            num_q = st.slider("Number of Questions:", 5, starter_count or 15, 5)
+            num_q = st.slider("Number of Questions:", MIN_QUESTION_SET, starter_count or 15, MIN_QUESTION_SET)
             time_limit = st.selectbox("Exam Time Limit (minutes):", [15, 30, 45, 60], index=1)
             high_pressure = st.checkbox("⚡ High-Pressure Mode (Reduce Time by 15%)")
         
             if st.button("🚀 Start Mock Exam"):
                 effective_time = time_limit * 0.85 if high_pressure else time_limit
-                questions = load_selected_questions(num_q)
+                questions = load_question_set(num_q)
                 if questions:
                     if len(questions) < num_q:
                         st.warning(f"Only {len(questions)} usable questions are available for this subject and level.")
@@ -2012,8 +2035,6 @@ if tab_exam.open:
                     st.session_state.exam_run_id = time.time_ns()
                     st.session_state.exam_duration = effective_time * 60
                     st.rerun()
-                elif questions is not None:
-                    st.warning("No usable past-paper questions are available for this subject and level yet.")
 
         with col2:
             if "exam_paper" in st.session_state and st.session_state.exam_paper:

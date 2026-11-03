@@ -51,6 +51,37 @@ N4_MODULES = {
     ),
 }
 
+EXTRA_PRACTICE = {
+    "MATH-N4": (
+        ("Determinants", "Use Cramer's rule to solve 2x + y = 9 and x + 3y = 17.",
+         "The coefficient determinant is 5 [1]. The replacement determinants are Dₓ = 10 and Dᵧ = 25 [2]. Therefore x = 2 and y = 5 [1]."),
+        ("Complex numbers", "Express (4 + 2i)/(1 − i) in rectangular form.",
+         "Multiply numerator and denominator by 1 + i [1]. The numerator becomes 2 + 6i [1], and the denominator is 2 [1]. The result is 1 + 3i [1]."),
+        ("Trigonometry", "Solve 2 cos θ + 1 = 0 for 0° ≤ θ < 360°.",
+         "Isolate cos θ = −0.5 [1]. The reference angle is 60° [1]. Cosine is negative in quadrants II and III [1], so θ = 120° or 240° [1]."),
+        ("Functions and graphs", "For y = −(x + 2)² + 9, give the turning point, axis of symmetry and x-intercepts.",
+         "Turning point (−2, 9) [1]; axis x = −2 [1]. At y = 0, x + 2 = ±3 [1], so the intercepts are (−5, 0) and (1, 0) [1]."),
+        ("Differential calculus", "Find the stationary point of y = x² − 8x + 10 and classify it.",
+         "Differentiate to get 2x − 8 [1]. Set it to zero to obtain x = 4 [1]; y = −6 [1]. The second derivative is 2 > 0, so (4, −6) is a minimum [1]."),
+        ("Integral calculus", "A particle's velocity is v(t) = 4t + 2 m/s. Find its displacement between t = 1 s and t = 4 s.",
+         "Integrate velocity from 1 to 4 [1]. An antiderivative is 2t² + 2t [1]. Its values at 4 and 1 are 40 and 4 [1], so displacement is 36 m [1]."),
+    ),
+    "IE-N4": (
+        ("Direct current theory", "A 12 V supply is connected across 300 Ω and 600 Ω resistors in parallel. Find both branch currents, total current and equivalent resistance.",
+         "The 300 Ω branch draws 40 mA [1] and the 600 Ω branch draws 20 mA [1]. Their sum is 60 mA [1], so Rₑ = 12/0.060 = 200 Ω [1]."),
+        ("Alternating current theory", "A series R-C circuit has R = 8 Ω and capacitive reactance of 6 Ω. With 20 V RMS applied, find impedance magnitude, RMS current and whether current leads or lags.",
+         "The impedance is 8 − j6 Ω [1] and its magnitude is 10 Ω [1]. Current is 2 A RMS [1]. Current leads the supply voltage because the circuit is capacitive [1]."),
+        ("Electronic power control", "An ideal SCR feeds a resistive load from 50 Hz AC as a half-wave controller. It fires 60° into the positive half-cycle. Find the firing delay and the conduction duration.",
+         "One cycle is 20 ms [1]. The firing delay is (60/360) × 20 = 3.33 ms [1]. It conducts from 60° to 180°, or 120° [1], lasting (120/360) × 20 = 6.67 ms [1]."),
+        ("Power supplies", "A half-wave rectifier with a reservoir capacitor is fed by a 50 Hz source. Find the ripple frequency and explain how increasing load current changes ripple when capacitance stays fixed.",
+         "There is one charging peak per cycle [1], so ripple frequency is 50 Hz [1]. More load current discharges the capacitor faster between peaks [1], increasing ripple voltage [1]."),
+        ("Amplifiers", "A transistor amplifier has a 30 mV RMS input and a 0.75 V RMS output that is 180° out of phase. Find its signed voltage gain.",
+         "Convert 30 mV to 0.030 V [1]. Divide output by input using RMS for both [1] to get a magnitude of 25 [1]. The phase reversal makes the signed gain −25 [1]."),
+        ("Transducers and electronic testing equipment", "An oscilloscope shows a sine wave 6 vertical divisions from peak to peak at 0.5 V per division. The displayed scale already accounts for the probe. Find peak-to-peak, peak and RMS voltage.",
+         "Peak-to-peak voltage is 6 × 0.5 = 3 V [1]. Peak voltage is half of that, or 1.5 V [1]. For a sine wave use Vᵣₘₛ = Vₚ/√2 [1], giving approximately 1.061 V [1]."),
+    ),
+}
+
 N4_NAMES = {"MATH-N4": "Mathematics N4", "IE-N4": "Industrial Electronics N4"}
 N4_CODES = {"MATH-N4": "16030164", "IE-N4": "8080164"}
 N4_LAB_TOPICS = {
@@ -69,6 +100,11 @@ def syllabus_url(subject_code):
 
 
 def starter_questions(subject_code):
+    questions = [
+        (topic, question, solution)
+        for topic, _, question, solution in N4_MODULES.get(subject_code, ())
+    ]
+    questions.extend(EXTRA_PRACTICE.get(subject_code, ()))
     return [
         {
             "id": f"trentox-{subject_code.lower()}-{index}",
@@ -80,5 +116,5 @@ def starter_questions(subject_code):
             "marks": 4,
             "original_practice": True,
         }
-        for index, (topic, _, question, solution) in enumerate(N4_MODULES.get(subject_code, ()), 1)
+        for index, (topic, question, solution) in enumerate(questions, 1)
     ]
