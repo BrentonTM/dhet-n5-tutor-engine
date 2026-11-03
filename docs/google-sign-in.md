@@ -97,6 +97,24 @@ callback or disable XSRF/CORS protections.
 
 ## Verification scope
 
+When setup is incomplete, the entry message includes fixed support references.
+These reveal no saved values and do not grant workspace access:
+
+| Reference | Owner check |
+| --- | --- |
+| A01 | Missing or invalid `[auth]` section |
+| A02 | Missing or invalid explicitly configured `[auth.google]` section |
+| A03 | Missing, placeholder or invalid callback URL |
+| A04 | Missing, placeholder or too-short cookie signing secret |
+| A05 | Missing or placeholder Google client ID |
+| A06 | Missing or placeholder Google client secret |
+| A07 | Missing or incorrect Google discovery URL |
+| A08 | Secrets could not be read, or an unrecognized setup failure |
+
+Multiple references can appear together. Field-level detail remains in the
+Cloud logs. Only public callback/discovery URLs, redacted structure and status
+information should be shared when investigating a setup failure.
+
 Automated checks cover missing configuration, unauthenticated access, username
 validation, verified-claim requirements, expiry and audience checks, rejected
 callback destinations, account-switch cleanup and logout. Real

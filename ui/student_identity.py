@@ -119,6 +119,21 @@ def google_auth_configuration_issues(secrets):
         return ["Secrets configuration could not be read"]
 
 
+def _configuration_reference(issues):
+    """Expose fixed support codes, never configuration values or exception text."""
+    labels = (
+        ("[auth.google]", "A02"),
+        ("[auth]", "A01"),
+        (".redirect_uri", "A03"),
+        (".cookie_secret", "A04"),
+        (".client_id", "A05"),
+        (".client_secret", "A06"),
+        (".server_metadata_url", "A07"),
+    )
+    codes = [next((code for label, code in labels if label in issue), "A08") for issue in issues]
+    return ", ".join(dict.fromkeys(codes))
+
+
 def student_id_from_claims(claims, *, client_id=None, now=None):
     """Check trusted st.user claims, then derive a pseudonymous learner ID.
 
@@ -184,7 +199,7 @@ def _entry_card(title, subtitle):
     st.markdown(subtitle, text_alignment="center")
 
 
-def _render_login(ready, embedded, runtime_view=False):
+def _render_login(ready, embedded, runtime_view=False, configuration_reference=""):
     with st.container(horizontal_alignment="center"):
         with st.container(width=560, border=True, key="student_entry",
                           horizontal_alignment="center", gap="small"):
@@ -207,7 +222,10 @@ def _render_login(ready, embedded, runtime_view=False):
                         logger.warning("Google sign-in could not start: %s", type(exc).__name__)
                         st.error("Google sign-in could not start. Please try again or contact the app owner.")
                 if not ready:
-                    st.info("Google sign-in is being set up. Please check back soon.", icon=":material/info:")
+                    message = "Google sign-in is being set up. Please check back soon."
+                    if configuration_reference:
+                        message += f" Support reference: {configuration_reference}."
+                    st.info(message, icon=":material/info:")
                 if runtime_view:
                     st.link_button("Open the main Trentox app", APP_URL, width="stretch")
             st.caption("Sign in, choose your Tex username and start learning.", text_alignment="center")
@@ -220,16 +238,17 @@ def require_student():
     Call immediately after ``st.set_page_config`` and before protected UI or
     data loads. No configured provider or valid verified identity means stop.
     """
-    ready = google_auth_ready(st.secrets)
+    issues = google_auth_configuration_issues(st.secrets)
+    ready = not issues
     if not ready:
         logger.warning("Google sign-in configuration incomplete: %s",
-                       "; ".join(google_auth_configuration_issues(st.secrets)))
+                       "; ".join(issues))
     url = str(st.context.url or "")
     embedded = bool(st.context.is_embedded)
     runtime_view = urlsplit(url).path.startswith("/~/+/")
     if not ready or embedded or not st.user.is_logged_in:
         reset_student_state()
-        _render_login(ready, embedded, runtime_view)
+        _render_login(ready, embedded, runtime_view, _configuration_reference(issues))
         st.stop()
 
     try:

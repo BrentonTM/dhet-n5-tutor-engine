@@ -138,6 +138,32 @@ class StudentIdentityTests(unittest.TestCase):
         ui.login.assert_not_called()
         self.assertTrue(ui.button.call_args.kwargs["disabled"])
 
+    def test_support_reference_identifies_failures_without_exposing_settings(self):
+        settings = default_auth_settings()
+        settings["auth"]["cookie_secret"] = "PRIVATE-short"
+        settings["auth"]["client_secret"] = "REPLACE_PRIVATE_SECRET"
+        settings["auth"]["redirect_uri"] = "https://private.example.test/wrong?key=PRIVATE_TOKEN"
+        ui = ui_stub()
+        ui.secrets = settings
+        with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
+            identity.require_student()
+        message = ui.info.call_args.args[0]
+        for code in ("A03", "A04", "A06"):
+            self.assertIn(code, message)
+        for private in ("PRIVATE", "private.example", "cookie_secret", "client_secret", "redirect_uri"):
+            self.assertNotIn(private, message)
+        self.assertTrue(ui.button.call_args.kwargs["disabled"])
+        ui.login.assert_not_called()
+
+    def test_missing_auth_table_has_a_safe_support_reference(self):
+        ui = ui_stub()
+        ui.secrets = {"client_secret": "PRIVATE_ROOT_VALUE"}
+        with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
+            identity.require_student()
+        message = ui.info.call_args.args[0]
+        self.assertIn("Support reference: A01", message)
+        self.assertNotIn("PRIVATE_ROOT_VALUE", message)
+
     def test_setup_diagnostic_handles_missing_sections_and_unreadable_secrets(self):
         self.assertEqual(identity.google_auth_configuration_issues({}), ["missing [auth] table"])
         issues = identity.google_auth_configuration_issues({"auth": {"cookie_secret": "private"}})
@@ -400,6 +426,7 @@ class StudentIdentityTests(unittest.TestCase):
             result.run(timeout=10)
         self.assertEqual(len(result.exception), 0)
         self.assertFalse(result.button(key="student_google_login").disabled)
+        self.assertFalse(any("Support reference:" in element.value for element in result.info))
         self.assertFalse(any(element.value == "PROTECTED WORKSPACE" for element in result.markdown))
 
 
