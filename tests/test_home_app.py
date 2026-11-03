@@ -37,7 +37,44 @@ class HomeAppTests(unittest.TestCase):
         self.assertEqual(len(app.exception), 0)
         self.assertEqual(app.session_state["learning_workspace"], "📝 Practice")
         self.assertEqual(len(app.audio_input), 1)
+        self.assertFalse(any("Live engineering model:" in node.proto.alt for node in app.get("iframe")))
         app.button[0]  # Native controls remain present after navigation.
+
+    def test_live_model_and_tips_are_restored_and_full_lab_keeps_selected_model(self):
+        app = self.home()
+        models = [node for node in app.get("iframe") if node.proto.alt.startswith("Live engineering model:")]
+        tips = [node for node in app.get("iframe") if node.proto.alt.startswith("Live engineering tips:")]
+        self.assertEqual(len(models), 1)
+        self.assertEqual(len(tips), 1)
+        self.assertIn("Rotameter", models[0].proto.alt)
+        self.assertNotIn("__SLIDES_JSON__", tips[0].proto.srcdoc)
+        self.assertNotIn("__AUTO_PLAY__", tips[0].proto.srcdoc)
+        app.selectbox(key="home_live_model_INST-N5").select("venturi").run()
+        self.assertEqual(len(app.exception), 0)
+        app.button(key="home_open_model_lab").click().run()
+        self.assertEqual(len(app.exception), 0)
+        self.assertEqual(app.session_state["learning_workspace"], "🤖 Tutor & lab")
+        self.assertEqual(app.selectbox(key="interactive_3d_lab_diagram_Industrial Instruments N5").value, "venturi")
+
+    def test_course_change_updates_the_live_gallery_and_tip_content(self):
+        app = self.home()
+        subject = next(box for box in app.selectbox if box.label == "Subject:")
+        subject.select(next(option for option in subject.options if option.startswith("Mathematics"))).run()
+        self.assertEqual(len(app.exception), 0)
+        self.assertEqual(app.selectbox(key="home_live_model_MATH-N5").value, "derivative")
+        tips = next(node for node in app.get("iframe") if node.proto.alt.startswith("Live engineering tips:"))
+        self.assertIn("Power rule for differentiation", tips.proto.srcdoc)
+
+    def test_model_discussion_opens_tex_with_the_selected_model_context(self):
+        app = self.home()
+        app.selectbox(key="home_live_model_INST-N5").select("venturi").run()
+        app.button(key="home_discuss_model").click().run()
+        self.assertEqual(len(app.exception), 0)
+        self.assertEqual(app.session_state["learning_workspace"], "🤖 Tutor & lab")
+        self.assertEqual(self.model.call_count, 1)
+        request = self.model.call_args.args[0][0].parts[0].text
+        self.assertIn("Venturi", request)
+        self.assertIn("report the settings and readings", request)
 
     def test_tex_sends_real_turn_roles_and_remembers_across_navigation(self):
         app = self.home()

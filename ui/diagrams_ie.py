@@ -67,7 +67,7 @@ def bridge_rectifier_3d():
     o = [
         box([0, 0, -0.72], [14.5, 8.2, 0.35], "#142235", metal=0.35, rough=0.65,
             label="Insulated circuit board", lp=[-5.6, -3.65, 0.2]),
-        box([-5.35, 0, 0.05], [1.55, 1.6, 0.75], CHIP, label="AC transformer", lp=[0, 1.0, 0.2], lsize=0.25,
+        box([-5.35, 0, 0.05], [1.55, 1.6, 0.75], DK, label="AC transformer", lp=[0, 1.0, 0.2], lsize=0.25,
             info="The transformer supplies an isolated low-voltage AC signal to the bridge."),
         text([-5.35, 0, 0.52], "AC", YL, 0.34),
         wire([[-4.55, 0.55, 0.35], [-3.4, 0.55, 0.35], [-2.5, 1.2, 0.35]], OR, 0.07,
@@ -115,7 +115,7 @@ def bridge_rectifier_3d():
             info="Load resistance sets output current. With a capacitor-input filter, approximate ripple is Vr(pp) ≈ Iload/(2 f C)."),
         wire([[3.6, 1.4, 0.35], [4.25, 0.8, 0.35]], GR, 0.055),
         wire([[4.25, -0.8, 0.35], [3.6, -1.4, 0.35]], BL, 0.055),
-        sphere([5.45, 0, 0.42], 0.24, LOW,
+        sphere([5.45, 0, 0.42], 0.24, "#475569",
                bind={"color": "p.Vpk>1.4?'#10B981':'#475569'", "emissive": "p.Vpk>1.4?0.65:0.02"},
                label="Filtered DC output", lp=[0.8, 0, 0.2], lsize=0.20),
         text([0.0, 3.15, 0.2], "FULL-WAVE BRIDGE · 4 DIODES · CAPACITOR FILTER", YL, 0.25),

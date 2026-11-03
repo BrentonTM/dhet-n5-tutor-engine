@@ -71,6 +71,7 @@ from ui.gemini_client import configured_models, generate_reply
 from ui.tex_partner import MODES, conversation_context, partner_instruction, recent_turns
 from ui.rubik_cube import render_rubik_cube
 from ui.logic_builder import render_logic_builder
+from ui.home_showcase import LAB_SUBJECTS, model_discussion_prompt, render_home_model
 
 @st.cache_data(show_spinner=False, max_entries=128)
 def cached_question_pdf(question_id, source_file, source_pages):
@@ -758,7 +759,10 @@ def render_home_slideshow(subject_code, subject_name, height=262):
         st.info("Quick reminders are temporarily unavailable.")
         return
     slide_data = json.dumps(slides, ensure_ascii=False).replace("</", "<\\/")
-    components.html(slide_html.replace("__SLIDES_JSON__", slide_data), height=height, scrolling=False)
+    slide_html = slide_html.replace("__SLIDES_JSON__", slide_data).replace(
+        "__AUTO_PLAY__", json.dumps(st.session_state.get("fx_mode", "high") == "high")
+    )
+    st.iframe(slide_html, height=height, alt="Live engineering tips: exam technique, formulas, study methods and animated course concepts")
 
 # Universal Topic Diagram Engine
 @st.cache_data(show_spinner=False, max_entries=64)
@@ -1447,6 +1451,19 @@ def resume_learning():
     open_learning_workspace("🤖 Tutor & lab", "📖 Lessons")
 
 
+def open_home_model_lab(subject_code, model_id):
+    profile = LAB_SUBJECTS.get(subject_code)
+    if profile:
+        st.session_state["interactive_3d_lab_subject"] = profile
+        st.session_state[f"interactive_3d_lab_diagram_{profile}"] = model_id
+    open_learning_workspace("🤖 Tutor & lab", "🧊 3D lab")
+
+
+def discuss_home_model(subject_name, model_id):
+    st.session_state["tex_pending_message"] = model_discussion_prompt(subject_name, model_id)
+    open_learning_workspace("🤖 Tutor & lab", "💬 Ask tutor")
+
+
 def discuss_logic_with_tex(prompt):
     st.session_state.setdefault("tex_logic_context", {})[active_subject] = prompt
     st.session_state["tex_pending_message"] = prompt
@@ -1720,7 +1737,24 @@ if tab_home.open:
         hour = datetime.now(timezone(timedelta(hours=2))).hour
         greeting = "Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening"
         st.title(f"{greeting}, {student_name}", anchor=False)
-        st.write("What are we cracking today?")
+        st.markdown("**See it move. Work out why.** Explore a live model, pick up a quick insight, then build your understanding with Tex.")
+        model_column, insight_column = st.columns([1.25, 1], gap="medium")
+        with model_column.container(border=True, height="stretch", key="home_live_engineering"):
+            st.subheader("Live engineering models", anchor=False, icon=":material/deployed_code:")
+            model_id = render_home_model(active_subject, height=350)
+            st.caption("Drag to rotate · scroll or pinch to zoom · change a slider and watch the response.")
+            st.button("Open this model in the 3D lab", key="home_open_model_lab", width="stretch",
+                      icon=":material/open_in_full:", on_click=open_home_model_lab,
+                      args=(active_subject, model_id))
+        with insight_column.container(border=True, height="stretch", key="home_live_tips"):
+            st.subheader("Live tips & insights", anchor=False, icon=":material/lightbulb:")
+            st.caption("Exam technique · formula flashes · ideas from your course")
+            render_home_slideshow(active_subject, selected_subject["subject_name"], height=350)
+            st.caption("Turn the model into a conversation: predict, change one control, then explain what you see.")
+            st.button("Explore this model with Tex", key="home_discuss_model", width="stretch",
+                      icon=":material/forum:", on_click=discuss_home_model,
+                      args=(selected_subject["subject_name"], model_id))
+        st.subheader("Your study workspace", anchor=False)
         tex_column, action_column = st.columns([1.35, 1], gap="large")
         with tex_column:
             with st.container(border=True, key="home_tex"):
@@ -2358,7 +2392,7 @@ if tab_tutor.open:
                     lab_subject = st.selectbox(
                         "Lab subject:",
                         lab_subjects,
-                        index=lab_subjects.index(preferred_lab_subject),
+                        index=0 if "interactive_3d_lab_subject" in st.session_state else lab_subjects.index(preferred_lab_subject),
                         key="interactive_3d_lab_subject",
                     )
 
