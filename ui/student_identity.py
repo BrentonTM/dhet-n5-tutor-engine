@@ -47,6 +47,20 @@ def google_auth_ready(secrets):
     return not google_auth_configuration_issues(secrets)
 
 
+def _google_provider_settings(auth):
+    """Resolve Streamlit's named or default provider without merging credentials.
+
+    An explicitly configured google table takes precedence. An incomplete named
+    provider must be repaired rather than silently using a different client.
+    """
+    if "google" in auth:
+        provider = auth["google"]
+        if not isinstance(provider, Mapping) or not provider:
+            raise ValueError("missing or invalid [auth.google] table")
+        return "google", provider, "auth.google"
+    return None, auth, "auth"
+
+
 def _valid_redirect_uri(value):
     """Allow this deployment's callback, or an explicit local HTTP callback."""
     if any(char.isspace() or ord(char) < 32 for char in value):
@@ -73,15 +87,16 @@ def google_auth_configuration_issues(secrets):
         auth = secrets.get("auth", {})
         if not isinstance(auth, Mapping) or not auth:
             return ["missing [auth] table"]
-        provider = auth.get("google", {})
-        if not isinstance(provider, Mapping) or not provider:
-            return ["missing [auth.google] table"]
+        try:
+            _, provider, prefix = _google_provider_settings(auth)
+        except ValueError:
+            return ["missing or invalid [auth.google] table"]
         issues = []
         for name, value in (
             ("auth.redirect_uri", auth.get("redirect_uri")),
             ("auth.cookie_secret", auth.get("cookie_secret")),
-            ("auth.google.client_id", provider.get("client_id")),
-            ("auth.google.client_secret", provider.get("client_secret")),
+            (prefix + ".client_id", provider.get("client_id")),
+            (prefix + ".client_secret", provider.get("client_secret")),
         ):
             if not isinstance(value, str) or not value.strip():
                 issues.append(name + " is missing or is not a nonempty string")
@@ -91,7 +106,7 @@ def google_auth_configuration_issues(secrets):
         if isinstance(cookie, str) and cookie and len(cookie) < 32:
             issues.append("auth.cookie_secret must have at least 32 characters")
         if provider.get("server_metadata_url") != GOOGLE_METADATA_URL:
-            issues.append("auth.google.server_metadata_url is missing or does not match Google")
+            issues.append(prefix + ".server_metadata_url is missing or does not match Google")
         redirect_value = auth.get("redirect_uri")
         if isinstance(redirect_value, str) and redirect_value.strip():
             try:
@@ -183,7 +198,11 @@ def _render_login(ready, embedded, runtime_view=False):
                 if st.button("Continue with Google", type="primary", width="stretch",
                              disabled=not ready, key="student_google_login"):
                     try:
-                        st.login("google")
+                        provider_name, _, _ = _google_provider_settings(st.secrets["auth"])
+                        if provider_name is None:
+                            st.login()
+                        else:
+                            st.login(provider_name)
                     except Exception as exc:
                         logger.warning("Google sign-in could not start: %s", type(exc).__name__)
                         st.error("Google sign-in could not start. Please try again or contact the app owner.")
@@ -214,7 +233,8 @@ def require_student():
         st.stop()
 
     try:
-        student_id = student_id_from_claims(st.user, client_id=st.secrets["auth"]["google"]["client_id"])
+        _, provider, _ = _google_provider_settings(st.secrets["auth"])
+        student_id = student_id_from_claims(st.user, client_id=provider["client_id"])
     except ValueError:
         reset_student_state()
         st.error("Your sign-in has expired or could not be verified. Please sign in again.")

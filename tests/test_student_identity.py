@@ -32,6 +32,12 @@ def auth_settings():
     }}
 
 
+def default_auth_settings():
+    settings = auth_settings()
+    settings["auth"].update(settings["auth"].pop("google"))
+    return settings
+
+
 def verified_claims(subject="google-subject-123"):
     return VerifiedClaims(iss="https://accounts.google.com", sub=subject,
                           aud=auth_settings()["auth"]["google"]["client_id"], exp=time.time() + 3600,
@@ -134,12 +140,36 @@ class StudentIdentityTests(unittest.TestCase):
 
     def test_setup_diagnostic_handles_missing_sections_and_unreadable_secrets(self):
         self.assertEqual(identity.google_auth_configuration_issues({}), ["missing [auth] table"])
-        self.assertEqual(identity.google_auth_configuration_issues({"auth": {"cookie_secret": "private"}}),
-                         ["missing [auth.google] table"])
+        issues = identity.google_auth_configuration_issues({"auth": {"cookie_secret": "private"}})
+        self.assertIn("auth.client_secret is missing or is not a nonempty string", issues)
         unavailable = Mock()
         unavailable.get.side_effect = FileNotFoundError("PRIVATE_EXCEPTION_MESSAGE")
         self.assertEqual(identity.google_auth_configuration_issues(unavailable),
                          ["Secrets configuration could not be read"])
+
+    def test_default_google_provider_is_supported_in_streamlit_secrets(self):
+        from streamlit.runtime.secrets import AttrDict
+        settings = AttrDict(default_auth_settings())
+        self.assertTrue(identity.google_auth_ready(settings))
+        self.assertEqual(identity.google_auth_configuration_issues(settings), [])
+
+    def test_incomplete_named_provider_cannot_fall_back_to_default_credentials(self):
+        for named in ({}, "invalid", {"client_id": "incomplete"}):
+            with self.subTest(named=named):
+                settings = default_auth_settings()
+                settings["auth"]["google"] = named
+                self.assertFalse(identity.google_auth_ready(settings))
+
+    def test_default_provider_keeps_google_metadata_and_secret_validation(self):
+        for field, value in (("server_metadata_url", "https://other-provider.test/discovery"),
+                             ("client_secret", "REPLACE_PRIVATE_SECRET"), ("client_id", "")):
+            with self.subTest(field=field):
+                settings = default_auth_settings()
+                settings["auth"][field] = value
+                self.assertFalse(identity.google_auth_ready(settings))
+                issues = "; ".join(identity.google_auth_configuration_issues(settings))
+                self.assertIn("auth." + field, issues)
+                self.assertNotIn("PRIVATE_SECRET", issues)
 
     def test_stable_pseudonym_uses_verified_subject_not_email(self):
         claims = verified_claims()
@@ -229,6 +259,41 @@ class StudentIdentityTests(unittest.TestCase):
 
     def test_login_button_calls_only_native_google_flow(self):
         ui = ui_stub(claims=SimpleNamespace(is_logged_in=False))
+        ui.button.return_value = True
+        with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
+            identity.require_student()
+        ui.login.assert_called_once_with("google")
+
+    def test_default_provider_login_uses_native_unnamed_flow(self):
+        ui = ui_stub(claims=SimpleNamespace(is_logged_in=False))
+        ui.secrets = default_auth_settings()
+        ui.button.return_value = True
+        with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
+            identity.require_student()
+        ui.login.assert_called_once_with()
+
+    def test_default_provider_uses_its_client_id_to_check_verified_identity(self):
+        for audience in ("configured-default-client", "other-app-client"):
+            with self.subTest(audience=audience):
+                claims = verified_claims()
+                claims["aud"] = audience
+                student_id = identity.student_id_from_claims(claims)
+                state = {"_student_identity_owner": student_id, "_student_display_name": "Breezy"}
+                ui = ui_stub(claims=claims, state=state)
+                ui.secrets = default_auth_settings()
+                ui.secrets["auth"]["client_id"] = "configured-default-client"
+                with patch.object(identity, "st", ui):
+                    if audience == "configured-default-client":
+                        self.assertEqual(identity.require_student()["student_id"], student_id)
+                    else:
+                        with self.assertRaises(StopExecution):
+                            identity.require_student()
+                        self.assertEqual(state, {})
+
+    def test_named_provider_takes_precedence_over_an_unnamed_provider(self):
+        ui = ui_stub(claims=SimpleNamespace(is_logged_in=False))
+        ui.secrets["auth"].update(default_auth_settings()["auth"])
+        ui.secrets["auth"]["client_id"] = "another-default-client"
         ui.button.return_value = True
         with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
             identity.require_student()
@@ -324,6 +389,17 @@ class StudentIdentityTests(unittest.TestCase):
         self.assertEqual(len(result.exception), 0)
         self.assertEqual(result.title[0].value, "Trentox Tutor AI")
         self.assertTrue(result.button(key="student_google_login").disabled)
+        self.assertFalse(any(element.value == "PROTECTED WORKSPACE" for element in result.markdown))
+
+    def test_real_default_provider_view_enables_login_without_opening_workspace(self):
+        script = "from ui.student_identity import require_student\nimport streamlit as st\nrequire_student()\nst.markdown('PROTECTED WORKSPACE')"
+        result = AppTest.from_string(script)
+        result.secrets["auth"] = default_auth_settings()["auth"]
+        # AppTest has no real browser identity cookie; model an anonymous user.
+        with patch.object(identity.st, "user", SimpleNamespace(is_logged_in=False)):
+            result.run(timeout=10)
+        self.assertEqual(len(result.exception), 0)
+        self.assertFalse(result.button(key="student_google_login").disabled)
         self.assertFalse(any(element.value == "PROTECTED WORKSPACE" for element in result.markdown))
 
 

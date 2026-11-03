@@ -46,6 +46,15 @@ For local development, register and use
 `http://localhost:8501/oauth2callback` instead, with a separate local secrets file
 and the same `google` provider name. Never commit that file.
 
+Streamlit's single-provider layout is also supported: when `[auth.google]` is
+absent, `client_id`, `client_secret` and Google's `server_metadata_url` can sit
+directly under `[auth]` alongside `redirect_uri` and `cookie_secret`. Trentox
+then calls the native default-provider login. When `[auth.google]` exists,
+Trentox uses that named provider consistently for login and audience validation;
+an incomplete named provider is rejected instead of falling back to root
+credentials. Both layouts require the exact Google discovery URL and the same
+callback, cookie-strength and verified-identity checks.
+
 ## Username and privacy behavior
 
 After Google authentication the student chooses the name Tex will use. Names
