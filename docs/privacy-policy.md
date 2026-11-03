@@ -17,7 +17,9 @@ Trentox uses this information for sign-in, tutoring, transcription and translati
 
 ## Retention and choices
 
-Trentox keeps study activity in the active server session. It does not provide a permanent cloud study profile or sync study history across devices. You can clear the current Tex conversation from the chat and sign out to clear the active study session and remove the Trentox sign-in cookie from that browser. Other open sessions and copies you downloaded can remain. Google and Streamlit apply their own retention policies to the data they process. Clearing chat or signing out cannot recall requests already processed by those services.
+When account history is available, Trentox stores activity under an internal learner identifier in a server-side database. This includes dates, subjects, topics, topic-check scores, confidence ratings, missed-concept labels, whether a lab prediction matched, and records that you received practice feedback or submitted a mock exam. We use topic checks and lab reflections to identify concepts to review and suggest your next study activity. Saved history is available when you return with the same Google account. You can request its deletion using the contact below.
+
+Your chats, recordings, uploaded work and written answers are excluded from the account history. Other workspace activity stays in the active server session. You can clear the current Tex conversation from the chat and sign out to clear the active study session and remove the Trentox sign-in cookie from that browser. Other open sessions and copies you downloaded can remain. Google and Streamlit apply their own retention policies to the data they process. Clearing chat or signing out cannot recall requests already processed by those services.
 
 ## Privacy and deletion requests
 

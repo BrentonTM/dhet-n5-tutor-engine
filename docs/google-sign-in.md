@@ -65,9 +65,9 @@ Google email, ID token or account claims.
 
 The app derives an internal pseudonymous student ID from Google's verified issuer
 and subject. Changing accounts or signing out clears the session's learner data.
-Names, conversations and study state are session-scoped; this change does not add
-a database or promise cross-device profile/history sync. Students can change the
-Tex username through the account menu.
+Names and conversations are session-scoped. When [study history](study-history.md)
+is enabled, the same verified learner ID restores saved study activity. Students
+can change the Tex username through the account menu.
 
 Streamlit/Authlib validates the Google token at the sign-in callback. Trentox
 uses Streamlit's signed identity cookie for a fixed 12-hour study session,

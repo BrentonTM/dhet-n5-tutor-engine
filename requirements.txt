@@ -8,3 +8,4 @@ python-dotenv
 pypdf
 python-pptx
 
+psycopg[binary]>=3.2,<4

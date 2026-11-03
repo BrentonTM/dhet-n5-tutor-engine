@@ -221,6 +221,13 @@ def _render_login(ready, embedded, runtime_view=False, configuration_reference="
                 st.info("Open Trentox directly to sign in securely with Google.")
                 st.link_button("Open secure sign-in", APP_URL, type="primary", width="stretch")
             else:
+                if runtime_view:
+                    st.link_button("Open the main Trentox app", APP_URL, width="stretch")
+                if not ready:
+                    message = "Google sign-in is being set up. Please check back soon."
+                    if configuration_reference:
+                        message += f" Support reference: {configuration_reference}."
+                    st.info(message, icon=":material/info:")
                 if st.button("Continue with Google", type="primary", width="stretch",
                              disabled=not ready, key="student_google_login") and ready:
                     try:
@@ -232,15 +239,8 @@ def _render_login(ready, embedded, runtime_view=False, configuration_reference="
                     except Exception as exc:
                         logger.warning("Google sign-in could not start: %s", type(exc).__name__)
                         st.error("Google sign-in could not start. Please try again or contact the app owner.")
-                if not ready:
-                    message = "Google sign-in is being set up. Please check back soon."
-                    if configuration_reference:
-                        message += f" Support reference: {configuration_reference}."
-                    st.info(message, icon=":material/info:")
-                if runtime_view:
-                    st.link_button("Open the main Trentox app", APP_URL, width="stretch")
-            st.caption("Sign in, choose your Tex username and start learning.", text_alignment="center")
-            st.caption(":material/lock: Your Google password stays with Google.", text_alignment="center")
+            st.caption("Sign in", text_alignment="center")
+            st.caption(":material/lock: Your password is protected by Google.", text_alignment="center")
 
 
 def require_student():
@@ -304,7 +304,7 @@ def render_student_menu(student):
     with st.popover(student["display_name"], icon=":material/account_circle:", key="student_account_menu"):
         st.caption("Signed in with Google")
         st.markdown(f"Tex calls you **{html.escape(student['display_name'])}**.")
-        st.caption("Your study session is private to this browser session.")
+        st.caption("View your study activity in Analytics.")
         if st.button("Change Tex username", key="student_change_name", width="stretch"):
             st.session_state.pop(_NAME_KEY, None)
             st.session_state.pop("student_name_entry", None)

@@ -14,11 +14,14 @@ from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
 from xml.etree import ElementTree
+from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
 from dotenv import load_dotenv
+from streamlit.errors import StreamlitSecretNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +80,76 @@ from ui.learning_progress import (
     summarize_progress,
     topic_status,
 )
+from ui.study_history import ACTIVITY_LABELS, HISTORY_LIMITS, activity_record, study_event, sync_events
+
+
+try:
+    history_config = st.secrets.get("study_history", {})
+except StreamlitSecretNotFoundError:
+    history_config = {}
+history_database = history_config.get("database_url") if hasattr(history_config, "get") else None
+study_records = st.session_state.setdefault("study_events", {})
+pending_study_events = st.session_state.setdefault("pending_study_events", {})
+
+
+def sync_study_history():
+    if not history_database:
+        return
+    load = not st.session_state.get("study_history_loaded")
+    if not load and not pending_study_events:
+        return
+    try:
+        saved = sync_events(history_database, student["student_id"], list(pending_study_events.values()), load=load)
+    except Exception as exc:
+        logger.warning("Study history sync failed: %s", type(exc).__name__)
+        st.session_state["study_history_sync_error"] = True
+        return
+    pending_study_events.clear()
+    st.session_state["study_history_loaded"] = True
+    st.session_state["study_history_sync_error"] = False
+    for kind, records in saved.items():
+        study_records.setdefault(kind, {}).update(records)
+
+
+def apply_study_history():
+    st.session_state["topic_quiz_history"] = merge_progress(
+        st.session_state.get("topic_quiz_history", []), list(study_records.get("quiz", {}).values())
+    )
+    labs = {
+        study_event("lab", row)["id"]: row
+        for row in st.session_state.get("lab_prediction_history", [])
+    }
+    labs.update(study_records.get("lab", {}))
+    st.session_state["lab_prediction_history"] = sorted(
+        labs.values(), key=lambda row: row["attempted_at"]
+    )[-HISTORY_LIMITS["lab"]:]
+
+
+def save_study_records(kind, records, *, attempt_id=None):
+    entries = study_records.setdefault(kind, {})
+    for row in records:
+        event = study_event(kind, row, attempt_id=attempt_id)
+        if event["id"] in entries:
+            continue
+        entries[event["id"]] = row
+        if history_database:
+            pending_study_events[(kind, event["id"])] = event
+    sync_study_history()
+    apply_study_history()
+
+
+def show_study_history_status():
+    if not history_database:
+        st.caption("Study activity is available for this session. Account history is unavailable.")
+    elif st.session_state.get("study_history_sync_error"):
+        st.warning("Study history couldn’t sync. Keep this tab open while Trentox retries.")
+    else:
+        st.caption("Study history is saved to your signed-in account.")
+
+
+sync_study_history()
+apply_study_history()
+
 from ui.device_guide import render_first_use_guide
 from ui.study_reminders import open_exam_calendar_workspace, render_study_reminders
 from ui import exam_questions as _exam_questions
@@ -1259,11 +1332,10 @@ def render_topic_quiz(quiz, subject_code, topic_name):
                 for question, response, correct in zip(quiz, responses, correct_indices)
                 if response != correct
             ]
-            history = st.session_state.get("topic_quiz_history", [])
-            st.session_state["topic_quiz_history"] = record_quiz_attempt(
-                history, subject_code, topic_name, score, len(quiz), gaps,
+            save_study_records("quiz", record_quiz_attempt(
+                [], subject_code, topic_name, score, len(quiz), gaps,
                 confidence=confidence_value,
-            )
+            ))
             st.session_state[result_key] = {
                 "score": score, "responses": responses, "confidence": confidence_value
             }
@@ -1911,7 +1983,7 @@ if tab_mastery.open:
     with tab_mastery:
         st.subheader(f"Your learning progress: {active_subject}")
         st.caption(
-            "Progress below comes from topic checks in this browser session. It is a study guide, "
+            "Progress below comes from your topic checks. It is a study guide, "
             "not a grade or an exam-pass prediction."
         )
         history = st.session_state.get("topic_quiz_history", [])
@@ -1995,6 +2067,8 @@ if tab_practice.open:
                         diag_prompt = f"Evaluate troubleshooting steps for {active_subject}.\nSCENARIO: {selected_scenario}\nDIAGNOSIS: {user_diag}"
                         resp, err = _call_gemini(diag_prompt, system_instruction=LEARNER_LANGUAGE_INSTRUCTION)
                         if resp:
+                            save_study_records("practice", [activity_record(active_subject, "Fault diagnosis")],
+                                               attempt_id=uuid4().hex)
                             st.markdown("### 🛠 Senior Technician Feedback")
                             st.markdown(resp)
                         else:
@@ -2038,6 +2112,8 @@ if tab_practice.open:
                         prompt = f"Socratic guidance for {active_subject}:\nQUESTION: {q['text']}\nMARKING: {q['marking']}\nATTEMPT: {user_sol}"
                         resp, err = query_exam_guidance(LEARNER_LANGUAGE_INSTRUCTION + "\n" + prompt, [q])
                         if resp:
+                            save_study_records("practice", [activity_record(active_subject, q["topic"])],
+                                               attempt_id=uuid4().hex)
                             st.markdown(resp)
                         else:
                             st.error(err)
@@ -2073,6 +2149,7 @@ if tab_exam.open:
                     st.session_state.exam_confidence = {}
                     st.session_state.exam_submitted = False
                     st.session_state.exam_graded = False
+                    st.session_state.exam_history_recorded = False
                     st.session_state.exam_report = None
                     st.session_state.exam_report_err = None
                     st.session_state.exam_start_time = time.time()
@@ -2125,6 +2202,10 @@ if tab_exam.open:
             
                 if submit_exam or st.session_state.get("exam_submitted", False):
                     st.session_state.exam_submitted = True
+                    if not st.session_state.get("exam_history_recorded"):
+                        record = activity_record(active_subject, f"{len(paper)} questions")
+                        save_study_records("mock", [record], attempt_id=st.session_state.exam_run_id)
+                        st.session_state.exam_history_recorded = True
                     if not st.session_state.get("exam_graded", False):
                         with st.spinner("Chief Examiner Grading Attempt..."):
                             grading_prompt = f"Grade exam for {active_subject}."
@@ -2625,22 +2706,21 @@ if tab_tutor.open:
                                 if reflection is None:
                                     st.info("Choose the reflection that best describes what you observed.")
                                 elif lab_code and lab_topic:
-                                    lab_records = st.session_state.get("lab_prediction_history", [])
-                                    lab_records.append({
+                                    save_study_records("lab", [{
                                         "subject": lab_code,
                                         "topic": lab_topic,
                                         "matched": reflection == "It matched",
                                         "confidence": st.session_state.get(f"{prediction_key}_confidence_value", 2),
                                         "attempted_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                                    })
-                                    st.session_state["lab_prediction_history"] = lab_records[-300:]
+                                    }])
                                     st.session_state[saved_key] = True
-                                    st.success("Reflection saved for this browser session. It can guide your next study suggestion.")
+                                    st.success("Reflection recorded. It can guide your next study suggestion.")
+                                    show_study_history_status()
                                 else:
                                     st.session_state[saved_key] = True
                                     st.success("Reflection saved for this browser session.")
                         elif st.session_state.get(saved_key):
-                            st.success("Saved. Your lab reflection stays in this browser session and is not included in the progress export.")
+                            st.caption("Reflection recorded. Course-linked reflections can guide your next study suggestion.")
 
                     if lab_subject == "Industrial Electronics N5":
                         st.divider()
@@ -2689,6 +2769,7 @@ if tab_formulas.open:
 if tab_analytics.open:
     with tab_analytics:
         st.subheader(f"Learning insights: {active_subject}")
+        show_study_history_status()
         import_message = st.session_state.pop("progress_import_message", None)
         if import_message:
             st.success(import_message)
@@ -2704,8 +2785,7 @@ if tab_analytics.open:
             lab_history=st.session_state.get("lab_prediction_history", []),
         )
         st.caption(
-            "These suggestions use your own topic-check results and optional lab reflections from this browser session. "
-            "They describe practice evidence only; they do not diagnose learning style or estimate exam results."
+            "These suggestions use your topic checks and lab reflections to spot repeated gaps and topics due for review."
         )
         st.info(
             f"**Suggested next:** {adaptive_plan['topic'] or 'Choose a topic'} · "
@@ -2717,6 +2797,26 @@ if tab_analytics.open:
         metric_cols[1].metric("Average latest check", f"{avg:.0f}%" if avg is not None else "—")
         metric_cols[2].metric("Review queue", len(summary["due_reviews"]))
         metric_cols[3].metric("Study streak", f"{study_streak(history)} days")
+
+        st.markdown("### Recent study activity")
+        recent = sorted(
+            ((kind, row) for kind, entries in study_records.items() for row in entries.values()
+             if row["subject"] == active_subject),
+            key=lambda item: item[1]["attempted_at"], reverse=True,
+        )[:20]
+        if recent:
+            study_timezone = ZoneInfo("Africa/Johannesburg")
+            st.dataframe([
+                {
+                    "Date and time": datetime.fromisoformat(row["attempted_at"]).astimezone(study_timezone).strftime("%d %b %Y %H:%M"),
+                    "Activity": ACTIVITY_LABELS[kind],
+                    "Topic or set": row["topic"],
+                    "Result": f"{row['score']}/{row['total']}" if kind == "quiz" else "—",
+                }
+                for kind, row in recent
+            ], hide_index=True)
+        else:
+            st.caption("Complete a topic check, ask for practice feedback, submit a mock exam, or save a course-linked lab reflection to build your history.")
 
         st.markdown("### 📍 Topic map")
         if modules:
@@ -2757,10 +2857,10 @@ if tab_analytics.open:
             st.caption("After a quiz, missed concept labels will appear here as a practical review guide.")
 
         st.divider()
-        with st.expander("Save or move progress to another session", expanded=False):
+        with st.expander("Export or import topic checks", expanded=False):
             st.caption(
-                "Progress is session-only. Export a small JSON file to keep a copy or move it to another browser. "
-                "It contains subject, topic, score, review date, missed-concept labels and your optional confidence rating; "
+                "Export a small JSON file to keep a copy of your topic checks. "
+                "It contains subject, topic, score, review date, missed-concept labels and your optional confidence rating. "
                 "it excludes answers, uploaded work, tutor conversations and lab prediction text/reflections."
             )
             st.download_button(
@@ -2791,7 +2891,7 @@ if tab_analytics.open:
                     before = len(history)
                     merged_history = merge_progress(history, imported_history)
                     added_count = max(0, len(merged_history) - before)
-                    st.session_state["topic_quiz_history"] = merged_history
+                    save_study_records("quiz", imported_history)
                     st.session_state["progress_import_message"] = (
                         f"Progress merged. {added_count} new quiz record(s) added."
                     )
@@ -2815,7 +2915,7 @@ if tab_analytics.open:
                     f"status {status}, next review {record['review_due']}"
                 )
         else:
-            report_lines.append("No topic checks recorded for this subject in the current session.")
+            report_lines.append("No topic checks recorded for this subject.")
         report_text = "\n".join(report_lines) + "\n"
         st.download_button(
             "📄 Download this subject's learning summary (.txt)",
