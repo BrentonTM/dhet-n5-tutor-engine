@@ -1,0 +1,80 @@
+# Connect secure Google sign-in
+
+Trentox uses Streamlit's native Google OpenID Connect login. Google verifies the
+student account; Trentox never collects a Google password. The workspace stays
+closed until authentication succeeds and the learner chooses a Tex username.
+
+## Owner setup
+
+1. In [Google Cloud's Google Auth Platform](https://console.cloud.google.com/auth/clients),
+   configure the app's branding and audience, then create an OAuth client with
+   application type **Web application**. If the app is in Testing, add the
+   intended student accounts as test users. Publish the audience when ready for
+   the intended students.
+2. Add this exact **Authorized redirect URI** to that client:
+
+   `https://dhet-n5-tutor-engine-rxogmong3h45cfoqv7t6sq.streamlit.app/oauth2callback`
+
+3. Copy `.streamlit/secrets.toml.example` into the app's **Streamlit Cloud >
+   Settings > Secrets**, retaining any existing Gemini settings. Replace the
+   client ID and client secret with the values from the Google Web client.
+   Generate a random cookie signing secret locally, for example:
+
+   ```shell
+   python -c "import secrets; print(secrets.token_urlsafe(48))"
+   ```
+
+   Paste the generated value into `cookie_secret`. Do not paste credentials into
+   a chat, commit them to GitHub, or include them in screenshots. The example is
+   intentionally unusable until its placeholder values are replaced.
+4. Ensure the deployment installs `streamlit[auth,pdf]>=1.66`. The auth extra
+   provides Authlib. Restart the app after changing its authentication secrets.
+5. Open the **canonical app URL** directly, choose **Continue with Google**, and
+   sign in using an allowed test account. Choose a Tex username, enter the
+   workspace, then verify sign-out returns to the login page. Reopen in a second
+   browser profile and confirm that the other learner's conversation is absent.
+
+No sign-in credentials have been created, read, or configured by the code change.
+The app shows a disabled sign-in button while configuration is incomplete; there
+is no guest flag, password shortcut, URL bypass or simulated identity in the
+production flow.
+
+For local development, register and use
+`http://localhost:8501/oauth2callback` instead, with a separate local secrets file
+and the same `google` provider name. Never commit that file.
+
+## Username and privacy behavior
+
+After Google authentication the student chooses the name Tex will use. Names
+allow 2-32 Unicode characters (letters, numbers, spaces and common name
+punctuation). A name is personalization data, never an authentication credential
+or a set of model instructions. Tex receives the chosen name, not the student's
+Google email, ID token or account claims.
+
+The app derives an internal pseudonymous student ID from Google's verified issuer
+and subject. Changing accounts or signing out clears the session's learner data.
+Names, conversations and study state are session-scoped; this change does not add
+a database or promise cross-device profile/history sync. Students can change the
+Tex username through the account menu.
+
+Streamlit's identity cookie can persist for 30 days. Sign out on shared devices;
+other already-open sessions can remain authenticated until separately signed out.
+Signing out of Trentox does not sign out of the underlying Google account.
+
+Authentication is not supported in apps configured with `embed=true`. These
+views link back to the canonical app for sign-in. A `/~/+/` runtime view also
+offers the canonical link; the path itself is not treated as an embedding or
+authentication signal. Do not register the runtime path as the Google OAuth
+callback or disable XSRF/CORS protections.
+
+## Verification scope
+
+Automated checks cover missing configuration, unauthenticated access, username
+validation, verified-claim requirements, account-switch cleanup and logout. Real
+Google consent and callback verification requires the owner-configured OAuth
+client and a student signing in. The app must not claim that live Google login
+has been verified before that step succeeds.
+
+References: [Streamlit authentication](https://docs.streamlit.io/develop/concepts/connections/authentication),
+[st.login configuration](https://docs.streamlit.io/develop/api-reference/user/st.login),
+[Google OpenID Connect setup](https://developers.google.com/identity/openid-connect/openid-connect).

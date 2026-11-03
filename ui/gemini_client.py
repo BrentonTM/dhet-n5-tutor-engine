@@ -49,7 +49,7 @@ ERROR_MESSAGES = {
 }
 
 
-def generate_reply(contents, *, api_key, client_factory, models=DEFAULT_MODELS, sleep=time.sleep):
+def generate_reply(contents, *, api_key, client_factory, models=DEFAULT_MODELS, sleep=time.sleep, system_instruction=None):
     if not api_key:
         return None, "ASK TX needs a Gemini API key in Streamlit Cloud Settings → Secrets (GEMINI_API_KEY or GOOGLE_API_KEY)."
     client = None
@@ -62,7 +62,10 @@ def generate_reply(contents, *, api_key, client_factory, models=DEFAULT_MODELS, 
         for model in models:
             for attempt in range(2):
                 try:
-                    response = client.models.generate_content(model=model, contents=contents)
+                    options = {"model": model, "contents": contents}
+                    if system_instruction:
+                        options["config"] = {"system_instruction": system_instruction}
+                    response = client.models.generate_content(**options)
                     text = response.text if response else None
                     if text and text.strip():
                         return text, None
