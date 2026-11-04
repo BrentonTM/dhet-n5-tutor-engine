@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const code = await readFile(new URL("../ui/components/rubik_cube.js", import.meta.url), "utf8");
-const {FACES,solvedCube,turnCube,cubeFromHistory,isSolvedCube,scrambleMoves} = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
+const {FACES,MOVES,solvedCube,turnCube,cubeFromHistory,isSolvedCube,scrambleMoves,moveForSwipe} = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 const canonical = cube => cube.map(s=>`${s.id}:${s.p.join(",")}:${s.n.join(",")}`).sort();
 const original = solvedCube();
 assert.equal(original.length,54);
@@ -16,6 +16,35 @@ for (const face of Object.keys(FACES)) {
   assert.equal(isSolvedCube(once),false,`${face} moves adjacent stickers`);
   assert.equal(once.filter((s,i)=>s.p.join()!==original[i].p.join() || s.n.join()!==original[i].n.join()).length,20,`${face} moves twenty stickers, leaving the center`);
 }
+for (const face of Object.keys(MOVES)) {
+  for (const turns of [1, -1, 2, -2]) {
+    const moved = turnCube(original, face, turns);
+    assert.deepEqual(canonical(turnCube(moved, face, -turns)), canonical(original), `${face} ${turns} inverse`);
+    assert.equal(moved.length, 54);
+    assert.equal(new Set(moved.map(sticker => `${sticker.p}:${sticker.n}`)).size, 54);
+    // The stickers on each physical cubie must stay together through every turn.
+    for (const sticker of original) {
+      const group = original.filter(other => other.p.join() === sticker.p.join());
+      const positions = moved.filter(other => group.some(home => home.id === other.id)).map(other => other.p.join());
+      assert.equal(new Set(positions).size, 1, `${face} keeps a cubie's stickers together`);
+    }
+  }
+  assert.deepEqual(canonical(turnCube(original, face, 2)), canonical(turnCube(turnCube(original, face), face)));
+}
+// Front-facing phone gestures must turn the touched row/column in screen direction.
+const frontProjection = ([x, y]) => [x * 60, -y * 60];
+const at = (x, y) => original.find(sticker => sticker.color === "F" && sticker.p[0] === x && sticker.p[1] === y);
+assert.deepEqual(moveForSwipe(at(1, 1), [45, 0], frontProjection), {face: "U", turns: -1});
+assert.deepEqual(moveForSwipe(at(1, 1), [0, 45], frontProjection), {face: "R", turns: -1});
+assert.deepEqual(moveForSwipe(at(0, 0), [45, 0], frontProjection), {face: "E", turns: 1});
+assert.deepEqual(moveForSwipe(at(0, 0), [0, 45], frontProjection), {face: "M", turns: 1});
+assert.equal(moveForSwipe(at(0, 0), [0, 0], frontProjection), null);
+const back = original.find(sticker => sticker.color === "B" && sticker.p[0] === -1 && sticker.p[1] === 1);
+assert.deepEqual(moveForSwipe(back, [45, 0], ([x, y]) => [-x * 60, -y * 60]), {face: "U", turns: -1});
+assert.deepEqual(moveForSwipe(back, [0, 45], ([x, y]) => [-x * 60, -y * 60]), {face: "L", turns: -1});
+const right = original.find(sticker => sticker.color === "R" && sticker.p[1] === 1 && sticker.p[2] === -1);
+assert.deepEqual(moveForSwipe(right, [45, 0], ([, y, z]) => [-z * 60, -y * 60]), {face: "U", turns: -1});
+assert.deepEqual(moveForSwipe(right, [0, 45], ([, y, z]) => [-z * 60, -y * 60]), {face: "B", turns: -1});
 // Two turns of opposite faces commute; adjacent face turns generally do not.
 for (const [a,b] of [["F","B"],["L","R"],["U","D"]]) {
   assert.deepEqual(canonical(turnCube(turnCube(original,a),b)),canonical(turnCube(turnCube(original,b),a)));
@@ -43,6 +72,6 @@ for (let round=0;round<20;round++) {
   assert.deepEqual(canonical(cubeFromHistory([...moves,...retrace])),canonical(original));
 }
 assert.throws(()=>turnCube(original,"X"));
-assert.throws(()=>turnCube(original,"F",2));
+assert.throws(()=>turnCube(original,"F",3));
 assert.deepEqual(canonical(original),canonical(solvedCube()),"Turns must not mutate source state");
 console.log("Rubik cube: six-face inverses/four-turn identities, direction, commutation, 2,000 legal scramble turns and complete retraces pass.");
