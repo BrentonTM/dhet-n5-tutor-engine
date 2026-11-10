@@ -174,6 +174,9 @@ from ui.money_class import render_money_class
 from ui.career_readiness import render_career_tools, render_employability_meter
 from ui.home_showcase import LAB_SUBJECTS, model_discussion_prompt, render_home_model
 from ui.brand import render_wordmark
+from ui.flashcards import render_flashcards
+from ui.plant_fault_lab import render_fault_bench, render_worked_diagnosis
+from ui.study_visuals import render_study_model, render_study_visual, study_models
 from ui.exam_readiness import render_exam_readiness
 from ui.n4_courses import N4_CODES, N4_LAB_TOPICS, N4_MODULES, N4_NAMES, starter_questions, syllabus_url
 
@@ -182,7 +185,7 @@ def cached_question_pdf(question_id, source_file, source_pages):
     return question_pdf(BASE_DIR, {"source_file": source_file, "source_pages": source_pages})
 
 
-def render_selected_question(question, widget_prefix):
+def render_selected_question(question, widget_prefix, *, show_model=False):
     if question.get("original_practice"):
         st.caption("Original Trentox practice")
         st.write(question["text"])
@@ -197,6 +200,11 @@ def render_selected_question(question, widget_prefix):
         )
     else:
         st.write(question["text"])
+    if show_model:
+        render_study_visual(
+            study_models(active_subject, question["text"]),
+            key=f"visual_{widget_prefix}_{question['id']}", question=True,
+        )
 
 
 def load_selected_questions(limit):
@@ -688,13 +696,11 @@ with st.sidebar:
 # Configure Matplotlib for headless Streamlit rendering
 try:
     import matplotlib
-    from matplotlib import patches
     from matplotlib import pyplot as plt
 
     matplotlib.use("Agg")
 except ImportError:
     plt = None
-    patches = None
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -904,127 +910,6 @@ def render_home_slideshow(subject_code, subject_name, height=262):
         "__AUTO_PLAY__", json.dumps(st.session_state.get("fx_mode", "high") == "high")
     )
     st.iframe(slide_html, height=height, alt="Live engineering tips: exam technique, formulas, study methods and animated course concepts")
-
-# Universal Topic Diagram Engine
-@st.cache_data(show_spinner=False, max_entries=64)
-def render_topic_diagram(topic_name):
-    if not plt or not patches:
-        st.info("💡 Install Matplotlib (`python -m pip install matplotlib`) to render dynamic vector diagrams.")
-        return
-        
-    topic_lower = topic_name.lower()
-    fig, ax = plt.subplots(figsize=(8, 3.8), dpi=120)
-    fig.patch.set_facecolor("#0A0D12")
-    ax.set_facecolor("#0A0D12")
-    
-    if "pressure" in topic_lower or "bourdon" in topic_lower or "gauge" in topic_lower:
-        ax.set_title("C-Type Bourdon Tube Gauge Assembly (INST-N5)", color="white", fontsize=11, fontweight="bold")
-        arc = patches.Arc((0.35, 0.45), 0.5, 0.6, angle=0, theta1=20, theta2=250, color="#22D3EE", linewidth=5)
-        ax.add_patch(arc)
-        base = patches.Rectangle((0.28, 0.1), 0.08, 0.2, color="#8B949E")
-        ax.add_patch(base)
-        ax.annotate("Fluid Pressure Inlet (P)", xy=(0.32, 0.1), xytext=(0.05, 0.05),
-                    arrowprops={"arrowstyle": "->", "color": "#FF7A1A", "lw": 2}, color="white", fontsize=9)
-        ax.plot([0.5, 0.65], [0.62, 0.65], color="#FF7A1A", lw=3)
-        ax.text(0.52, 0.68, "Sealed Tip & Link", color="#FF7A1A", fontsize=8)
-        sector = patches.Wedge((0.65, 0.55), 0.12, 120, 210, color="#8B5CF6")
-        ax.add_patch(sector)
-        ax.text(0.70, 0.58, "Quadrant Gear", color="#C4B5FD", fontsize=8)
-        dial = patches.Circle((0.65, 0.45), 0.2, fill=False, edgecolor="#ffffff", ls="--", lw=1.5)
-        ax.add_patch(dial)
-        ax.text(0.72, 0.4, "Dial Scale & Pointer", color="#FCA5A5", fontsize=8)
-    elif "thyristor" in topic_lower or "phase control" in topic_lower or "scr" in topic_lower or "triac" in topic_lower:
-        ax.set_title("SCR / Thyristor Phase Control Waveforms (IE-N5)", color="white", fontsize=11, fontweight="bold")
-        
-        t = np.linspace(0, 2 * np.pi, 400)
-        v_in = np.sin(t)
-        alpha = np.pi / 3  # Firing angle (60 degrees)
-        
-        # Chopped output voltage based on firing angle alpha
-        v_out = np.where(
-            ((t >= alpha) & (t <= np.pi)) | ((t >= np.pi + alpha) & (t <= 2 * np.pi)), 
-            v_in, 
-            0
-        )
-        
-        ax.plot(t, v_in, color="#22D3EE", lw=2, alpha=0.6, label="Input AC Voltage ($V_{in}$)")
-        ax.plot(t, v_out, color="#FF7A1A", lw=3, label="Chopped Output ($V_{out}$)")
-        
-        # Firing angle markers
-        ax.axvline(alpha, color="yellow", linestyle="--", alpha=0.8, label="Firing Angle $\\alpha$")
-        ax.axvline(np.pi + alpha, color="yellow", linestyle="--", alpha=0.8)
-        
-        ax.set_xlabel(r"Angle ($\omega t$)", color="white")
-        ax.set_ylabel("Voltage", color="white")
-        ax.tick_params(colors='white')
-        ax.legend(loc="upper right", facecolor="#1E1E1E", edgecolor="none", labelcolor="white", fontsize=8)
-    elif "flow" in topic_lower or "orifice" in topic_lower or "venturi" in topic_lower or "bernoulli" in topic_lower:
-        ax.set_title("Venturi Flow Meter Differential Pressure (INST-N5)", color="white", fontsize=11, fontweight="bold")
-        ax.plot([0.05, 0.35, 0.5, 0.65, 0.95], [0.8, 0.8, 0.65, 0.8, 0.8], color="#8B949E", lw=4)
-        ax.plot([0.05, 0.35, 0.5, 0.65, 0.95], [0.2, 0.2, 0.35, 0.2, 0.2], color="#8B949E", lw=4)
-        for x in [0.15, 0.48, 0.8]:
-            ax.annotate("", xy=(x+0.08, 0.5), xytext=(x, 0.5), arrowprops=dict(arrowstyle="->", color="#22D3EE", lw=2.5))
-        ax.text(0.1, 0.53, "Inlet (P1, V1)", color="#67E8F9", fontsize=9)
-        ax.text(0.44, 0.53, "Throat (P2, V2)", color="#FF7A1A", fontsize=8)
-        ax.plot([0.25, 0.25], [0.8, 0.95], color="#22D3EE", lw=3)
-        ax.plot([0.50, 0.50], [0.65, 0.95], color="#22D3EE", lw=3)
-        ax.plot([0.25, 0.50], [0.95, 0.95], color="#FF7A1A", lw=2, ls=":")
-        ax.text(0.32, 0.97, "ΔP = P1 - P2", color="#FF7A1A", fontsize=10, fontweight="bold")
-
-    elif "temperature" in topic_lower or "rtd" in topic_lower or "thermocouple" in topic_lower or "pyrometer" in topic_lower:
-        ax.set_title("RTD / Thermocouple Industrial Sensor Probe (INST-N5)", color="white", fontsize=11, fontweight="bold")
-        probe = patches.Rectangle((0.15, 0.42), 0.5, 0.16, facecolor="#8B949E", edgecolor="#22D3EE", lw=2)
-        ax.add_patch(probe)
-        ax.text(0.4, 0.48, "Protective Thermowell Sheath", color="white", fontsize=9, ha="center")
-        ax.plot([0.65, 0.85], [0.5, 0.5], color="#FF7A1A", lw=3)
-        ax.text(0.7, 0.55, "Compensating Leads to Transmitter", color="#FF7A1A", fontsize=8)
-
-    elif "op-amp" in topic_lower or "amplifier" in topic_lower or "thyristor" in topic_lower or "electronics" in topic_lower:
-        ax.set_title("Operational Amplifier Circuit Schematic (IE-N5)", color="white", fontsize=11, fontweight="bold")
-        opamp = patches.Polygon([[0.45, 0.25], [0.45, 0.75], [0.75, 0.5]], color="#10B981")
-        ax.add_patch(opamp)
-        ax.text(0.47, 0.62, "-", color="white", fontsize=16, fontweight="bold")
-        ax.text(0.47, 0.32, "+", color="white", fontsize=14, fontweight="bold")
-        ax.plot([0.1, 0.3], [0.65, 0.65], color="#FF7A1A", lw=2)
-        ax.text(0.05, 0.63, "Vin", color="#22D3EE", fontsize=11, fontweight="bold")
-        ax.plot([0.75, 0.9], [0.5, 0.5], color="#EF4444", lw=2.5)
-        ax.text(0.82, 0.42, "Vout", color="#EF4444", fontsize=10, fontweight="bold")
-
-    elif "calculus" in topic_lower or "derivative" in topic_lower or "integral" in topic_lower or "differential equation" in topic_lower or "complex" in topic_lower:
-        ax.set_title(f"Mathematical Response & Function Curve: {topic_name}", color="white", fontsize=11, fontweight="bold")
-        x = np.linspace(0, 10, 100)
-        y = np.exp(-0.2*x) * np.sin(1.5*x) + 0.5
-        ax.plot(x, y, color="#22D3EE", lw=2.5, label="f(x) Curve")
-        ax.axhline(0, color="#30363D", lw=1.5)
-        ax.axvline(0, color="#30363D", lw=1.5)
-        ax.grid(True, color="#30363D", linestyle=":")
-        ax.legend(facecolor="#0A0D12", edgecolor="none", labelcolor="white")
-
-    elif "counter" in topic_lower or "shift" in topic_lower or "flip-flop" in topic_lower or "logic" in topic_lower or "number" in topic_lower:
-        ax.set_title("Sequential Digital Logic Architecture (DIGI-N4/N5)", color="white", fontsize=11, fontweight="bold")
-        for i, label in enumerate(["FF0 (LSB)", "FF1", "FF2 (MSB)"]):
-            x = 0.1 + i * 0.28
-            rect = patches.Rectangle((x, 0.3), 0.2, 0.4, facecolor="#161B22", edgecolor="#22D3EE", lw=2)
-            ax.add_patch(rect)
-            ax.text(x + 0.1, 0.5, label, color="white", fontsize=9, fontweight="bold", ha="center")
-            if i < 2:
-                ax.annotate("", xy=(x + 0.28, 0.5), xytext=(x + 0.2, 0.5), arrowprops=dict(arrowstyle="->", color="#FF7A1A", lw=2))
-        ax.annotate("CLK", xy=(0.1, 0.5), xytext=(0.01, 0.5), arrowprops=dict(arrowstyle="->", color="#22D3EE", lw=2), color="#22D3EE", fontsize=9, fontweight="bold")
-
-    else:
-        ax.set_title(f"System Block Diagram & Signal Flow: {topic_name}", color="white", fontsize=11, fontweight="bold")
-        blocks = [("Sensor / Input", 0.1, "#22D3EE"), ("Signal Conditioner", 0.4, "#10B981"), ("Controller / Output", 0.7, "#FF7A1A")]
-        for title, x, color in blocks:
-            rect = patches.Rectangle((x, 0.35), 0.2, 0.3, facecolor="#161B22", edgecolor=color, lw=2)
-            ax.add_patch(rect)
-            ax.text(x + 0.1, 0.5, title, color="white", fontsize=8, fontweight="bold", ha="center")
-        ax.annotate("", xy=(0.4, 0.5), xytext=(0.3, 0.5), arrowprops=dict(arrowstyle="->", color="white", lw=2))
-        ax.annotate("", xy=(0.7, 0.5), xytext=(0.6, 0.5), arrowprops=dict(arrowstyle="->", color="white", lw=2))
-
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-    ax.axis("off")
-    st.pyplot(fig)
 
 # Local Material Reader Function (cached so source files are not re-read on every click)
 @st.cache_data(show_spinner=False)
@@ -2053,44 +1938,51 @@ if active_subject and tab_practice.open:
         if "current_question" not in st.session_state:
             st.session_state.current_question = None
         st.subheader("💡 Practical Engineering Sandbox & Fault-Finding Scenarios")
-        if active_subject in N4_MODULES:
-            st.caption("Try original Trentox questions mapped to the N4 syllabus, with worked answers.")
-            mode = "Trentox practice"
-        else:
-            mode = st.radio("Select Practice Mode:", ["Exam Past Paper Guidance", "🚨 Plant Fault Diagnosis Scenario"], horizontal=True)
-    
-        st.caption("Type or record your answer in your preferred language. Requesting feedback sends your answer to Google Gemini.")
+        practice_mode = "Trentox practice" if active_subject in N4_MODULES else "Exam Past Paper Guidance"
+        mode = st.radio("Select Practice Mode:", [practice_mode, "Plant fault diagnosis"], horizontal=True)
+        st.caption("Type or record your answer in your preferred language. Requesting Tex feedback sends your answer to Google Gemini.")
 
-        if mode == "🚨 Plant Fault Diagnosis Scenario":
-            st.markdown("### Industrial Troubleshooting & Fault Diagnosis")
-            fault_scenarios = {
-                "INST-N5": "A differential pressure transmitter across an orifice plate reads 0 kPa despite a high fluid flow rate in the main pipeline. The 4-20mA loop current is steady at 4.0 mA.",
-                "IE-N5": "An operational amplifier non-inverting circuit outputs a clipped square wave at ±15V when a 2V peak-to-peak sine wave is applied at the input.",
-                "DIGI-N5": "An asynchronous 4-bit ripple counter skips count state 0110 (6) and resets directly to 0000 on every cycle."
-            }
-            selected_scenario = fault_scenarios.get(active_subject, "A 4-20mA pressure transducer signal is noisy and tripping the relay switch.")
-            st.error(f"**SCENARIO:** {selected_scenario}")
-            voice_text, voice_pending = render_practice_voice(f"{active_subject}_diagnosis")
-        
-            typed_diag = st.text_area("Your Step-by-Step Fault Diagnosis & Repair Strategy:", placeholder="e.g., Step 1: Check impulse line blockage...")
-            user_diag = "\n\n".join(part for part in (typed_diag.strip(), voice_text) if part)
-        
-            if st.button("Submit Fault Diagnosis"):
+        if mode == "Plant fault diagnosis":
+            case = render_fault_bench(active_subject)
+            attempt_key = f"{active_subject}_{case.id}"
+            voice_text, voice_pending = render_practice_voice(f"diagnosis_{attempt_key}")
+            typed_diag = st.text_area(
+                "What is your diagnosis and how would you verify it?",
+                placeholder="Name the likely cause, which readings support it, and what result would confirm the repair.",
+                key=f"diagnosis_answer_{attempt_key}",
+            )
+            answer = "\n\n".join(part for part in (typed_diag.strip(), voice_text) if part)
+            completed = st.session_state.setdefault("fault_diagnosis_attempts", set())
+            if st.button("Check my diagnosis", key=f"diagnosis_check_{attempt_key}", type="primary"):
                 if voice_pending:
-                    st.warning("Transcribe your recording first, or remove it to submit just your typed answer.")
-                elif not user_diag:
-                    st.warning("Type or record your diagnostic process first!")
-                else:
-                    with st.spinner("Senior Engineering Technician reviewing your strategy..."):
-                        diag_prompt = f"Evaluate troubleshooting steps for {active_subject}.\nSCENARIO: {selected_scenario}\nDIAGNOSIS: {user_diag}"
-                        resp, err = _call_gemini(diag_prompt, system_instruction=LEARNER_LANGUAGE_INSTRUCTION)
-                        if resp:
-                            save_study_records("practice", [activity_record(active_subject, "Fault diagnosis")],
-                                               attempt_id=uuid4().hex)
-                            st.markdown("### 🛠 Senior Technician Feedback")
-                            st.markdown(resp)
-                        else:
-                            st.error(err)
+                    st.warning("Transcribe your recording first, or remove it to use your typed answer.")
+                elif not answer:
+                    st.info("Write or record your diagnosis before viewing the worked steps.")
+                elif attempt_key not in completed:
+                    completed.add(attempt_key)
+                    save_study_records("practice", [activity_record(active_subject, f"Fault diagnosis · {case.title}")],
+                                       attempt_id=uuid4().hex)
+            if attempt_key in completed:
+                st.markdown("#### Compare with the worked diagnosis")
+                render_worked_diagnosis(case)
+                if st.button("Get Tex feedback on my reasoning", key=f"diagnosis_feedback_{attempt_key}",
+                             disabled=not answer or voice_pending):
+                    evidence = "\n".join(f"{probe.part}: {probe.reading}" for probe in case.probes)
+                    prompt = (
+                        "Review the learner's reasoning for this simulated engineering fault. "
+                        "Compare their sequence of checks and evidence with the worked diagnosis. "
+                        "Do not give instructions for live or energised plant work. "
+                        f"\nScenario: {case.symptom}\nVirtual measurements:\n{evidence}"
+                        f"\nLikely cause: {case.cause}\nLearner response: {answer}"
+                    )
+                    with st.spinner("Tex is reviewing your diagnosis..."):
+                        feedback, error = _call_gemini(prompt, system_instruction=LEARNER_LANGUAGE_INSTRUCTION)
+                    st.session_state[f"diagnosis_reply_{attempt_key}"] = (feedback, error)
+                feedback, error = st.session_state.get(f"diagnosis_reply_{attempt_key}", (None, None))
+                if feedback:
+                    st.markdown(feedback)
+                elif error:
+                    st.error(error)
         else:
             practice_set = st.session_state.get("practice_set", [])
             position = st.session_state.get("practice_position", 0)
@@ -2112,34 +2004,34 @@ if active_subject and tab_practice.open:
             if practice_set:
                 st.caption(f"Practice question {position + 1} of {len(practice_set)}")
 
-        q = st.session_state.current_question
-        if q and mode != "🚨 Plant Fault Diagnosis Scenario":
-            st.markdown(f"**{q['num']} · {q['marks']} marks** — {q['topic']}")
-            render_selected_question(q, "practice_pdf")
-            voice_text, voice_pending = render_practice_voice(f"{active_subject}_{q['id']}")
-            typed_sol = st.text_area("Your Working / Answer Attempt:", height=140, key=f"practice_work_{q['id']}")
-            user_sol = "\n\n".join(part for part in (typed_sol.strip(), voice_text) if part)
+            q = st.session_state.current_question
+            if q:
+                st.markdown(f"**{q['num']} · {q['marks']} marks** — {q['topic']}")
+                render_selected_question(q, "practice_pdf", show_model=True)
+                voice_text, voice_pending = render_practice_voice(f"{active_subject}_{q['id']}")
+                typed_sol = st.text_area("Your Working / Answer Attempt:", height=140, key=f"practice_work_{q['id']}")
+                user_sol = "\n\n".join(part for part in (typed_sol.strip(), voice_text) if part)
 
-            if st.button("Get AI Socratic Guidance"):
-                if voice_pending:
-                    st.warning("Transcribe your recording first, or remove it to submit just your typed answer.")
-                elif not user_sol:
-                    st.warning("Type or record your answer first!")
-                else:
-                    with st.spinner("Analyzing solution..."):
-                        prompt = f"Socratic guidance for {active_subject}:\nQUESTION: {q['text']}\nMARKING: {q['marking']}\nATTEMPT: {user_sol}"
-                        resp, err = query_exam_guidance(LEARNER_LANGUAGE_INSTRUCTION + "\n" + prompt, [q])
-                        if resp:
-                            save_study_records("practice", [activity_record(active_subject, q["topic"])],
-                                               attempt_id=uuid4().hex)
-                            st.markdown(resp)
-                        else:
-                            st.error(err)
-            render_matched_memo(q, "practice_memo")
-        elif mode != "🚨 Plant Fault Diagnosis Scenario":
-            render_practice_voice(active_subject, disabled=True)
+                if st.button("Get AI Socratic Guidance"):
+                    if voice_pending:
+                        st.warning("Transcribe your recording first, or remove it to submit just your typed answer.")
+                    elif not user_sol:
+                        st.warning("Type or record your answer first!")
+                    else:
+                        with st.spinner("Analyzing solution..."):
+                            prompt = f"Socratic guidance for {active_subject}:\nQUESTION: {q['text']}\nMARKING: {q['marking']}\nATTEMPT: {user_sol}"
+                            resp, err = query_exam_guidance(LEARNER_LANGUAGE_INSTRUCTION + "\n" + prompt, [q])
+                            if resp:
+                                save_study_records("practice", [activity_record(active_subject, q["topic"])],
+                                                   attempt_id=uuid4().hex)
+                                st.markdown(resp)
+                            else:
+                                st.error(err)
+                render_matched_memo(q, "practice_memo")
+            else:
+                render_practice_voice(active_subject, disabled=True)
 
-        render_paper_library()
+            render_paper_library()
 
 # TAB 3: Stress-Conditioned Exam Simulator
 if active_subject and tab_exam.open:
@@ -2241,10 +2133,16 @@ if active_subject and tab_exam.open:
                         if st.button("🔁 Retry grading", key="retry_grading"):
                             st.session_state.exam_graded = False
                             st.rerun()
-                    for item in paper:
+                    for index, item in enumerate(paper):
                         if item.get("original_practice"):
                             with st.expander(f"Worked answer · {item['topic']}"):
                                 st.write(item["marking"])
+                        render_study_visual(
+                            study_models(active_subject, item["text"]),
+                            key=f"exam_review_model_{st.session_state.exam_run_id}_{index}",
+                            label=f"Question {index + 1} · review with a 3D model",
+                            question=True,
+                        )
 
 # TAB 4: AI Tutor Notes, Simulators & Spaced-Repetition Flashcards
 if active_subject and tab_tutor.open:
@@ -2360,7 +2258,9 @@ if active_subject and tab_tutor.open:
                     placeholder="e.g., Op-amp summing amplifier derivation",
                     key=f"custom_topic_{active_subject}",
                 )
-                target_topic = custom_query.strip() if custom_query.strip() else selected_module
+                target_topic = custom_query.strip() or selected_module
+                lesson_models = study_models(active_subject, target_topic, lesson=True)
+                render_study_visual(lesson_models, key=f"lesson_model_{active_subject}_{target_topic}")
                 if active_subject in N4_MODULES and not custom_query.strip():
                     example = next(item for item in starter_questions(active_subject) if item["topic"] == selected_module)
                     with st.expander("Try a starter exercise", expanded=True):
@@ -2368,6 +2268,10 @@ if active_subject and tab_tutor.open:
                         render_selected_question(example, "n4_lesson")
                         if st.checkbox("Reveal the worked answer", key=f"n4_reveal_{example['id']}"):
                             st.write(example["marking"])
+                    if not lesson_models:
+                        render_study_visual(
+                            study_models(active_subject, example["text"]), key=f"n4_starter_model_{example['id']}", question=True,
+                        )
                 adaptive_start = st.session_state.pop("adaptive_start_lesson_subject", None) == active_subject
                 if st.button("📖 Generate Lesson & Explanation") or adaptive_start:
                     if active_subject in N4_MODULES:
@@ -2424,9 +2328,6 @@ if active_subject and tab_tutor.open:
                 lesson_state = st.session_state.get("active_topic_lesson", {})
                 if lesson_state.get("subject") == active_subject and lesson_state.get("topic") == target_topic:
                     if lesson_state.get("notes"):
-                        st.markdown("### 🎨 Engineering Vector Schematic")
-                        render_topic_diagram(target_topic)
-                        st.divider()
                         st.markdown(lesson_state["notes"])
                         st.divider()
                         if lesson_state.get("quiz"):
@@ -2450,31 +2351,7 @@ if active_subject and tab_tutor.open:
 
         if sub_tab2.open:
             with sub_tab2:
-                st.markdown("### 🧠 Active Recall Flashcard Deck")
-                cards = FLASHCARDS_DATA.get(active_subject, [])
-                if not cards:
-                    st.info("Flashcards for this subject have not been integrated yet.")
-                else:
-                    if "card_idx" not in st.session_state:
-                        st.session_state.card_idx = 0
-                        st.session_state.show_answer = False
-
-                    current_card = cards[st.session_state.card_idx % len(cards)]
-                    st.info(f"**Flashcard {st.session_state.card_idx % len(cards) + 1} of {len(cards)}**\n\n### ❓ Question:\n{current_card['q']}")
-
-                    if st.button("👁️ Flip Card / Reveal Answer"):
-                        st.session_state.show_answer = not st.session_state.show_answer
-
-                    if st.session_state.show_answer:
-                        st.success(f"**💡 Answer:**\n\n{current_card['a']}")
-                        col_a, col_b = st.columns(2)
-                        if col_a.button("✅ Got It Right (+1 Score)"):
-                            st.session_state.card_idx += 1
-                            st.session_state.show_answer = False
-                            st.rerun()
-                        if col_b.button("❌ Need Review"):
-                            st.session_state.show_answer = False
-                            st.warning("Flagged for review!")
+                render_flashcards(active_subject, FLASHCARDS_DATA.get(active_subject, []))
 
         if sub_tab3.open:
             with sub_tab3:
@@ -2600,16 +2477,16 @@ if active_subject and tab_tutor.open:
                 st.markdown("### 🧊 Interactive 3D engineering lab")
                 st.caption("How to operate a 3D model: drag empty space to rotate · scroll or pinch to zoom · right-drag to pan where supported · hover or click a labelled component to inspect it · adjust sliders or input switches, then use Reset.")
 
-                from ui.diagram_engine import render_diagram3d
                 from ui.diagram_registry import get_spec, title_of
 
                 lab_profiles = {
                     **{N4_NAMES[code]: list(topics) for code, topics in N4_LAB_TOPICS.items()},
                     "Mathematics N5": ["derivative", "riemann", "revolve", "second_moment", "ode_decay", "unit_circle", "pascal"],
-                    "Digital Electronics N4": ["logic_gate_board", "kmap4", "full_adder_3d"],
-                    "Digital Electronics N5 — visualization preview": ["weighted_dac_3d", "flash_adc_3d"],
+                    "Industrial Electronics N4": ["dc_resistor_network", *N4_LAB_TOPICS["IE-N4"]],
+                    "Digital Electronics N4": ["logic_gate_board", "kmap4", "full_adder_3d", "ripple_counter_3d", "weighted_dac_3d", "flash_adc_3d"],
+                    "Digital Electronics N5 — visualization preview": ["weighted_dac_3d", "flash_adc_3d", "ripple_counter_3d"],
                     "Industrial Electronics N5": ["phasor", "rc_response", "bridge_rectifier_3d", "rectifier", "bjt_structure", "load_line", "opamp_inv", "opamp_noninv", "timer555", "wheatstone", "lvdt", "scr_structure", "scr_waveform", "cro", "lc_tank", "lcd_cell"],
-                    "Industrial Instruments N5": ["rotameter", "venturi", "orifice", "weir", "target_flow", "manometer", "bourdon", "strain_gauge", "rtd_tc", "tank_level", "ph_probe", "pid_loop", "step_response"],
+                    "Industrial Instruments N5": ["current_loop_3d", "rotameter", "venturi", "orifice", "weir", "target_flow", "manometer", "bourdon", "strain_gauge", "rtd_tc", "tank_level", "ph_probe", "pid_loop", "step_response"],
                 }
                 lab_subjects = list(lab_profiles)
                 preferred_lab_subject = LAB_SUBJECTS.get(active_subject, "Digital Electronics N5 — visualization preview")
@@ -2621,9 +2498,9 @@ if active_subject and tab_tutor.open:
                 )
 
                 if lab_subject == "Digital Electronics N5 — visualization preview":
-                    st.warning("This DAC scene is an interactive study aid. The standalone Digital Electronics N5 curriculum map still needs authoritative syllabus verification.")
+                    st.warning("These models are interactive study aids. The Digital Electronics N5 curriculum map still needs authoritative syllabus verification.")
                 elif lab_subject == "Digital Electronics N4":
-                    st.caption("N4 lab scope includes logic gates, full adders and K-maps. Memory Systems are excluded from your confirmed N4 scope.")
+                    st.caption("Explore logic gates, adders, K-maps, counters and converters.")
 
                 if lab_subject == "Industrial Electronics N5":
                     st.markdown("#### Guided 3D engineering diagrams")
@@ -2637,7 +2514,7 @@ if active_subject and tab_tutor.open:
                 )
                 diagram_spec = get_spec(diagram_id)
                 if diagram_spec:
-                    render_diagram3d(diagram_spec, height=680)
+                    render_study_model(diagram_id, diagram_spec, height=680, alt=f"3D lab model: {title_of(diagram_id)}")
                 else:
                     st.error("This model could not be loaded. Check the diagram registry and its source module.")
 

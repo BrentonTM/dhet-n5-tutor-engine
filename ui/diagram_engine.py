@@ -65,8 +65,17 @@ body{display:flex;flex-direction:column}
 .row{display:flex;flex-direction:column;min-width:190px;font-size:12px;color:#c9d1d9}
 .row input[type=range]{width:100%;accent-color:#FF7A1A}
 .row input[type=checkbox]{accent-color:#FF7A1A;width:18px;height:18px}
+.row select{background:#17243a;color:#e6edf3;border:1px solid #43516b;border-radius:6px;min-height:36px;padding:4px 8px}
 .read{display:flex;justify-content:space-between;gap:12px;font-size:12px;border-bottom:1px dashed #21262d;padding:1px 0}
 .read span{color:#8B949E}.read b{color:#22D3EE;font-family:"JetBrains Mono",Consolas,monospace;font-weight:600;text-align:right}
+.study-model #hint{background:#0b1727;border-left-color:#34e1cb}
+.study-model .read b{text-align:left}
+@media(max-width:560px){
+  .study-model #title{display:none}
+  .study-model #btns button{min-height:38px;padding:5px 8px}
+  .study-model .row{width:100%;min-width:0}
+  .study-model .read{align-items:baseline}
+}
 </style>__THREE__</head>
 <body>
 <div id="stage">
@@ -88,6 +97,7 @@ function showErr(e){var s=document.getElementById('stage');s.innerHTML='<div sty
 function start(){
 var S=SPEC,D2R=Math.PI/180,T=0,P={};
 var stage=document.getElementById('stage');
+if(S.studyView)document.body.classList.add('study-model');
 (S.params||[]).forEach(function(q){P[q.id]=q.value;});
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
@@ -104,8 +114,8 @@ function compile(src){
 function val(v,x){return (typeof v==='string')?compile(v)(P,T,x):v;}
 function V3(a){return new THREE.Vector3(a[0],a[1],a[2]||0);}
 
-var renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+var renderer=new THREE.WebGLRenderer(S.lowQuality?{antialias:false}:{antialias:true});
+renderer.setPixelRatio(S.lowQuality?1:Math.min(window.devicePixelRatio||1,2));
 renderer.setClearColor(new THREE.Color(S.bg||'#0A0D12'),1);
 stage.insertBefore(renderer.domElement,stage.firstChild);
 var dom=renderer.domElement;
@@ -238,6 +248,12 @@ function finish(en){
   if(POS[o.type]&&o.p)node.position.set(o.p[0],o.p[1],o.p[2]||0);
   if(o.rot)node.rotation.set(o.rot[0]*D2R,o.rot[1]*D2R,o.rot[2]*D2R);
   if(o.scale)node.scale.set(o.scale[0],o.scale[1],o.scale[2]);
+  if(o.outline&&!S.lowQuality&&node.isMesh){
+    var edge=new THREE.LineSegments(new THREE.EdgesGeometry(node.geometry,26),
+      new THREE.LineBasicMaterial({color:0x8fa7ba,transparent:true,opacity:0.35}));
+    edge.userData.outline=true;
+    node.add(edge);
+  }
   en._em=null;en._col=null;
 }
 function disposeNode(node){
@@ -279,12 +295,17 @@ function buildUI(){
   (S.params||[]).forEach(function(q){
     if(q.hidden)return;any=true;
     var row=document.createElement('label');row.className='row';
-    var span=document.createElement('span');var inp=document.createElement('input');
-    if(q.toggle){inp.type='checkbox';inp.checked=!!q.value;inp.oninput=function(){P[q.id]=inp.checked?1:0;changed(true);};}
+    var span=document.createElement('span');var inp=document.createElement(q.select?'select':'input');
+    if(q.select){
+      q.names.forEach(function(name,i){var option=document.createElement('option');option.value=i;option.textContent=name;inp.appendChild(option);});
+      inp.value=q.value;
+      inp.onchange=function(){P[q.id]=Number(inp.value);changed(true);};
+    }
+    else if(q.toggle){inp.type='checkbox';inp.checked=!!q.value;inp.oninput=function(){P[q.id]=inp.checked?1:0;changed(true);};}
     else{inp.type='range';inp.min=q.min;inp.max=q.max;inp.step=q.step||((q.max-q.min)/100);inp.value=q.value;inp.oninput=function(){P[q.id]=parseFloat(inp.value);changed(true);};}
     row.appendChild(span);row.appendChild(inp);ctrls.appendChild(row);uiRefs[q.id]={inp:inp,span:span};
   });
-  (S.readouts||[]).forEach(function(rd,i){any=true;var d=document.createElement('div');d.className='read';d.innerHTML='<span>'+esc(rd.label)+'</span><b id="rd'+i+'"></b>';reads.appendChild(d);});
+  (S.readouts||[]).forEach(function(rd,i){any=true;var d=document.createElement('div');d.className='read';if(S.probe)d.setAttribute('aria-live','polite');d.innerHTML='<span>'+esc(rd.label)+'</span><b id="rd'+i+'"></b>';reads.appendChild(d);});
   if(any)document.getElementById('panel').style.display='flex';
   refreshUI(false);
 }
@@ -296,17 +317,18 @@ var defHint=S.hint||'Drag to rotate · scroll to zoom · right-drag to pan · ho
 hint.innerHTML=esc(defHint);
 function showHint(en){
   if(!en||(!en.o.info&&!en.o.label)){hint.innerHTML=esc(defHint);return;}
-  hint.innerHTML='<b>'+esc(en.o.label||en.o.name||'')+'</b> '+esc(en.o.info||'')+(en.o.click?' <i style="color:#22D3EE">(click to change)</i>':'');
+  hint.innerHTML='<b>'+esc(en.o.label||en.o.name||'')+'</b> '+esc(en.o.info||'')+(en.o.click?' <i style="color:#22D3EE">'+(S.probe?'(tap to probe)':'(click to change)')+'</i>':'');
 }
 
 /* ---------- per-frame binding ---------- */
 function setEm(node,v){node.traverse(function(c){if(c.material&&c.material.emissive&&c.material.emissiveIntensity!==undefined)c.material.emissiveIntensity=v;});}
-function setCol(node,v){var col=new THREE.Color(v);node.traverse(function(c){if(c.material&&c.material.color){c.material.color.copy(col);if(c.material.emissive)c.material.emissive.copy(col);}});}
+function setCol(node,v){var col=new THREE.Color(v);node.traverse(function(c){if(c.material&&c.material.color&&!c.userData.outline){c.material.color.copy(col);if(c.material.emissive)c.material.emissive.copy(col);}});}
 function setOp(node,v){node.traverse(function(c){if(c.material&&c.material.transparent!==undefined){c.material.transparent=v<0.99;c.material.opacity=v;c.material.depthWrite=v>=0.95;}});}
 function applyBinds(){
   for(var e=0;e<entries.length;e++){
     var en=entries[e],o=en.o,node=en.node;if(!node)continue;
     var b=o.bind,em=o.emissive||0;
+    if(o.explode)node.position.set(o.p[0],o.p[1],o.p[2]||0);
     if(b){
       for(var k in b){
         var v=compile(b[k])(P,T);
@@ -321,7 +343,11 @@ function applyBinds(){
         }
       }
     }
-    var tgt=em+(en.hover?0.45:0);
+    if(o.explode){
+      var amount=P.assembly||0;
+      node.position.x+=o.explode[0]*amount;node.position.y+=o.explode[1]*amount;node.position.z+=o.explode[2]*amount;
+    }
+    var tgt=em+(en.hover?0.45:0)+(o.probeIndex===P.probePoint&&S.probe?0.42:0);
     if(en._em!==tgt){en._em=tgt;setEm(node,tgt);}
   }
 }
@@ -343,7 +369,7 @@ function updateFlows(){
 function updateLabels(){
   for(var e=0;e<entries.length;e++){
     var en=entries[e];if(!en.label)continue;
-    var o=en.o,lp=o.lp||[0,0.55,0],base=o.la?o.la:(en.node?[en.node.position.x,en.node.position.y,en.node.position.z]:[0,0,0]);
+    var o=en.o,lp=o.lp||[0,0.55,0],base=o.la&&!o.explode?o.la:(en.node?[en.node.position.x,en.node.position.y,en.node.position.z]:[0,0,0]);
     en.label.position.set(base[0]+lp[0],base[1]+lp[1],base[2]+lp[2]);
     en.label.visible=en.node?en.node.visible:true;
   }
@@ -354,7 +380,7 @@ var pointers={},downX=0,downY=0,moved=false,pinchD=0,ray=new THREE.Raycaster(),m
 function pick(e){
   var r=dom.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;
   ray.setFromCamera(mouse,camera);var hits=ray.intersectObjects(world.children,true);
-  for(var i=0;i<hits.length;i++){var n=hits[i].object;while(n&&!(n.userData&&n.userData.entry))n=n.parent;if(n&&n.userData.entry&&(n.userData.entry.o.info||n.userData.entry.o.click||n.userData.entry.o.label))return n.userData.entry;}
+  for(var i=0;i<hits.length;i++){var n=hits[i].object;while(n&&!(n.userData&&n.userData.entry))n=n.parent;if(n&&n.visible&&n.userData.entry&&(n.userData.entry.o.info||n.userData.entry.o.click||n.userData.entry.o.label))return n.userData.entry;}
   return null;
 }
 function setHover(en){
@@ -404,7 +430,9 @@ bLab.onclick=function(){labelGroup.visible=!labelGroup.visible;bLab.classList.to
 /* ---------- sizing + loop ---------- */
 function resize(){
   var w=stage.clientWidth,h=stage.clientHeight;if(w<2||h<2)return;
-  renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h,false);camera.aspect=w/h;
+  if(S.studyView)camera.zoom=Math.min(1,camera.aspect);
+  camera.updateProjectionMatrix();
 }
 if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
 window.addEventListener('resize',resize);resize();

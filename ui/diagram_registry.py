@@ -16,7 +16,7 @@ def _load():
     global _loaded
     if _loaded:
         return
-    for mod in ("diagrams_inst", "diagrams_math", "diagrams_ie", "diagrams_digi"):
+    for mod in ("diagrams_inst", "diagrams_math", "diagrams_ie", "diagrams_digi", "diagrams_study"):
         try:
             importlib.import_module("ui." + mod)
         except ModuleNotFoundError as exc:  # allows partial installs while developing
