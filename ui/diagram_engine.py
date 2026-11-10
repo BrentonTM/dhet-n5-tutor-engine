@@ -451,3 +451,5 @@ requestAnimationFrame(tick);
 })();
 </script></body></html>
 """
+
+SUPPORTS_STUDY_PROBES = True

@@ -172,6 +172,14 @@ from ui.logic_builder import render_logic_builder
 from ui.engineering_games import render_fault_finder, render_resistor_decoder
 from ui.money_class import render_money_class
 from ui.career_readiness import render_career_tools, render_employability_meter
+from ui import diagram_engine as _diagram_engine
+
+# Streamlit can keep the previous diagram template in memory after a git update.
+if not getattr(_diagram_engine, "SUPPORTS_STUDY_PROBES", False):
+    importlib.reload(_diagram_engine)
+    from ui import diagrams_ie as _diagrams_ie
+
+    importlib.reload(_diagrams_ie)
 from ui.home_showcase import LAB_SUBJECTS, model_discussion_prompt, render_home_model
 from ui.brand import render_wordmark
 from ui.flashcards import render_flashcards
