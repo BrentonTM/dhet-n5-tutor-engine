@@ -180,10 +180,14 @@ if not getattr(_diagram_engine, "SUPPORTS_STUDY_PROBES", False):
     from ui import diagrams_ie as _diagrams_ie
 
     importlib.reload(_diagrams_ie)
-from ui import flashcards as _flashcards, home_showcase as _home_showcase, industrial_electronics_n6 as n6
+from ui import diagrams_n6, industrial_electronics_n6 as n6
+
+if "h_bridge_3d" not in n6.LAB_MODELS:
+    importlib.reload(n6)
+from ui import flashcards as _flashcards, home_showcase as _home_showcase
 
 # Bring the course catalogue into an already-running Streamlit process.
-if n6.CODE not in _home_showcase.LAB_SUBJECTS:
+if "mathematics-N6" not in _home_showcase.HOME_MODELS:
     importlib.reload(_home_showcase)
 if n6.CODE not in _flashcards.DECKS:
     importlib.reload(_flashcards)
@@ -191,10 +195,12 @@ from ui.home_showcase import LAB_SUBJECTS, model_discussion_prompt, render_home_
 from ui.brand import render_wordmark
 from ui.flashcards import render_flashcards
 from ui.plant_fault_lab import render_fault_bench, render_worked_diagnosis
-from ui.study_visuals import render_study_model, render_study_visual, study_models
+from ui.study_visuals import render_study_visual, study_models
 from ui.exam_readiness import render_exam_readiness
 from ui.course_resources import render_curriculum, render_exam_resources
-from ui.n4_courses import N4_CODES, N4_LAB_TOPICS, N4_MODULES, N4_NAMES, starter_questions, syllabus_url
+from ui.lab_workspace import render_engineering_lab
+from ui.n4_courses import N4_CODES, N4_MODULES, N4_NAMES, starter_questions, syllabus_url
+from ui.n6_visuals import N6_FORMULA_CARDS, N6_LAB_MODELS, N6_VISUAL_TOPICS
 
 
 def render_local_study_pdf(filename, *, label, key):
@@ -906,6 +912,10 @@ def render_home_slideshow(subject_code, subject_name, height=262):
         },
     }
     formula_cards["MATH-N4"] = formula_cards["MATH-N5"]
+    formula_cards.update({
+        course: {"title": title, "formula": formula, "terms": terms, "note": note}
+        for course, (title, formula, terms, note) in N6_FORMULA_CARDS.items()
+    })
     for code, related in (("MATH-N4", "MATH-N5"), ("IE-N4", "IE-N5")):
         concept_cards[code] = {
             **concept_cards[related], "eyebrow": f"COURSE CONCEPT · {N4_NAMES[code].upper()}",
@@ -921,7 +931,7 @@ def render_home_slideshow(subject_code, subject_name, height=262):
         "title": "Inspect the system before solving",
         "copy": "Identify the inputs, the process and the output before choosing an equation.",
         "highlight": "Sketch the signal or energy path and label each quantity.",
-        "visual": "rectifier",
+        "visual": "study",
     })
     slides = [
         {
@@ -1539,11 +1549,9 @@ def resume_learning():
     open_learning_workspace("🤖 Tutor & lab", "📖 Lessons")
 
 
-def open_home_model_lab(subject_code, model_id):
-    profile = LAB_SUBJECTS.get(subject_code)
-    if profile:
-        st.session_state["interactive_3d_lab_subject"] = profile
-        st.session_state[f"interactive_3d_lab_diagram_{profile}"] = model_id
+def open_home_model_lab(profile, model_id):
+    st.session_state["interactive_3d_lab_subject"] = profile
+    st.session_state[f"interactive_3d_lab_diagram_{profile}"] = model_id
     open_learning_workspace("🤖 Tutor & lab", "🧊 3D lab")
 
 
@@ -1605,7 +1613,7 @@ for subject in selected_programme["subjects"]:
     resource = resource_catalog["courses"][f"{subject_id}-{selected_level}"]
     subject_code = integrated_subject_codes.get((subject_id, selected_level))
     if not subject_code:
-        state_label = "DHET syllabus & papers" if resource.get("syllabus") else "exam resources"
+        state_label = "3D lab & resources" if f"{subject_id}-{selected_level}" in N6_LAB_MODELS else "exam resources"
     elif subject_code in N4_MODULES or subject_code == n6.CODE:
         state_label = "DHET map available"
     elif subject_code == "DIGI-N5":
@@ -1638,6 +1646,16 @@ selected_subject, active_subject = subject_by_label[selected_subject_label]
 resource_key = f"{selected_subject['subject_id']}-{selected_level}"
 course_resource = resource_catalog["courses"][resource_key]
 course_title = f"{course_resource['name']} {selected_level}"
+n6_lab_profiles = {f"{resource_catalog['courses'][key]['name']} N6": models
+                   for key, models in N6_LAB_MODELS.items() if key in resource_catalog["courses"]}
+lab_profile = course_title if resource_key in N6_LAB_MODELS else LAB_SUBJECTS.get(active_subject)
+if st.session_state.get("lab_course_profile") != lab_profile:
+    st.session_state["lab_course_profile"] = lab_profile
+    if lab_profile:
+        st.session_state["interactive_3d_lab_subject"] = lab_profile
+        if st.session_state.get("learning_workspace") == "🤖 Tutor & lab":
+            # The available tabs change between courses with different study tools.
+            open_learning_workspace("🤖 Tutor & lab", st.session_state.get("tutor_section"))
 
 with st.container(horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"):
     render_wordmark()
@@ -1860,7 +1878,9 @@ if pending_workspace:
     open_learning_workspace(*pending_workspace)
 course_workspaces = ["📊 Progress", "📝 Practice", "⏱ Mock exam", "🤖 Tutor & lab", "📐 Formula hub", "📈 Analytics"]
 resources_workspace = "📚 Study materials"
-workspace_names = ["Home", *(course_workspaces if active_subject else []), resources_workspace,
+if not active_subject:
+    course_workspaces = ["🤖 Tutor & lab"] if lab_profile else []
+workspace_names = ["Home", *course_workspaces, resources_workspace,
                    GAMES_WORKSPACE, MONEY_WORKSPACE, CAREER_WORKSPACE]
 if st.session_state.get("learning_workspace", "Home") not in workspace_names:
     st.session_state["learning_workspace"] = "Home"
@@ -1868,6 +1888,8 @@ tab_home, *other_tabs = st.tabs(workspace_names, key="learning_workspace", on_ch
 tab_resources, tab_games, tab_money, tab_career = other_tabs[-4:]
 if active_subject:
     tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = other_tabs[:6]
+elif lab_profile:
+    tab_tutor = other_tabs[0]
 
 
 # Tab bodies follow, one block per tab.
@@ -1885,26 +1907,29 @@ if tab_home.open:
             ):
                 st.button(label, key=f"home_open_{workspace}", icon=icon, on_click=open_learning_workspace, args=(workspace,))
 
-if tab_home.open and active_subject:
+if tab_home.open and lab_profile:
     with tab_home:
         st.badge("SIGNAL FORGE", color="orange", icon=":material/graphic_eq:")
         st.markdown("**See it move. Work out why.** Change a setting, watch the model respond and ask Tex about what you see.")
         model_column, insight_column = st.columns([1.55, 1], gap="medium")
         with model_column.container(border=True, height="stretch", key="home_live_engineering"):
             st.subheader("Live engineering models", anchor=False, icon=":material/deployed_code:")
-            model_id = render_home_model(active_subject, height=370)
+            model_id = render_home_model(active_subject or resource_key, height=370)
             st.caption("Drag to rotate · scroll or pinch to zoom · change a slider and watch the response.")
             st.button("Open this model in the 3D lab", key="home_open_model_lab", width="stretch",
                       icon=":material/open_in_full:", on_click=open_home_model_lab,
-                      args=(active_subject, model_id))
+                      args=(lab_profile, model_id))
         with insight_column.container(border=True, height="stretch", key="home_live_tips"):
             st.subheader("Live tips & insights", anchor=False, icon=":material/lightbulb:")
             st.caption("Exam technique · formula flashes · ideas from your course")
-            render_home_slideshow(active_subject, selected_subject["subject_name"], height=350)
+            render_home_slideshow(active_subject or resource_key, course_title, height=350)
             st.caption("Turn the model into a conversation: predict, change one control, then explain what you see.")
             st.button("Explore this model with Tex", key="home_discuss_model", width="stretch", type="primary",
                       icon=":material/forum:", on_click=discuss_home_model,
-                      args=(N4_NAMES.get(active_subject, selected_subject["subject_name"]), model_id))
+                      args=(course_title, model_id))
+
+if tab_home.open and active_subject:
+    with tab_home:
         st.subheader("Your study workspace", anchor=False)
         tex_column, action_column = st.columns([1.35, 1], gap="large")
         with tex_column:
@@ -1947,8 +1972,31 @@ if tab_home.open and not active_subject:
         with st.container(border=True):
             st.subheader(course_title, anchor=False)
             st.caption("Open the course outline and exam archive, or bring a question to Tex.")
+            if lab_profile:
+                st.button("Explore visual lessons", key="home_visual_lessons", icon=":material/view_in_ar:",
+                          on_click=open_learning_workspace, args=("🤖 Tutor & lab", "📖 Lessons"))
             st.button("Open study materials", type="primary", icon=":material/library_books:", key="home_open_study_materials",
                       on_click=open_learning_workspace, args=(resources_workspace,))
+
+if not active_subject and lab_profile and tab_tutor.open:
+    with tab_tutor:
+        visual_tabs = ["📖 Lessons", "💬 Ask tutor", "🧊 3D lab"]
+        if st.session_state.get("tutor_section", visual_tabs[0]) not in visual_tabs:
+            st.session_state["tutor_section"] = visual_tabs[0]
+        visual_lessons, ask_tutor, lab = st.tabs(visual_tabs, key="tutor_section", on_change="rerun")
+        if visual_lessons.open:
+            with visual_lessons:
+                st.subheader(f"{course_title} · visual lessons", anchor=False)
+                st.caption("Each demonstration covers a selected topic. Study materials has the course references and exam papers.")
+                topics = N6_VISUAL_TOPICS[resource_key]
+                topic = st.selectbox("Visual topic", list(topics), key=f"visual_topic_{resource_key}")
+                render_study_visual(topics[topic], key=f"n6_visual_{resource_key}_{topic}")
+        if ask_tutor.open:
+            with ask_tutor:
+                render_ai_tutor_chat(widget_prefix=f"visual_tutor_{resource_key}", subject=course_title)
+        if lab.open:
+            with lab:
+                render_engineering_lab(lab_profile, n6_lab_profiles)
 
 if tab_resources.open:
     with tab_resources:
@@ -2601,57 +2649,7 @@ if active_subject and tab_tutor.open:
 
         if sub_tab6.open:
             with sub_tab6:
-                st.markdown("### 🧊 Interactive 3D engineering lab")
-                st.caption("How to operate a 3D model: drag empty space to rotate · scroll or pinch to zoom · right-drag to pan where supported · hover or click a labelled component to inspect it · adjust sliders or input switches, then use Reset.")
-
-                from ui.diagram_registry import get_spec, title_of
-
-                lab_profiles = {
-                    **{N4_NAMES[code]: list(topics) for code, topics in N4_LAB_TOPICS.items()},
-                    "Mathematics N5": ["derivative", "riemann", "revolve", "second_moment", "ode_decay", "unit_circle", "pascal"],
-                    "Industrial Electronics N4": ["dc_resistor_network", *N4_LAB_TOPICS["IE-N4"]],
-                    "Digital Electronics N4": ["logic_gate_board", "kmap4", "full_adder_3d", "ripple_counter_3d", "weighted_dac_3d", "flash_adc_3d"],
-                    "Digital Electronics N5 — visualization preview": ["weighted_dac_3d", "flash_adc_3d", "ripple_counter_3d"],
-                    "Industrial Electronics N5": ["phasor", "rc_response", "bridge_rectifier_3d", "rectifier", "bjt_structure", "load_line", "opamp_inv", "opamp_noninv", "timer555", "wheatstone", "lvdt", "scr_structure", "scr_waveform", "cro", "lc_tank", "lcd_cell"],
-                    n6.NAME: list(n6.LAB_MODELS),
-                    "Industrial Instruments N5": ["current_loop_3d", "rotameter", "venturi", "orifice", "weir", "target_flow", "manometer", "bourdon", "strain_gauge", "rtd_tc", "tank_level", "ph_probe", "pid_loop", "step_response"],
-                }
-                lab_subjects = list(lab_profiles)
-                preferred_lab_subject = LAB_SUBJECTS.get(active_subject, "Digital Electronics N5 — visualization preview")
-                lab_subject = st.selectbox(
-                    "Lab subject:",
-                    lab_subjects,
-                    index=0 if "interactive_3d_lab_subject" in st.session_state else lab_subjects.index(preferred_lab_subject),
-                    key="interactive_3d_lab_subject",
-                )
-
-                if lab_subject == "Digital Electronics N5 — visualization preview":
-                    st.warning("These models are interactive study aids. The Digital Electronics N5 curriculum map still needs authoritative syllabus verification.")
-                elif lab_subject == "Digital Electronics N4":
-                    st.caption("Explore logic gates, adders, K-maps, counters and converters.")
-
-                if lab_subject == "Industrial Electronics N5":
-                    st.markdown("#### Guided 3D engineering diagrams")
-
-                diagram_ids = lab_profiles[lab_subject]
-                diagram_id = st.selectbox(
-                    "Interactive model:",
-                    diagram_ids,
-                    format_func=title_of,
-                    key=f"interactive_3d_lab_diagram_{lab_subject}",
-                )
-                diagram_spec = get_spec(diagram_id)
-                if diagram_spec:
-                    render_study_model(diagram_id, diagram_spec, height=680, alt=f"3D lab model: {title_of(diagram_id)}")
-                else:
-                    st.error("This model could not be loaded. Check the diagram registry and its source module.")
-
-                if lab_subject == "Industrial Electronics N5":
-                    st.divider()
-                    st.markdown("#### 🧰 Build and simulate this topic")
-                    st.caption(f"Use the interactive {title_of(diagram_id)} model above, then build a matching circuit below. Add components, connect breadboard holes and Arduino pins, run the built-in Blink sketch or load a supported .ino sketch, and compare your predicted values with the DC meter.")
-                    from ui.circuit_lab import render_circuit_lab
-                    render_circuit_lab(height=1030, focus_topic=title_of(diagram_id))
+                render_engineering_lab(lab_profile, n6_lab_profiles)
 
 # TAB 5: Formula & Reference Hub
 if active_subject and tab_formulas.open:

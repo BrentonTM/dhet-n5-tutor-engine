@@ -71,7 +71,7 @@ MODULES = (
             "X-rays are electromagnetic radiation. An X-ray tube accelerates electrons into a target; slowing the electrons produces a broad spectrum and atomic transitions add characteristic lines. Radioactive decay, by contrast, originates in unstable nuclei. Compare alpha, beta and gamma emissions and how half-life changes activity over time.",
         ),
         r"d=\frac{vt}{2},\qquad \lambda_{\min}=\frac{hc}{eV},\qquad A=A_0\,2^{-t/T_{1/2}}",
-        (),
+        ("pulse_echo_3d",),
         (
             ("In a virtual steel inspection, a back-wall echo returns after 8.0 µs. Wave speed is 5,900 m/s. Estimate the plate thickness and explain the factor of two.",
              "The echo travels to the back wall and returns. d = 5,900 × 8.0 × 10⁻⁶ / 2 = 0.0236 m = 23.6 mm. (1 mark for time conversion, 2 for the thickness, 1 for explaining the round trip.)", 4),
@@ -87,7 +87,7 @@ MODULES = (
             "Non-destructive testing checks a part without making it unusable. Insulation resistance and dielectric withstand are different electrical production tests: one measures resistance, the other verifies the insulation withstands a specified test stress. Review these with drawings and simulations.",
         ),
         "",
-        (),
+        ("pulse_echo_3d",),
         (
             ("A three-way sorter accepts parts from 19.8 to 20.2 mm, inclusive. Route readings of 19.78, 20.20 and 20.24 mm. Give one feedback signal that could detect a stuck diverter.",
              "19.78 mm: undersize. 20.20 mm: accept, because the boundary is included. 20.24 mm: oversize. An end-position switch on the diverter, or a presence sensor in the commanded lane, can confirm the move. (1 mark for each routing decision and 1 for a valid confirmation signal.)", 4),
@@ -104,7 +104,7 @@ MODULES = (
             "Intrinsic safety limits available electrical and thermal energy in a hazardous atmosphere. Stored energy in field devices and cables matters alongside supply voltage and current. Use a simulated system to distinguish an energy-limiting barrier from an ordinary signal conditioner.",
         ),
         "",
-        ("logic_gate_board",),
+        ("plc_interlock_3d", "logic_gate_board"),
         (
             ("A light curtain clears after an operator leaves a machine's protected zone. What should the safety logic permit at that moment, and why should it avoid automatic motion?",
              "The cleared signal is one prerequisite for a reset. Verify other protective inputs and require the designated reset/start sequence before motion can resume. A person could remain beyond the beam or another unsafe condition could exist. (1 mark for the cleared input, 1 for other checks, 1 for no automatic restart, 1 for the reason.)", 4),
@@ -154,7 +154,7 @@ MODULES = (
             "Separate physical wiring from the ladder instruction that tests a bit. Trace normal start, stop, broken-wire and power-restoration cases. Safety functions require appropriate safety hardware and design; a standard PLC rung is useful for learning the logic.",
         ),
         "",
-        ("logic_gate_board",),
+        ("plc_interlock_3d", "logic_gate_board"),
         (
             ("A PLC starts a pump only when the tank level is low, supply pressure is healthy and the Auto selector is on. Write the logic and describe its ladder arrangement.",
              "Run = LevelLow AND PressureHealthy AND Auto. Put three tests for the healthy or desired input states in series before the run output. One false test prevents the output. (1 mark for the equation, 2 for the series rung, 1 for the false-input behaviour.)", 4),
@@ -170,7 +170,7 @@ MODULES = (
             "In closed-loop motion, the controller compares target position or speed with the measured value. Trace a stall by asking whether the command reached the driver, whether the motor responded, and whether feedback matches the actual motion.",
         ),
         "",
-        (),
+        ("h_bridge_3d",),
         (
             ("One L293D bridge is enabled. The inputs change from (1, 0) to (0, 1). What changes at the motor and what happens at the driver outputs when enable goes low?",
              "The output polarity reverses, so the commanded motor direction reverses. With enable low, the two driver outputs are high impedance. The motor's physical direction depends on which way it was wired. (2 marks for polarity and direction, 1 for high impedance, 1 for the wiring distinction.)", 4),

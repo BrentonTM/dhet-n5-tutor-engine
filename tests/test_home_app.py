@@ -144,6 +144,22 @@ class HomeAppTests(unittest.TestCase):
         self.assertTrue(any("mathematics-n6" in url and "memo" in url for url in urls))
         self.assertEqual(app.button(key="student_logout").label, "Sign out")
 
+    def test_n6_course_opens_its_home_model_in_its_own_lab(self):
+        app = self.home()
+        app.button(key="home_open_model_lab").click().run()
+        self.assertEqual(app.selectbox(key="interactive_3d_lab_subject").value, "Industrial Instruments N5")
+
+        next(box for box in app.selectbox if box.label == "N-level:").select("N6").run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.selectbox(key="interactive_3d_lab_subject").value, "Mathematics N6")
+        app.session_state["learning_workspace"] = "Home"
+        app.run()
+        app.selectbox(key="home_live_model_mathematics-N6").select("composite_centroid_3d").run()
+        app.button(key="home_open_model_lab").click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.selectbox(key="interactive_3d_lab_diagram_Mathematics N6").value, "composite_centroid_3d")
+        self.assertTrue(any("Composite section" in node.proto.alt for node in app.get("iframe")))
+
     def test_new_n4_courses_route_to_their_own_models_and_questions(self):
         app = self.home()
         next(box for box in app.selectbox if box.label == "N-level:").select("N4").run()

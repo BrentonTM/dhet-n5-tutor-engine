@@ -5,13 +5,15 @@ import streamlit as st
 from ui.diagram_engine import build_html
 from ui.diagram_registry import get_spec, title_of
 from ui.n4_courses import N4_LAB_TOPICS, N4_NAMES
+from ui.n6_visuals import N6_LAB_MODELS
 
 
 HOME_MODELS = {
     **{code: tuple(topics) for code, topics in N4_LAB_TOPICS.items()},
+    **N6_LAB_MODELS,
     "INST-N5": ("rotameter", "venturi", "bourdon", "pid_loop"),
     "IE-N5": ("bridge_rectifier_3d", "opamp_inv", "bjt_structure"),
-    "IE-N6": ("rc_response", "wheatstone", "scr_waveform", "pid_loop", "logic_gate_board"),
+    "IE-N6": ("rc_response", "wheatstone", "pulse_echo_3d", "plc_interlock_3d", "h_bridge_3d", "scr_waveform", "pid_loop", "logic_gate_board"),
     "MATH-N5": ("derivative", "riemann", "revolve"),
     "DIGI-N4": ("logic_gate_board", "full_adder_3d", "kmap4"),
     "DIGI-N5": ("weighted_dac_3d", "flash_adc_3d"),
