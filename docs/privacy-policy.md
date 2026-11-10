@@ -1,6 +1,6 @@
 # Trentox Tutor AI Privacy Policy
 
-Last updated 3 November 2026
+Last updated 10 November 2026
 
 This policy explains how Trentox Tutor AI handles information in its web app. Contact the Trentox team at [trentoxtx@gmail.com](mailto:trentoxtx@gmail.com) for privacy questions and requests.
 
@@ -20,6 +20,8 @@ Trentox uses this information for sign-in, tutoring, transcription and translati
 When account history is available, Trentox stores activity under an internal learner identifier in a server-side database. This includes dates, subjects, topics, topic-check scores, confidence ratings, missed-concept labels, whether a lab prediction matched, and records that you received practice feedback or submitted a mock exam. We use topic checks and lab reflections to identify concepts to review and suggest your next study activity. Saved history is available when you return with the same Google account. You can request its deletion using the contact below.
 
 Your chats, recordings, uploaded work and written answers are excluded from the account history. Other workspace activity stays in the active server session. You can clear the current Tex conversation from the chat and sign out to clear the active study session and remove the Trentox sign-in cookie from that browser. Other open sessions and copies you downloaded can remain. Google and Streamlit apply their own retention policies to the data they process. Clearing chat or signing out cannot recall requests already processed by those services.
+
+**Money Class and Career readiness.** When account history is available, Trentox saves module completion and completion dates for the Employability Meter. Practice budgets and CV drafts stay in your active session. If you choose Tex feedback on your CV, Trentox sends the draft and recent chat context to Google Gemini. Add private contact details to the downloaded draft on your device.
 
 ## Privacy and deletion requests
 

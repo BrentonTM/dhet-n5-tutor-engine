@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 
 HISTORY_LIMITS = {"quiz": 2000, "lab": 300, "practice": 300, "mock": 300}
+CAREER_SUBJECT = "CAREER"
 ACTIVITY_LABELS = {
     "quiz": "Topic check",
     "lab": "Lab reflection",
@@ -60,4 +61,12 @@ def sync_events(dsn, student_id, pending, *, load=False):
                     (student_id, kind, limit),
                 )
                 history[kind] = {event_id: details for event_id, details in rows}
+            # Keep module completions even after they fall outside recent practice activity.
+            career_rows = conn.execute(
+                """SELECT event_id, details FROM trentox_study_events
+                   WHERE student_id = %s AND kind = 'practice' AND details->>'subject' = %s
+                   ORDER BY attempted_at DESC, event_id DESC LIMIT 40""",
+                (student_id, CAREER_SUBJECT),
+            )
+            history["practice"].update(career_rows)
     return history

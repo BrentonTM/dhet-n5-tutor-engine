@@ -80,7 +80,12 @@ from ui.learning_progress import (
     summarize_progress,
     topic_status,
 )
-from ui.study_history import ACTIVITY_LABELS, HISTORY_LIMITS, activity_record, study_event, sync_events
+from ui import study_history as _study_history
+
+# The hosted process may still have the previous helper loaded after a code update.
+if not hasattr(_study_history, "CAREER_SUBJECT"):
+    _study_history = importlib.reload(_study_history)
+from ui.study_history import ACTIVITY_LABELS, CAREER_SUBJECT, HISTORY_LIMITS, activity_record, study_event, sync_events
 
 
 try:
@@ -164,6 +169,9 @@ from ui.gemini_client import (
 from ui.tex_partner import MODES, conversation_context, partner_instruction, recent_turns
 from ui.rubik_cube import render_rubik_cube
 from ui.logic_builder import render_logic_builder
+from ui.engineering_games import render_fault_finder, render_resistor_decoder
+from ui.money_class import render_money_class
+from ui.career_readiness import render_career_tools, render_employability_meter
 from ui.home_showcase import LAB_SUBJECTS, model_discussion_prompt, render_home_model
 from ui.brand import render_wordmark
 from ui.exam_readiness import render_exam_readiness
@@ -366,19 +374,21 @@ def clean_exam_text(text: str) -> str:
     cleaned = re.sub(r'\s+', ' ', cleaned)
     
     return cleaned.strip()
-def _ensure_tutor_chat():
+def _ensure_tutor_chat(subject=None):
+    subject = active_subject if subject is None else subject
     threads = st.session_state.setdefault("tex_conversations", {})
-    st.session_state.tutor_chat = threads.setdefault(active_subject, [])
-    if st.session_state.get("tutor_chat_subject") != active_subject:
+    st.session_state.tutor_chat = threads.setdefault(subject, [])
+    if st.session_state.get("tutor_chat_subject") != subject:
         st.session_state.pop("tex_error", None)
-    st.session_state.tutor_chat_subject = active_subject
+    st.session_state.tutor_chat_subject = subject
+    return subject
 
 
-def _submit_tutor_message(user_msg: str = "", audio=None, retry=False):
+def _submit_tutor_message(user_msg: str = "", audio=None, retry=False, *, subject=None):
     user_msg = str(user_msg or "").strip()
     if not user_msg and not audio and not retry:
         return
-    _ensure_tutor_chat()
+    subject = _ensure_tutor_chat(subject)
     if audio and len(audio) > 8 * 1024 * 1024:
         st.session_state["tex_error"] = "That recording is too large. Record a shorter message (up to 8 MB)."
         st.rerun()
@@ -395,8 +405,8 @@ def _submit_tutor_message(user_msg: str = "", audio=None, retry=False):
         if message.get("audio"):
             parts.append(genai_types.Part.from_bytes(data=message["audio"], mime_type="audio/wav"))
         contents.append(genai_types.Content(role="user" if message["role"] == "user" else "model", parts=parts))
-    instruction = partner_instruction(student_name, active_subject, st.session_state.get("tex_mode", "Hint"),
-                                      conversation_context(st.session_state, active_subject))
+    instruction = partner_instruction(student_name, subject, st.session_state.get("tex_mode", "Hint"),
+                                      conversation_context(st.session_state, subject))
     with st.spinner("Tex is reading your message..."):
         reply, err = _call_gemini(contents, system_instruction=instruction)
     if reply:
@@ -416,14 +426,19 @@ def render_ai_tutor_chat(
     compact: bool = False,
     use_form: bool = False,
     include_upload: bool = True,
+    subject: str | None = None,
 ):
-    _ensure_tutor_chat()
+    subject = _ensure_tutor_chat(subject)
+    include_upload = include_upload and subject != CAREER_SUBJECT
     pending_message = st.session_state.pop("tex_pending_message", None)
     if pending_message:
-        _submit_tutor_message(pending_message)
+        _submit_tutor_message(pending_message, subject=subject)
     if compact:
         st.subheader("Tex · your thinking partner", anchor=False)
-        st.caption(f"Ask about {active_subject}, request a hint, or upload your worked answer for feedback.")
+        if subject == CAREER_SUBJECT:
+            st.caption("Ask about a fictional money example or get help with career skills.")
+        else:
+            st.caption(f"Ask about {subject}, request a hint, or upload your worked answer for feedback.")
     else:
         st.subheader("Tex · your thinking partner", anchor=False)
         st.markdown(
@@ -448,18 +463,18 @@ def render_ai_tutor_chat(
             answer_file = st.file_uploader(
                 "Your worked answer",
                 type=["pdf", "docx", "txt", "png", "jpg", "jpeg", "webp"],
-                key=f"{widget_prefix}_answer_upload_{active_subject}",
+                key=f"{widget_prefix}_answer_upload_{subject}",
                 help="Maximum 12 MB. For a scan or handwriting, use a clear PDF or image.",
             )
             answer_context = st.text_area(
                 "Question or marking guide (optional)",
                 placeholder="Paste the question, given values, or marking guide so feedback can be more precise.",
-                key=f"{widget_prefix}_answer_context_{active_subject}",
+                key=f"{widget_prefix}_answer_context_{subject}",
                 height=90,
             )
             if st.button(
                 "Review my answer",
-                key=f"{widget_prefix}_review_answer_{active_subject}",
+                key=f"{widget_prefix}_review_answer_{subject}",
                 disabled=answer_file is None,
                 width="stretch",
             ):
@@ -474,10 +489,10 @@ def render_ai_tutor_chat(
                             answer_file.name,
                             answer_bytes,
                             answer_context,
-                            active_subject,
+                            subject,
                         )
                     st.session_state["answer_review"] = {
-                        "subject": active_subject,
+                        "subject": subject,
                         "filename": answer_file.name,
                         "feedback": feedback,
                         "error": review_error,
@@ -485,7 +500,7 @@ def render_ai_tutor_chat(
 
             saved_review = st.session_state.get("answer_review", {})
             if (
-                saved_review.get("subject") == active_subject
+                saved_review.get("subject") == subject
                 and answer_file
                 and saved_review.get("filename") == answer_file.name
             ):
@@ -508,23 +523,23 @@ def render_ai_tutor_chat(
         st.error(st.session_state["tex_error"])
         if st.session_state.tutor_chat and st.session_state.tutor_chat[-1]["role"] == "user":
             if st.button("Try that message again", key=f"{widget_prefix}_retry"):
-                _submit_tutor_message(retry=True)
+                _submit_tutor_message(retry=True, subject=subject)
     st.caption("When you send a message, its text or recording and recent chat context go to Google Gemini.")
     submission = st.chat_input("Ask Tex anything…", key=f"{widget_prefix}_chat_input",
                                max_chars=6000, accept_audio=True, max_upload_size=8, submit_mode="disable")
     if submission:
         if isinstance(submission, str):
-            _submit_tutor_message(submission)
+            _submit_tutor_message(submission, subject=subject)
         else:
             recording = submission.audio.getvalue() if submission.audio else None
-            _submit_tutor_message(submission.text, audio=recording)
+            _submit_tutor_message(submission.text, audio=recording, subject=subject)
 
     if st.session_state.tutor_chat and st.button(
         "🗑️ Clear chat",
         key=f"{widget_prefix}_chat_clear",
     ):
-        st.session_state["tex_conversations"][active_subject] = []
-        st.session_state.setdefault("tex_logic_context", {}).pop(active_subject, None)
+        st.session_state["tex_conversations"][subject] = []
+        st.session_state.setdefault("tex_logic_context", {}).pop(subject, None)
         st.session_state.pop("tex_error", None)
         st.rerun()
 
@@ -1532,6 +1547,22 @@ def build_exam_calendar_ics(timetable, learner_verified=False):
     return "\r\n".join(lines) + "\r\n"
 
 
+GAMES_WORKSPACE = "🎮 Games"
+MONEY_WORKSPACE = "💸 Money Class"
+CAREER_WORKSPACE = "🧭 Career readiness"
+
+
+def ask_tex_about_career(prompt):
+    st.session_state["tex_pending_message"] = prompt
+    st.session_state["quick_tex"] = True
+
+
+def complete_career_module(module):
+    save_study_records(
+        "practice", [activity_record(CAREER_SUBJECT, module)], attempt_id=(CAREER_SUBJECT, module)
+    )
+
+
 # Home shortcuts select the same workspaces as the main navigation.
 def open_learning_workspace(workspace: str, tutor_section: str = None):
     st.session_state["learning_workspace"] = workspace
@@ -1666,167 +1697,167 @@ if not active_subject:
     )
     if selected_subject["subject_id"] == "industrial_instruments" and selected_level == "N4":
         st.caption("DHET lists this subject as 8080194. A full N4 syllabus is needed to verify the module map.")
-    st.stop()
 
-if selected_programme["programme_id"] != "electrical_instrumentation":
+if active_subject and selected_programme["programme_id"] != "electrical_instrumentation":
     st.sidebar.caption(
         "A subject map is available by title and level. Confirm this programme's subject code and syllabus version before marking its route verified."
     )
 
-# Render Live Subject Motif in Sidebar
-with st.sidebar.expander("Subject visual", expanded=False):
-    render_subject_visual(active_subject, selected_subject["subject_name"], height=178)
+if active_subject:
+    # Render Live Subject Motif in Sidebar
+    with st.sidebar.expander("Subject visual", expanded=False):
+        render_subject_visual(active_subject, selected_subject["subject_name"], height=178)
 
-# Official NATED Categorized Formula Reference Sheets in Sidebar (Complete Exam Sheets Integration)
-with st.sidebar.expander("📐 N4 formula quick reference" if active_subject in N4_MODULES else "📐 Official NATED Formula Sheets", expanded=False):
-    st.markdown('<div style="max-height: 480px; overflow-y: auto; padding-right: 6px;">', unsafe_allow_html=True)
+    # Official NATED Categorized Formula Reference Sheets in Sidebar (Complete Exam Sheets Integration)
+    with st.sidebar.expander("📐 N4 formula quick reference" if active_subject in N4_MODULES else "📐 Official NATED Formula Sheets", expanded=False):
+        st.markdown('<div style="max-height: 480px; overflow-y: auto; padding-right: 6px;">', unsafe_allow_html=True)
     
-    if active_subject in N4_MODULES:
-        for topic, formula, _, _ in N4_MODULES[active_subject]:
-            st.markdown(f"**{topic}**")
-            st.latex(formula)
-    elif active_subject == "IE-N5":
-        st.markdown("### ⚡ Industrial Electronics N5")
+        if active_subject in N4_MODULES:
+            for topic, formula, _, _ in N4_MODULES[active_subject]:
+                st.markdown(f"**{topic}**")
+                st.latex(formula)
+        elif active_subject == "IE-N5":
+            st.markdown("### ⚡ Industrial Electronics N5")
         
-        st.markdown("**1. DC Circuits, Power & Transients**")
-        st.latex(r"I = \frac{V}{R} \quad | \quad P = IV = I^2R = \frac{V^2}{R}")
-        st.latex(r"V_T = V_1 + V_2 + \dots = I_1R_1 + I_2R_2 + \dots")
-        st.latex(r"I_T = I_1 + I_2 + \dots = \frac{V_1}{R_1} + \frac{V_2}{R_2} + \dots")
-        st.latex(r"T = RC \quad | \quad T = \frac{L}{R}")
-        st.latex(r"V_R = RC\frac{dv}{dt} \quad | \quad V_C = \frac{1}{RC}\int v_i dt")
+            st.markdown("**1. DC Circuits, Power & Transients**")
+            st.latex(r"I = \frac{V}{R} \quad | \quad P = IV = I^2R = \frac{V^2}{R}")
+            st.latex(r"V_T = V_1 + V_2 + \dots = I_1R_1 + I_2R_2 + \dots")
+            st.latex(r"I_T = I_1 + I_2 + \dots = \frac{V_1}{R_1} + \frac{V_2}{R_2} + \dots")
+            st.latex(r"T = RC \quad | \quad T = \frac{L}{R}")
+            st.latex(r"V_R = RC\frac{dv}{dt} \quad | \quad V_C = \frac{1}{RC}\int v_i dt")
 
-        st.markdown("**2. AC Theory, Impedance & Resonance**")
-        st.latex(r"X_L = 2\pi f L \quad | \quad X_C = \frac{1}{2\pi f C}")
-        st.latex(r"Z = R \pm jX_L \quad | \quad Z = R - jX_C")
-        st.latex(r"Z = R \pm j(X_L - X_C)")
-        st.latex(r"I_T = \frac{V_T}{Z_T} \quad | \quad V_R = I_T R \quad | \quad V_L = I_T(jX_L)")
-        st.latex(r"f_r = \frac{1}{2\pi \sqrt{LC}} \quad | \quad Q = \frac{V_L}{V_T} = \frac{X_L}{R}")
-        st.latex(r"BW = f_2 - f_1 \quad | \quad \frac{1}{Z_T} = \frac{1}{Z_1} + \frac{1}{Z_2}")
-        st.latex(r"Z_T = \frac{Z_1 Z_2}{Z_1 + Z_2} \quad | \quad f = \frac{1}{2\pi}\sqrt{\frac{1}{LC} - \frac{R^2}{L^2}}")
-        st.latex(r"Z_d = \frac{L}{CR_1} \quad | \quad Q = \tan\theta")
+            st.markdown("**2. AC Theory, Impedance & Resonance**")
+            st.latex(r"X_L = 2\pi f L \quad | \quad X_C = \frac{1}{2\pi f C}")
+            st.latex(r"Z = R \pm jX_L \quad | \quad Z = R - jX_C")
+            st.latex(r"Z = R \pm j(X_L - X_C)")
+            st.latex(r"I_T = \frac{V_T}{Z_T} \quad | \quad V_R = I_T R \quad | \quad V_L = I_T(jX_L)")
+            st.latex(r"f_r = \frac{1}{2\pi \sqrt{LC}} \quad | \quad Q = \frac{V_L}{V_T} = \frac{X_L}{R}")
+            st.latex(r"BW = f_2 - f_1 \quad | \quad \frac{1}{Z_T} = \frac{1}{Z_1} + \frac{1}{Z_2}")
+            st.latex(r"Z_T = \frac{Z_1 Z_2}{Z_1 + Z_2} \quad | \quad f = \frac{1}{2\pi}\sqrt{\frac{1}{LC} - \frac{R^2}{L^2}}")
+            st.latex(r"Z_d = \frac{L}{CR_1} \quad | \quad Q = \tan\theta")
 
-        st.markdown("**3. Complex Numbers & Polar Conversions**")
-        st.latex(r"a + jb = \sqrt{a^2 + b^2} \angle \tan^{-1}\frac{b}{a}")
-        st.latex(r"r \angle \theta = r(\cos\theta + j\sin\theta)")
+            st.markdown("**3. Complex Numbers & Polar Conversions**")
+            st.latex(r"a + jb = \sqrt{a^2 + b^2} \angle \tan^{-1}\frac{b}{a}")
+            st.latex(r"r \angle \theta = r(\cos\theta + j\sin\theta)")
 
-        st.markdown("**4. Rectifiers, Ripple & Power Supplies**")
-        st.latex(r"V_{rms} = \frac{1}{\sqrt{2}}V_m = 0.707 V_m")
-        st.latex(r"V_{dc} = \frac{2}{\pi}V_m = 0.637 V_m \quad | \quad V_{dc} = \frac{1}{\pi}V_m = 0.318 V_m")
-        st.latex(r"PIV = V_m \quad | \quad PIV = 2V_m")
-        st.latex(r"V_{r(rms)} = \frac{V_{r(p-p)}}{2\sqrt{3}} \quad | \quad r = \frac{V_{r(rms)}}{V_{dc}}")
-        st.latex(r"V_{dc} = V_m - \frac{V_{r(p-p)}}{2} \quad | \quad V_{dc} = V_m - \frac{I_{dc}}{2fC}")
-        st.latex(r"V'_{dc} = \frac{R_L}{R + R_L}V_{dc} \quad | \quad V'_{dc} = V_{dc} - I_{dc}R_1")
-        st.latex(r"V'_{r(rms)} = \frac{V_{r(rms)}}{(2\pi f)^2 LC} \quad | \quad \%VR = \frac{V_{NL} - V_{FL}}{V_{FL}} \times 100")
+            st.markdown("**4. Rectifiers, Ripple & Power Supplies**")
+            st.latex(r"V_{rms} = \frac{1}{\sqrt{2}}V_m = 0.707 V_m")
+            st.latex(r"V_{dc} = \frac{2}{\pi}V_m = 0.637 V_m \quad | \quad V_{dc} = \frac{1}{\pi}V_m = 0.318 V_m")
+            st.latex(r"PIV = V_m \quad | \quad PIV = 2V_m")
+            st.latex(r"V_{r(rms)} = \frac{V_{r(p-p)}}{2\sqrt{3}} \quad | \quad r = \frac{V_{r(rms)}}{V_{dc}}")
+            st.latex(r"V_{dc} = V_m - \frac{V_{r(p-p)}}{2} \quad | \quad V_{dc} = V_m - \frac{I_{dc}}{2fC}")
+            st.latex(r"V'_{dc} = \frac{R_L}{R + R_L}V_{dc} \quad | \quad V'_{dc} = V_{dc} - I_{dc}R_1")
+            st.latex(r"V'_{r(rms)} = \frac{V_{r(rms)}}{(2\pi f)^2 LC} \quad | \quad \%VR = \frac{V_{NL} - V_{FL}}{V_{FL}} \times 100")
 
-        st.markdown("**5. Transistors, Biasing & h-Parameters**")
-        st.latex(r"\beta = \frac{I_c}{I_b} \quad | \quad V_{be} = h_{ie}i_b + h_{re}V_{ce}")
-        st.latex(r"R_b = \frac{V_{cc} - V_{be}}{I_b} \quad | \quad R_c = \frac{V_{cc} - V_{ce}}{I_c}")
-        st.latex(r"R_{b1} = \frac{R_{b2}(V_{cc} - V_b)}{V_b} \quad | \quad R_{b2} = \frac{1}{10}\beta R_e")
-        st.latex(r"A_i = \frac{h_{fe}}{1 + h_{oe}Z_L} \quad | \quad A_v = \frac{-h_{fe}Z_L}{h_{ie} + (h_{ie}h_{oe} - h_{fe}h_{re})Z_L}")
-        st.latex(r"Z_1 = h_{ie} - \frac{h_{fe}h_{re}Z_L}{1 + h_{oe}Z_L} \quad | \quad Z_2 = \frac{1}{h_{oe} - \frac{h_{fe}h_{re}}{h_{ie} + R_s}}")
-        st.latex(r"A_p = \frac{A_i^2 R_L}{R_1} = -A_v A_i \quad | \quad Z_o = R_c // R_L // Z_2")
-        st.latex(r"CMRR = \frac{A_{dm}}{A_{cm}} \quad | \quad CMRR_{(dB)} = 20\log\left(\frac{A_{dm}}{A_{cm}}\right)")
+            st.markdown("**5. Transistors, Biasing & h-Parameters**")
+            st.latex(r"\beta = \frac{I_c}{I_b} \quad | \quad V_{be} = h_{ie}i_b + h_{re}V_{ce}")
+            st.latex(r"R_b = \frac{V_{cc} - V_{be}}{I_b} \quad | \quad R_c = \frac{V_{cc} - V_{ce}}{I_c}")
+            st.latex(r"R_{b1} = \frac{R_{b2}(V_{cc} - V_b)}{V_b} \quad | \quad R_{b2} = \frac{1}{10}\beta R_e")
+            st.latex(r"A_i = \frac{h_{fe}}{1 + h_{oe}Z_L} \quad | \quad A_v = \frac{-h_{fe}Z_L}{h_{ie} + (h_{ie}h_{oe} - h_{fe}h_{re})Z_L}")
+            st.latex(r"Z_1 = h_{ie} - \frac{h_{fe}h_{re}Z_L}{1 + h_{oe}Z_L} \quad | \quad Z_2 = \frac{1}{h_{oe} - \frac{h_{fe}h_{re}}{h_{ie} + R_s}}")
+            st.latex(r"A_p = \frac{A_i^2 R_L}{R_1} = -A_v A_i \quad | \quad Z_o = R_c // R_L // Z_2")
+            st.latex(r"CMRR = \frac{A_{dm}}{A_{cm}} \quad | \quad CMRR_{(dB)} = 20\log\left(\frac{A_{dm}}{A_{cm}}\right)")
 
-        st.markdown("**6. Operational Amplifiers (Op-Amps)**")
-        st.latex(r"V_o = -\left(\frac{R_f}{R_1}\right)V_i \text{ (Inverting)}")
-        st.latex(r"V_o = -\left(\frac{R_f}{R_1}V_1 + \frac{R_f}{R_2}V_2 + \frac{R_f}{R_3}V_3\right)")
-        st.latex(r"V_o = \left(\frac{R_f}{R_1} + 1\right)V_i \text{ (Non-Inverting)}")
-        st.latex(r"V_o(t) = -\frac{1}{RC}\int V_i(t)dt \text{ (Integrator)}")
-        st.latex(r"V_o(t) = -RC\frac{dV_i(t)}{dt} \text{ (Differentiator)}")
+            st.markdown("**6. Operational Amplifiers (Op-Amps)**")
+            st.latex(r"V_o = -\left(\frac{R_f}{R_1}\right)V_i \text{ (Inverting)}")
+            st.latex(r"V_o = -\left(\frac{R_f}{R_1}V_1 + \frac{R_f}{R_2}V_2 + \frac{R_f}{R_3}V_3\right)")
+            st.latex(r"V_o = \left(\frac{R_f}{R_1} + 1\right)V_i \text{ (Non-Inverting)}")
+            st.latex(r"V_o(t) = -\frac{1}{RC}\int V_i(t)dt \text{ (Integrator)}")
+            st.latex(r"V_o(t) = -RC\frac{dV_i(t)}{dt} \text{ (Differentiator)}")
 
-        st.markdown("**7. 555 Timers & Transducers**")
-        st.latex(r"f_o = \frac{1.443}{(R_A + 2R_B)C} \text{ (Astable)}")
-        st.latex(r"t_{low} = 0.693 R_B C \quad | \quad t_{high} = 0.693(R_A + R_B)C")
-        st.latex(r"K = \frac{\Delta R / R}{\Delta L / L} \quad | \quad R = \rho \frac{l}{\pi d^2 / 4}")
-        st.latex(r"R_t = A e^{B/T} \quad | \quad V_{Hall} = k I H")
+            st.markdown("**7. 555 Timers & Transducers**")
+            st.latex(r"f_o = \frac{1.443}{(R_A + 2R_B)C} \text{ (Astable)}")
+            st.latex(r"t_{low} = 0.693 R_B C \quad | \quad t_{high} = 0.693(R_A + R_B)C")
+            st.latex(r"K = \frac{\Delta R / R}{\Delta L / L} \quad | \quad R = \rho \frac{l}{\pi d^2 / 4}")
+            st.latex(r"R_t = A e^{B/T} \quad | \quad V_{Hall} = k I H")
 
-    elif active_subject == "INST-N5":
-        st.markdown("### 🎛 Instrumentation N5")
+        elif active_subject == "INST-N5":
+            st.markdown("### 🎛 Instrumentation N5")
         
-        st.markdown("**1. Flow Measurement (Weirs, Orifice & Venturi)**")
-        st.latex(r"Q = \frac{8}{15}\tan\left(\frac{\theta}{2}\right)\sqrt{2g}H^{5/2} \text{ (V-Notch)}")
-        st.latex(r"Q = \frac{2}{3}BC\sqrt{2g}H^{3/2} \text{ (Rectangular Weir)}")
-        st.latex(r"Q = C_d A_2 \sqrt{\frac{2\Delta P}{\rho(1 - \beta^4)}}")
-        st.latex(r"\Delta P = P_1 - P_2 = \frac{1}{2}\rho(V_2^2 - V_1^2)")
+            st.markdown("**1. Flow Measurement (Weirs, Orifice & Venturi)**")
+            st.latex(r"Q = \frac{8}{15}\tan\left(\frac{\theta}{2}\right)\sqrt{2g}H^{5/2} \text{ (V-Notch)}")
+            st.latex(r"Q = \frac{2}{3}BC\sqrt{2g}H^{3/2} \text{ (Rectangular Weir)}")
+            st.latex(r"Q = C_d A_2 \sqrt{\frac{2\Delta P}{\rho(1 - \beta^4)}}")
+            st.latex(r"\Delta P = P_1 - P_2 = \frac{1}{2}\rho(V_2^2 - V_1^2)")
 
-        st.markdown("**2. Pressure, Level & Chemical Sensors**")
-        st.latex(r"P = \rho \cdot g \cdot h \quad | \quad P_{gauge} = P_{abs} - P_{atm}")
-        st.latex(r"\text{pH} = -\log[\text{H}^+] \quad | \quad \text{pOH} = -\log[\text{OH}^-] ")
+            st.markdown("**2. Pressure, Level & Chemical Sensors**")
+            st.latex(r"P = \rho \cdot g \cdot h \quad | \quad P_{gauge} = P_{abs} - P_{atm}")
+            st.latex(r"\text{pH} = -\log[\text{H}^+] \quad | \quad \text{pOH} = -\log[\text{OH}^-] ")
 
-        st.markdown("**3. Temperature Sensors (RTDs & Thermocouples)**")
-        st.latex(r"R_t = R_0(1 + \alpha \Delta T + \beta \Delta T^2)")
-        st.latex(r"E = a \Delta T + b (\Delta T)^2")
+            st.markdown("**3. Temperature Sensors (RTDs & Thermocouples)**")
+            st.latex(r"R_t = R_0(1 + \alpha \Delta T + \beta \Delta T^2)")
+            st.latex(r"E = a \Delta T + b (\Delta T)^2")
 
-        st.markdown("**4. Control Systems & PID**")
-        st.latex(r"e(t) = SP - PV")
-        st.latex(r"MV(t) = K_p e(t) + K_i \int e(t)dt + K_d \frac{de(t)}{dt}")
+            st.markdown("**4. Control Systems & PID**")
+            st.latex(r"e(t) = SP - PV")
+            st.latex(r"MV(t) = K_p e(t) + K_i \int e(t)dt + K_d \frac{de(t)}{dt}")
 
-    elif active_subject == "MATH-N5":
-        st.markdown("### 📐 Mathematics N5")
+        elif active_subject == "MATH-N5":
+            st.markdown("### 📐 Mathematics N5")
         
-        st.markdown("**1. Trigonometric Identities**")
-        st.latex(r"\sin^2 x + \cos^2 x = 1 \quad | \quad 1 + \tan^2 x = \sec^2 x")
-        st.latex(r"\sin 2A = 2\sin A \cos A \quad | \quad \cos 2A = \cos^2 A - \sin^2 A")
-        st.latex(r"\tan 2A = \frac{2\tan A}{1 - \tan^2 A}")
-        st.latex(r"\sin(A \pm B) = \sin A \cos B \pm \sin B \cos A")
-        st.latex(r"\cos(A \pm B) = \cos A \cos B \mp \sin A \sin B")
+            st.markdown("**1. Trigonometric Identities**")
+            st.latex(r"\sin^2 x + \cos^2 x = 1 \quad | \quad 1 + \tan^2 x = \sec^2 x")
+            st.latex(r"\sin 2A = 2\sin A \cos A \quad | \quad \cos 2A = \cos^2 A - \sin^2 A")
+            st.latex(r"\tan 2A = \frac{2\tan A}{1 - \tan^2 A}")
+            st.latex(r"\sin(A \pm B) = \sin A \cos B \pm \sin B \cos A")
+            st.latex(r"\cos(A \pm B) = \cos A \cos B \mp \sin A \sin B")
 
-        st.markdown("**2. Calculus Rules (Product, Quotient, Chain)**")
-        st.latex(r"y = uv \implies \frac{dy}{dx} = u\frac{dv}{dx} + v\frac{du}{dx}")
-        st.latex(r"y = \frac{u}{v} \implies \frac{dy}{dx} = \frac{v\frac{du}{dx} - u\frac{dv}{dx}}{v^2}")
-        st.latex(r"\frac{dy}{dx} = \frac{dy}{du} \cdot \frac{du}{dx}")
+            st.markdown("**2. Calculus Rules (Product, Quotient, Chain)**")
+            st.latex(r"y = uv \implies \frac{dy}{dx} = u\frac{dv}{dx} + v\frac{du}{dx}")
+            st.latex(r"y = \frac{u}{v} \implies \frac{dy}{dx} = \frac{v\frac{du}{dx} - u\frac{dv}{dx}}{v^2}")
+            st.latex(r"\frac{dy}{dx} = \frac{dy}{du} \cdot \frac{du}{dx}")
 
-        st.markdown("**3. Standard Derivatives & Integrals Table**")
-        st.markdown("*Power Functions:*")
-        st.latex(r"\frac{d}{dx}[ax^n] = nax^{n-1} \quad | \quad \int ax^n dx = \frac{ax^{n+1}}{n+1} + c")
-        st.markdown("*Exponential & Logarithmic:*")
-        st.latex(r"\frac{d}{dx}[e^x] = e^x \quad | \quad \int e^x dx = e^x + c")
-        st.latex(r"\frac{d}{dx}[\ln x] = \frac{1}{x} \quad | \quad \int \frac{1}{x} dx = \ln|x| + c")
-        st.markdown("*Trigonometric Derivatives & Integrals:*")
-        st.latex(r"\frac{d}{dx}[\sin x] = \cos x \quad | \quad \int \sin x dx = -\cos x + c")
-        st.latex(r"\frac{d}{dx}[\cos x] = -\sin x \quad | \quad \int \cos x dx = \sin x + c")
-        st.latex(r"\frac{d}{dx}[\tan x] = \sec^2 x \quad | \quad \int \tan x dx = \ln|\sec x| + c")
-        st.markdown("*Inverse Trigonometric:*")
-        st.latex(r"\frac{d}{dx}[\sin^{-1}x] = \frac{1}{\sqrt{1-x^2}} \quad | \quad \int \frac{1}{\sqrt{a^2-x^2}}dx = \sin^{-1}\left(\frac{x}{a}\right)+c")
-        st.latex(r"\frac{d}{dx}[\tan^{-1}x] = \frac{1}{1+x^2} \quad | \quad \int \frac{1}{a^2+x^2}dx = \frac{1}{a}\tan^{-1}\left(\frac{x}{a}\right)+c")
-        st.latex(r"\int \frac{1}{\sqrt{x^2 \pm a^2}}dx = \ln|x + \sqrt{x^2 \pm a^2}| + c")
+            st.markdown("**3. Standard Derivatives & Integrals Table**")
+            st.markdown("*Power Functions:*")
+            st.latex(r"\frac{d}{dx}[ax^n] = nax^{n-1} \quad | \quad \int ax^n dx = \frac{ax^{n+1}}{n+1} + c")
+            st.markdown("*Exponential & Logarithmic:*")
+            st.latex(r"\frac{d}{dx}[e^x] = e^x \quad | \quad \int e^x dx = e^x + c")
+            st.latex(r"\frac{d}{dx}[\ln x] = \frac{1}{x} \quad | \quad \int \frac{1}{x} dx = \ln|x| + c")
+            st.markdown("*Trigonometric Derivatives & Integrals:*")
+            st.latex(r"\frac{d}{dx}[\sin x] = \cos x \quad | \quad \int \sin x dx = -\cos x + c")
+            st.latex(r"\frac{d}{dx}[\cos x] = -\sin x \quad | \quad \int \cos x dx = \sin x + c")
+            st.latex(r"\frac{d}{dx}[\tan x] = \sec^2 x \quad | \quad \int \tan x dx = \ln|\sec x| + c")
+            st.markdown("*Inverse Trigonometric:*")
+            st.latex(r"\frac{d}{dx}[\sin^{-1}x] = \frac{1}{\sqrt{1-x^2}} \quad | \quad \int \frac{1}{\sqrt{a^2-x^2}}dx = \sin^{-1}\left(\frac{x}{a}\right)+c")
+            st.latex(r"\frac{d}{dx}[\tan^{-1}x] = \frac{1}{1+x^2} \quad | \quad \int \frac{1}{a^2+x^2}dx = \frac{1}{a}\tan^{-1}\left(\frac{x}{a}\right)+c")
+            st.latex(r"\int \frac{1}{\sqrt{x^2 \pm a^2}}dx = \ln|x + \sqrt{x^2 \pm a^2}| + c")
 
-        st.markdown("**4. Integration Techniques & Applications**")
-        st.latex(r"\int u \, dv = uv - \int v \, du \text{ (Parts)}")
-        st.latex(r"A_x = \int_{a}^{b} y \, dx \quad | \quad V_x = \pi \int_{a}^{b} y^2 \, dx")
-        st.latex(r"I_x = \int_{a}^{b} r^2 \, dA \quad | \quad M = m \cdot r^2")
+            st.markdown("**4. Integration Techniques & Applications**")
+            st.latex(r"\int u \, dv = uv - \int v \, du \text{ (Parts)}")
+            st.latex(r"A_x = \int_{a}^{b} y \, dx \quad | \quad V_x = \pi \int_{a}^{b} y^2 \, dx")
+            st.latex(r"I_x = \int_{a}^{b} r^2 \, dA \quad | \quad M = m \cdot r^2")
 
-    elif active_subject == "DIGI-N4":
-        st.markdown("### 🔢 Digital Electronics N4")
+        elif active_subject == "DIGI-N4":
+            st.markdown("### 🔢 Digital Electronics N4")
         
-        st.markdown("**1. Number Systems & Codes**")
-        st.latex(r"N_{base10} = \sum_{i} d_i \cdot b^i")
-        st.latex(r"N_{states} = 2^n")
+            st.markdown("**1. Number Systems & Codes**")
+            st.latex(r"N_{base10} = \sum_{i} d_i \cdot b^i")
+            st.latex(r"N_{states} = 2^n")
 
-        st.markdown("**2. Boolean Algebra & De Morgan's Laws**")
-        st.latex(r"\overline{A \cdot B} = \overline{A} + \overline{B}")
-        st.latex(r"\overline{A + B} = \overline{A} \cdot \overline{B}")
+            st.markdown("**2. Boolean Algebra & De Morgan's Laws**")
+            st.latex(r"\overline{A \cdot B} = \overline{A} + \overline{B}")
+            st.latex(r"\overline{A + B} = \overline{A} \cdot \overline{B}")
 
-        st.markdown("**3. Sequential Logic & Flip-Flops**")
-        st.latex(r"Q_{next} = J\overline{Q} + \overline{K}Q \text{ (JK FF)}")
-        st.latex(r"f_{max} = \frac{1}{n \cdot t_{pd}}")
+            st.markdown("**3. Sequential Logic & Flip-Flops**")
+            st.latex(r"Q_{next} = J\overline{Q} + \overline{K}Q \text{ (JK FF)}")
+            st.latex(r"f_{max} = \frac{1}{n \cdot t_{pd}}")
 
-    elif active_subject == "DIGI-N5":
-        st.markdown("### 💻 Digital Electronics N5")
+        elif active_subject == "DIGI-N5":
+            st.markdown("### 💻 Digital Electronics N5")
         
-        st.markdown("**1. Counters & State Machines**")
-        st.latex(r"\text{Modulus } M \le 2^n")
-        st.latex(r"f_{out} = \frac{f_{clk}}{M}")
+            st.markdown("**1. Counters & State Machines**")
+            st.latex(r"\text{Modulus } M \le 2^n")
+            st.latex(r"f_{out} = \frac{f_{clk}}{M}")
 
-        st.markdown("**2. Data Converters (ADC & DAC)**")
-        st.latex(r"V_{out} = -V_{ref} \sum_{i=1}^{n} \frac{d_i}{2^i}")
-        st.latex(r"\text{Resolution} = \frac{V_{FS}}{2^n - 1}")
+            st.markdown("**2. Data Converters (ADC & DAC)**")
+            st.latex(r"V_{out} = -V_{ref} \sum_{i=1}^{n} \frac{d_i}{2^i}")
+            st.latex(r"\text{Resolution} = \frac{V_{FS}}{2^n - 1}")
 
-        st.markdown("**3. Memory & Signal Conditioning**")
-        st.latex(r"A_d = 20 \log_{10}\left(\frac{V_o}{V_i}\right)")
-        st.latex(r"t_{conversion} = n \cdot T_{clk}")
+            st.markdown("**3. Memory & Signal Conditioning**")
+            st.latex(r"A_d = 20 \log_{10}\left(\frac{V_o}{V_i}\right)")
+            st.latex(r"t_{conversion} = n \cdot T_{clk}")
 
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
 st.html("""
@@ -1872,15 +1903,14 @@ tex_launcher = st.container(key="floating_tex_launcher", width="content")
 pending_workspace = st.session_state.pop("pending_workspace", None)
 if pending_workspace:
     open_learning_workspace(*pending_workspace)
-tab_home, tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = st.tabs([
-    "Home",
-    "📊 Progress",
-    "📝 Practice",
-    "⏱ Mock exam",
-    "🤖 Tutor & lab",
-    "📐 Formula hub",
-    "📈 Analytics"
-], key="learning_workspace", on_change="rerun")
+course_workspaces = ["📊 Progress", "📝 Practice", "⏱ Mock exam", "🤖 Tutor & lab", "📐 Formula hub", "📈 Analytics"]
+workspace_names = ["Home", *(course_workspaces if active_subject else []), GAMES_WORKSPACE, MONEY_WORKSPACE, CAREER_WORKSPACE]
+if st.session_state.get("learning_workspace", "Home") not in workspace_names:
+    st.session_state["learning_workspace"] = "Home"
+tab_home, *other_tabs = st.tabs(workspace_names, key="learning_workspace", on_change="rerun")
+tab_games, tab_money, tab_career = other_tabs[-3:]
+if active_subject:
+    tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = other_tabs[:6]
 
 
 # Tab bodies follow, one block per tab.
@@ -1890,6 +1920,16 @@ if tab_home.open:
         hour = datetime.now(timezone(timedelta(hours=2))).hour
         greeting = "Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening"
         st.title(f"{greeting}, {student_name}", anchor=False)
+        with st.container(horizontal=True):
+            for label, workspace, icon in (
+                ("Games", GAMES_WORKSPACE, ":material/sports_esports:"),
+                ("Money Class", MONEY_WORKSPACE, ":material/payments:"),
+                ("Career readiness", CAREER_WORKSPACE, ":material/work:"),
+            ):
+                st.button(label, key=f"home_open_{workspace}", icon=icon, on_click=open_learning_workspace, args=(workspace,))
+
+if tab_home.open and active_subject:
+    with tab_home:
         st.markdown("**See it move. Work out why.** Explore a live model, pick up a quick insight, then build your understanding with Tex.")
         model_column, insight_column = st.columns([1.25, 1], gap="medium")
         with model_column.container(border=True, height="stretch", key="home_live_engineering"):
@@ -1941,32 +1981,23 @@ if tab_home.open:
                           on_click=open_learning_workspace, args=("📊 Progress",))
                 st.button("Study calendar", icon=":material/calendar_month:", key="home_calendar",
                           on_click=open_exam_calendar_workspace)
-        st.subheader("Build, explore, take a brain break", anchor=False)
-        cube_tab, logic_tab = st.tabs(["Rubik cube", "Logic builder"], key="home_explore", on_change="rerun")
-        with cube_tab:
-            if cube_tab.open:
-                render_rubik_cube(key="home_cube")
-        with logic_tab:
-            if logic_tab.open:
-                render_logic_builder(student_name, on_ask_tex=discuss_logic_with_tex)
 
 
-
-if tab_practice.open:
+if active_subject and tab_practice.open:
     with tab_practice:
         st.subheader("📝 Practical & Socratic Sandbox")
         st.markdown("Practice past exam questions structured for clear problem-solving.")
     
         st.caption("Fetch a past-paper question below, or switch to Fault Diagnosis mode.")
 
-if tab_exam.open:
+if active_subject and tab_exam.open:
     with tab_exam:
         st.subheader("⚡ Stress-Conditioned Exam Simulator")
         st.markdown("Simulate timed exam conditions with structured problem cards.")
     
         st.caption("Configure the mock exam on the left, then press Start.")
 # TAB 1: Learner Progress Dashboard
-if tab_mastery.open:
+if active_subject and tab_mastery.open:
     with tab_mastery:
         st.subheader(f"Your learning progress: {active_subject}")
         st.caption(
@@ -2017,7 +2048,7 @@ if tab_mastery.open:
         )
 
 # TAB 2: Practical & Socratic Sandbox
-if tab_practice.open:
+if active_subject and tab_practice.open:
     with tab_practice:
         if "current_question" not in st.session_state:
             st.session_state.current_question = None
@@ -2111,7 +2142,7 @@ if tab_practice.open:
         render_paper_library()
 
 # TAB 3: Stress-Conditioned Exam Simulator
-if tab_exam.open:
+if active_subject and tab_exam.open:
     with tab_exam:
         st.subheader(f"🎯 Timed Mock Exam Simulator & Confidence Calibration ({active_subject})")
         starter_count = len(starter_questions(active_subject))
@@ -2216,7 +2247,7 @@ if tab_exam.open:
                                 st.write(item["marking"])
 
 # TAB 4: AI Tutor Notes, Simulators & Spaced-Repetition Flashcards
-if tab_tutor.open:
+if active_subject and tab_tutor.open:
     with tab_tutor:
         sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5, sub_tab6 = st.tabs([
             "📖 Lessons",
@@ -2618,7 +2649,7 @@ if tab_tutor.open:
                     render_circuit_lab(height=1030, focus_topic=title_of(diagram_id))
 
 # TAB 5: Formula & Reference Hub
-if tab_formulas.open:
+if active_subject and tab_formulas.open:
     with tab_formulas:
         st.subheader(f"📐 Comprehensive Formula & Reference Hub: {active_subject}")
         if active_subject in N4_MODULES:
@@ -2654,7 +2685,7 @@ if tab_formulas.open:
             st.markdown("**Core Principles:** Boolean algebraic laws, Karnaugh map minimization, asynchronous ripple counters, and synchronous state machines.")
 
 # TAB 6: Measured Learning Analytics and Portable Progress
-if tab_analytics.open:
+if active_subject and tab_analytics.open:
     with tab_analytics:
         st.subheader(f"Learning insights: {active_subject}")
         show_study_history_status()
@@ -2814,10 +2845,53 @@ if tab_analytics.open:
         )
 
 
+
+if tab_games.open:
+    with tab_games:
+        st.header("Games", anchor=False)
+        st.caption("Build, troubleshoot or take a brain break.")
+        cube, logic, resistor, fault = st.tabs(
+            ["Rubik cube", "Logic Builder", "Resistor Decoder", "Fault Finder"],
+            key="games_workspace", on_change="rerun",
+        )
+        if cube.open:
+            with cube:
+                render_rubik_cube(key="home_cube")
+        if logic.open:
+            with logic:
+                render_logic_builder(student_name, on_ask_tex=discuss_logic_with_tex if active_subject else None)
+        if resistor.open:
+            with resistor:
+                render_resistor_decoder()
+        if fault.open:
+            with fault:
+                render_fault_finder()
+
+
+if tab_money.open:
+    with tab_money:
+        render_money_class(complete_career_module, ask_tex_about_career)
+
+
+if tab_career.open:
+    with tab_career:
+        meter = render_career_tools(complete_career_module, ask_tex_about_career)
+        with meter:
+            completed = {
+                row["topic"] for row in study_records.get("practice", {}).values() if row["subject"] == CAREER_SUBJECT
+            }
+            render_employability_meter(completed, st.session_state.get("topic_quiz_history", []))
+            show_study_history_status()
+
+
 with tex_launcher:
     quick_tex = st.popover(
         "Ask Tex", icon=":material/chat:", type="primary", key="quick_tex", on_change="rerun"
     )
     if quick_tex.open:
+        workspace = st.session_state.get("learning_workspace")
+        career_chat = workspace in (MONEY_WORKSPACE, CAREER_WORKSPACE) or not active_subject
         with quick_tex, st.container(key="quick_tex_chat"):
-            render_ai_tutor_chat(widget_prefix="quick_tex", compact=True)
+            render_ai_tutor_chat(
+                widget_prefix="quick_tex", compact=True, subject=CAREER_SUBJECT if career_chat else active_subject,
+            )

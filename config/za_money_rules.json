@@ -1,0 +1,14 @@
+{
+  "reviewed_on": "2026-11-10",
+  "payroll": {
+    "uif_employee_percent": 1,
+    "sdl_employer_percent": 1,
+    "source": "https://www.sars.gov.za/tax-rates/other-taxes/"
+  },
+  "tax_free_investments": {
+    "effective_from": "2026-03-01",
+    "annual_limit_zar": 46000,
+    "lifetime_limit_zar": 500000,
+    "source": "https://www.sars.gov.za/types-of-tax/personal-income-tax/tax-free-investments/"
+  }
+}
