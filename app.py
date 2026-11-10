@@ -180,13 +180,60 @@ if not getattr(_diagram_engine, "SUPPORTS_STUDY_PROBES", False):
     from ui import diagrams_ie as _diagrams_ie
 
     importlib.reload(_diagrams_ie)
+from ui import flashcards as _flashcards, home_showcase as _home_showcase, industrial_electronics_n6 as n6
+
+# Bring the course catalogue into an already-running Streamlit process.
+if n6.CODE not in _home_showcase.LAB_SUBJECTS:
+    importlib.reload(_home_showcase)
+if n6.CODE not in _flashcards.DECKS:
+    importlib.reload(_flashcards)
 from ui.home_showcase import LAB_SUBJECTS, model_discussion_prompt, render_home_model
 from ui.brand import render_wordmark
 from ui.flashcards import render_flashcards
 from ui.plant_fault_lab import render_fault_bench, render_worked_diagnosis
 from ui.study_visuals import render_study_model, render_study_visual, study_models
 from ui.exam_readiness import render_exam_readiness
+from ui.course_resources import render_curriculum, render_exam_resources
 from ui.n4_courses import N4_CODES, N4_LAB_TOPICS, N4_MODULES, N4_NAMES, starter_questions, syllabus_url
+
+
+def render_local_study_pdf(filename, *, label, key):
+    source = n6.local_reference(filename, st.get_option("server.address"))
+    if source is None:
+        return
+    with st.expander(label, key=key, on_change="rerun") as reference:
+        if reference.open:
+            try:
+                st.pdf(source, height=650, key=f"{key}_pdf", alt=label)
+            except OSError:
+                st.info("This local PDF is unavailable. Check the Desktop attachments folder.")
+
+
+def render_n6_reference():
+    for module in n6.MODULES:
+        st.markdown(f"**{module.title}** · {module.weight}% syllabus weighting")
+        if module.formula:
+            st.latex(module.formula)
+        else:
+            st.caption(module.notes[0])
+
+
+def render_n6_notes(topic):
+    module = n6.BY_TOPIC[topic]
+    number = n6.MODULES.index(module) + 1
+    with st.container(border=True):
+        st.markdown(f"#### Module {number} · {module.title}")
+        st.caption(f"Trentox study notes · {module.weight}% syllabus weighting")
+        for note in module.notes:
+            st.markdown(f"- {note}")
+        if module.formula:
+            st.latex(module.formula)
+    for index, question in enumerate(n6.questions_for(module, number), 1):
+        with st.expander(f"Try worked question {index}"):
+            st.write(question["text"])
+            if st.checkbox("Reveal worked answer", key=f"n6_reveal_{question['id']}"):
+                st.write(question["marking"])
+    render_local_study_pdf(module.filename, label="Read the original module PDF (local copy)", key=f"n6_source_{number}")
 
 @st.cache_data(show_spinner=False, max_entries=128)
 def cached_question_pdf(question_id, source_file, source_pages):
@@ -217,6 +264,8 @@ def render_selected_question(question, widget_prefix, *, show_model=False):
 
 def load_selected_questions(limit):
     try:
+        if active_subject == n6.CODE:
+            return n6.question_set(limit)
         return select_questions(BASE_DIR, active_subject, limit)
     except (OSError, ValueError, sqlite3.Error) as exc:
         logger.warning("Question library could not be loaded: %s", type(exc).__name__)
@@ -806,6 +855,12 @@ def render_home_slideshow(subject_code, subject_name, height=262):
             "terms": [("Rᶠ", "feedback"), ("R₁", "input"), ("−", "inverting")],
             "note": "The minus sign shows a 180° phase reversal.",
         },
+        n6.CODE: {
+            "title": "RC and RL time constants",
+            "formula": "τ = RC  ·  τ = L/R",
+            "terms": [("R", "resistance seen by the component"), ("C", "capacitance"), ("L", "inductance")],
+            "note": "After one time constant, a first-order response has covered about 63% of the change to its final value.",
+        },
         "INST-N5": {
             "title": "Differential-pressure flow relation",
             "formula": "Q = CᵈA₂ √[2ΔP / ρ(1−β⁴)]",
@@ -833,6 +888,13 @@ def render_home_slideshow(subject_code, subject_name, height=262):
             "title": "Follow the rectifier current path",
             "copy": "Trace which diode pair conducts in each half-cycle before calculating the output.",
             "highlight": "A larger filter capacitor reduces ripple for the same load and frequency.",
+            "visual": "rectifier",
+        },
+        n6.CODE: {
+            "eyebrow": "COURSE CONCEPT · INDUSTRIAL ELECTRONICS N6",
+            "title": "What keeps an SCR conducting?",
+            "copy": "The gate triggers the device. Once it latches, the load current keeps it on.",
+            "highlight": "Use the phase-control model to see how the firing angle changes the output.",
             "visual": "rectifier",
         },
         "INST-N5": {
@@ -1293,6 +1355,7 @@ def render_topic_quiz(quiz, subject_code, topic_name):
 
 SUBJECT_MODULES = {
     **{code: [row[0] for row in rows] for code, rows in N4_MODULES.items()},
+    n6.CODE: list(n6.BY_TOPIC),
     "INST-N5": [
         "General Instrumentation Concepts and Terminology",
         "Flow Measurement",
@@ -1503,6 +1566,8 @@ catalog_path = os.path.join(BASE_DIR, "config", "programme_catalog.json")
 try:
     with open(catalog_path, "r", encoding="utf-8") as catalog_file:
         programme_catalog = json.load(catalog_file)
+    with (Path(BASE_DIR) / "config" / "course_resources.json").open(encoding="utf-8") as resource_file:
+        resource_catalog = json.load(resource_file)
 except (OSError, json.JSONDecodeError) as exc:
     st.error(f"The programme catalogue could not be loaded: {exc}")
     st.stop()
@@ -1512,11 +1577,11 @@ integrated_subject_codes = {
     ("industrial_electronics", "N4"): "IE-N4",
     ("mathematics", "N5"): "MATH-N5",
     ("industrial_electronics", "N5"): "IE-N5",
+    ("industrial_electronics", "N6"): n6.CODE,
     ("digital_electronics", "N4"): "DIGI-N4",
     ("digital_electronics", "N5"): "DIGI-N5",
     ("industrial_instruments", "N5"): "INST-N5",
 }
-provisional_subject_codes = {"DIGI-N5"}
 programme_by_name = {
     item["programme_name"]: item for item in programme_catalog["programmes"]
 }
@@ -1534,18 +1599,20 @@ selected_level = st.sidebar.selectbox(
 subject_choices = []
 subject_by_label = {}
 for subject in selected_programme["subjects"]:
-    subject_code = integrated_subject_codes.get((subject["subject_id"], selected_level))
+    if selected_level not in subject["levels"]:
+        continue
+    subject_id = subject["subject_id"]
+    resource = resource_catalog["courses"][f"{subject_id}-{selected_level}"]
+    subject_code = integrated_subject_codes.get((subject_id, selected_level))
     if not subject_code:
-        state_label = "planned"
-    elif subject_code in N4_MODULES:
+        state_label = "DHET syllabus & papers" if resource.get("syllabus") else "exam resources"
+    elif subject_code in N4_MODULES or subject_code == n6.CODE:
         state_label = "DHET map available"
     elif subject_code == "DIGI-N5":
         state_label = "school textbook map"
-    elif subject_code in provisional_subject_codes:
-        state_label = "provisional map"
     else:
         state_label = "map available"
-    label = f"{subject['subject_name']} — {state_label}"
+    label = f"{resource['name']} — {state_label}"
     subject_choices.append(label)
     subject_by_label[label] = (subject, subject_code)
 
@@ -1568,12 +1635,15 @@ selected_subject_label = st.sidebar.selectbox(
     index=default_subject_index,
 )
 selected_subject, active_subject = subject_by_label[selected_subject_label]
+resource_key = f"{selected_subject['subject_id']}-{selected_level}"
+course_resource = resource_catalog["courses"][resource_key]
+course_title = f"{course_resource['name']} {selected_level}"
 
 with st.container(horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"):
     render_wordmark()
     render_student_menu(student)
 st.sidebar.link_button("Privacy policy and data requests", PRIVACY_URL)
-st.caption(f"{selected_subject['subject_name']} · {selected_level} · Change your course in Study path.")
+st.caption(f"{course_resource['name']} · {selected_level} · Change your course in Study path.")
 
 # Old extracted questions must not survive a content update or subject change.
 exam_context = (active_subject, CONTENT_VERSION)
@@ -1583,32 +1653,24 @@ if st.session_state.get("exam_content_context") != exam_context:
     st.session_state.pop("practice_position", None)
     st.session_state.exam_paper = []
     st.session_state.exam_content_context = exam_context
-if not active_subject:
-    st.info(
-        f"{selected_subject['subject_name']} {selected_level} is in the programme catalogue, "
-        "but its curriculum map has not been integrated yet. The roadmap tracks the source review and build work."
-    )
-    if selected_subject["subject_id"] == "industrial_instruments" and selected_level == "N4":
-        st.caption("DHET lists this subject as 8080194. A full N4 syllabus is needed to verify the module map.")
-
-if active_subject and selected_programme["programme_id"] != "electrical_instrumentation":
-    st.sidebar.caption(
-        "A subject map is available by title and level. Confirm this programme's subject code and syllabus version before marking its route verified."
-    )
-
 if active_subject:
     # Render Live Subject Motif in Sidebar
     with st.sidebar.expander("Subject visual", expanded=False):
         render_subject_visual(active_subject, selected_subject["subject_name"], height=178)
 
     # Official NATED Categorized Formula Reference Sheets in Sidebar (Complete Exam Sheets Integration)
-    with st.sidebar.expander("📐 N4 formula quick reference" if active_subject in N4_MODULES else "📐 Official NATED Formula Sheets", expanded=False):
+    with st.sidebar.expander(
+        "📐 Formula quick reference" if active_subject in N4_MODULES or active_subject == n6.CODE
+        else "📐 Official NATED Formula Sheets", expanded=False,
+    ):
         st.markdown('<div style="max-height: 480px; overflow-y: auto; padding-right: 6px;">', unsafe_allow_html=True)
     
         if active_subject in N4_MODULES:
             for topic, formula, _, _ in N4_MODULES[active_subject]:
                 st.markdown(f"**{topic}**")
                 st.latex(formula)
+        elif active_subject == n6.CODE:
+            render_n6_reference()
         elif active_subject == "IE-N5":
             st.markdown("### ⚡ Industrial Electronics N5")
         
@@ -1797,11 +1859,13 @@ pending_workspace = st.session_state.pop("pending_workspace", None)
 if pending_workspace:
     open_learning_workspace(*pending_workspace)
 course_workspaces = ["📊 Progress", "📝 Practice", "⏱ Mock exam", "🤖 Tutor & lab", "📐 Formula hub", "📈 Analytics"]
-workspace_names = ["Home", *(course_workspaces if active_subject else []), GAMES_WORKSPACE, MONEY_WORKSPACE, CAREER_WORKSPACE]
+resources_workspace = "📚 Study materials"
+workspace_names = ["Home", *(course_workspaces if active_subject else []), resources_workspace,
+                   GAMES_WORKSPACE, MONEY_WORKSPACE, CAREER_WORKSPACE]
 if st.session_state.get("learning_workspace", "Home") not in workspace_names:
     st.session_state["learning_workspace"] = "Home"
 tab_home, *other_tabs = st.tabs(workspace_names, key="learning_workspace", on_change="rerun")
-tab_games, tab_money, tab_career = other_tabs[-3:]
+tab_resources, tab_games, tab_money, tab_career = other_tabs[-4:]
 if active_subject:
     tab_mastery, tab_practice, tab_exam, tab_tutor, tab_formulas, tab_analytics = other_tabs[:6]
 
@@ -1823,11 +1887,12 @@ if tab_home.open:
 
 if tab_home.open and active_subject:
     with tab_home:
-        st.markdown("**See it move. Work out why.** Explore a live model, pick up a quick insight, then build your understanding with Tex.")
-        model_column, insight_column = st.columns([1.25, 1], gap="medium")
+        st.badge("SIGNAL FORGE", color="orange", icon=":material/graphic_eq:")
+        st.markdown("**See it move. Work out why.** Change a setting, watch the model respond and ask Tex about what you see.")
+        model_column, insight_column = st.columns([1.55, 1], gap="medium")
         with model_column.container(border=True, height="stretch", key="home_live_engineering"):
             st.subheader("Live engineering models", anchor=False, icon=":material/deployed_code:")
-            model_id = render_home_model(active_subject, height=350)
+            model_id = render_home_model(active_subject, height=370)
             st.caption("Drag to rotate · scroll or pinch to zoom · change a slider and watch the response.")
             st.button("Open this model in the 3D lab", key="home_open_model_lab", width="stretch",
                       icon=":material/open_in_full:", on_click=open_home_model_lab,
@@ -1837,7 +1902,7 @@ if tab_home.open and active_subject:
             st.caption("Exam technique · formula flashes · ideas from your course")
             render_home_slideshow(active_subject, selected_subject["subject_name"], height=350)
             st.caption("Turn the model into a conversation: predict, change one control, then explain what you see.")
-            st.button("Explore this model with Tex", key="home_discuss_model", width="stretch",
+            st.button("Explore this model with Tex", key="home_discuss_model", width="stretch", type="primary",
                       icon=":material/forum:", on_click=discuss_home_model,
                       args=(N4_NAMES.get(active_subject, selected_subject["subject_name"]), model_id))
         st.subheader("Your study workspace", anchor=False)
@@ -1857,7 +1922,7 @@ if tab_home.open and active_subject:
                           icon=":material/arrow_forward:", width="stretch",
                           on_click=resume_learning)
             destinations = [
-                ("Practice", "Trentox questions with worked answers" if active_subject in N4_MODULES
+                ("Practice", "Trentox questions with worked answers" if active_subject in N4_MODULES or active_subject == n6.CODE
                  else "Past papers and original memos", ":material/edit:", "📝 Practice", None),
                 ("Mock exam", "A timed run at your pace", ":material/timer:", "⏱ Mock exam", None),
                 ("3D lab", "Rotate, inspect and experiment", ":material/deployed_code:", "🤖 Tutor & lab", "🧊 3D lab"),
@@ -1870,10 +1935,47 @@ if tab_home.open and active_subject:
                                   on_click=open_learning_workspace, args=(workspace, section))
                         st.caption(caption)
             with st.container(horizontal=True):
+                st.button("Study materials", icon=":material/library_books:", key="home_study_materials",
+                          on_click=open_learning_workspace, args=(resources_workspace,))
                 st.button("My progress", icon=":material/bar_chart:", key="home_progress",
                           on_click=open_learning_workspace, args=("📊 Progress",))
                 st.button("Study calendar", icon=":material/calendar_month:", key="home_calendar",
                           on_click=open_exam_calendar_workspace)
+
+if tab_home.open and not active_subject:
+    with tab_home:
+        with st.container(border=True):
+            st.subheader(course_title, anchor=False)
+            st.caption("Open the course outline and exam archive, or bring a question to Tex.")
+            st.button("Open study materials", type="primary", icon=":material/library_books:", key="home_open_study_materials",
+                      on_click=open_learning_workspace, args=(resources_workspace,))
+
+if tab_resources.open:
+    with tab_resources:
+        st.subheader(course_title, anchor=False)
+        curriculum_col, exams_col = st.columns(2, gap="large")
+        with curriculum_col:
+            render_curriculum(course_resource, resource_catalog["policy_url"])
+        with exams_col:
+            render_exam_resources(course_resource)
+        st.markdown("#### Further study")
+        with st.container(horizontal=True):
+            for resource in course_resource.get("study_links", []):
+                st.link_button(resource["label"], resource["url"], icon=":material/open_in_new:")
+            st.link_button("DHET ICASS guidelines", n6.ICASS_URL, icon=":material/description:")
+            if selected_programme["programme_id"] == "civil_engineering":
+                st.link_button("Structural Steel Detailing · drawing-office archive", resource_catalog["steel_archive"],
+                               icon=":material/open_in_new:")
+        if not active_subject:
+            if course_resource.get("modules"):
+                topic = st.selectbox("Choose a topic to explore with Tex", course_resource["modules"],
+                                     key=f"resources_topic_{resource_key}")
+                if st.button("Study this topic with Tex", key=f"resources_start_{resource_key}"):
+                    st.session_state["tex_pending_message"] = (
+                        f"Help me study {topic} for {course_title}. Start by checking what I know. "
+                        "Use a short worked example when it helps and distinguish general study guidance from the official syllabus."
+                    )
+            render_ai_tutor_chat(widget_prefix=f"resources_{resource_key}", subject=course_title)
 
 
 if active_subject and tab_practice.open:
@@ -1946,7 +2048,12 @@ if active_subject and tab_practice.open:
         if "current_question" not in st.session_state:
             st.session_state.current_question = None
         st.subheader("💡 Practical Engineering Sandbox & Fault-Finding Scenarios")
-        practice_mode = "Trentox practice" if active_subject in N4_MODULES else "Exam Past Paper Guidance"
+        st.button("Find past papers and memos", key="practice_study_materials", icon=":material/library_books:",
+                  on_click=open_learning_workspace, args=(resources_workspace,))
+        practice_mode = (
+            "Trentox practice" if active_subject in N4_MODULES or active_subject == n6.CODE
+            else "Exam Past Paper Guidance"
+        )
         mode = st.radio("Select Practice Mode:", [practice_mode, "Plant fault diagnosis"], horizontal=True)
         st.caption("Type or record your answer in your preferred language. Requesting Tex feedback sends your answer to Google Gemini.")
 
@@ -2039,13 +2146,17 @@ if active_subject and tab_practice.open:
             else:
                 render_practice_voice(active_subject, disabled=True)
 
-            render_paper_library()
+            if active_subject != n6.CODE:
+                render_paper_library()
 
 # TAB 3: Stress-Conditioned Exam Simulator
 if active_subject and tab_exam.open:
     with tab_exam:
         st.subheader(f"🎯 Timed Mock Exam Simulator & Confidence Calibration ({active_subject})")
-        starter_count = len(starter_questions(active_subject))
+        starter_count = (
+            sum(len(module.questions) for module in n6.MODULES) if active_subject == n6.CODE
+            else len(starter_questions(active_subject))
+        )
         if starter_count:
             st.caption("Timed mini-mock using original Trentox exercises. It does not reproduce a full DHET exam.")
         render_exam_readiness()
@@ -2169,6 +2280,9 @@ if active_subject and tab_tutor.open:
                 if active_subject in N4_MODULES:
                     st.caption(f"Six modules mapped to the DHET syllabus · subject code {N4_CODES[active_subject]}.")
                     st.markdown(f"[Open the DHET syllabus]({syllabus_url(active_subject)})")
+                elif active_subject == n6.CODE:
+                    st.caption("Nine modules mapped to the DHET syllabus · subject code 8080186.")
+                    st.link_button("Open the DHET syllabus", n6.SYLLABUS)
                 elif active_subject == "MATH-N5":
                     st.caption("The eight module names and weights match the official DHET N5 syllabus. Detailed topic lists are transcribed from the Future Managers Lecturer Guide and await a full cross-check.")
                 elif active_subject == "INST-N5":
@@ -2268,6 +2382,9 @@ if active_subject and tab_tutor.open:
                 )
                 target_topic = custom_query.strip() or selected_module
                 lesson_models = study_models(active_subject, target_topic, lesson=True)
+                if active_subject == n6.CODE and not custom_query.strip():
+                    render_n6_notes(selected_module)
+                    lesson_models = n6.BY_TOPIC[selected_module].models
                 render_study_visual(lesson_models, key=f"lesson_model_{active_subject}_{target_topic}")
                 if active_subject in N4_MODULES and not custom_query.strip():
                     example = next(item for item in starter_questions(active_subject) if item["topic"] == selected_module)
@@ -2282,7 +2399,9 @@ if active_subject and tab_tutor.open:
                         )
                 adaptive_start = st.session_state.pop("adaptive_start_lesson_subject", None) == active_subject
                 if st.button("📖 Generate Lesson & Explanation") or adaptive_start:
-                    if active_subject in N4_MODULES:
+                    if active_subject == n6.CODE:
+                        material_context = n6.lesson_context(selected_module)
+                    elif active_subject in N4_MODULES:
                         material_context = (
                             f"DHET module headings for {N4_NAMES[active_subject]}: {'; '.join(modules)}. "
                             "Only the module headings are provided. Do not claim the generated lesson is official "
@@ -2494,6 +2613,7 @@ if active_subject and tab_tutor.open:
                     "Digital Electronics N4": ["logic_gate_board", "kmap4", "full_adder_3d", "ripple_counter_3d", "weighted_dac_3d", "flash_adc_3d"],
                     "Digital Electronics N5 — visualization preview": ["weighted_dac_3d", "flash_adc_3d", "ripple_counter_3d"],
                     "Industrial Electronics N5": ["phasor", "rc_response", "bridge_rectifier_3d", "rectifier", "bjt_structure", "load_line", "opamp_inv", "opamp_noninv", "timer555", "wheatstone", "lvdt", "scr_structure", "scr_waveform", "cro", "lc_tank", "lcd_cell"],
+                    n6.NAME: list(n6.LAB_MODELS),
                     "Industrial Instruments N5": ["current_loop_3d", "rotameter", "venturi", "orifice", "weir", "target_flow", "manometer", "bourdon", "strain_gauge", "rtd_tc", "tank_level", "ph_probe", "pid_loop", "step_response"],
                 }
                 lab_subjects = list(lab_profiles)
@@ -2543,6 +2663,10 @@ if active_subject and tab_formulas.open:
             for topic, formula, _, _ in N4_MODULES[active_subject]:
                 st.markdown(f"**{topic}**")
                 st.latex(formula)
+        elif active_subject == n6.CODE:
+            st.caption("Trentox quick reference for Industrial Electronics N6 · subject code 8080186.")
+            st.link_button("Open the official DHET syllabus", n6.SYLLABUS)
+            render_n6_reference()
         else:
             st.markdown("Official NATED TVET engineering formulas, standard constants, and mathematical derivations.")
     
@@ -2563,11 +2687,15 @@ if active_subject and tab_formulas.open:
             st.latex(r"V_{out} = -\left(\frac{R_f}{R_1}V_1 + \frac{R_f}{R_2}V_2\right)")
             st.latex(r"V_{dc} = \frac{V_m}{\pi}(1 + \cos\alpha)")
             st.markdown("**Core Principles:** Op-amp feedback networks, thyristor firing angles, and transistor biasing.")
-        elif active_subject not in N4_MODULES:
+        elif active_subject not in N4_MODULES and active_subject != n6.CODE:
             st.markdown("### Digital Electronics N4/N5 Reference Equations")
             st.latex(r"N_{states} = 2^n")
             st.latex(r"f_{max} = \frac{1}{n \cdot t_{pd}}")
             st.markdown("**Core Principles:** Boolean algebraic laws, Karnaugh map minimization, asynchronous ripple counters, and synchronous state machines.")
+        st.markdown("### Report 191 assessment (ICASS)")
+        st.caption("Shared guidance for Engineering Studies N4–N6. Confirm your subject’s assessment dates and requirements with your college.")
+        st.link_button("Open the DHET ICASS guidelines (January 2026)", n6.ICASS_URL)
+        render_local_study_pdf(n6.ICASS_ARCHIVE, label="Read the archived 2020 ICASS guide (local copy)", key="icass_archive")
 
 # TAB 6: Measured Learning Analytics and Portable Progress
 if active_subject and tab_analytics.open:
@@ -2775,8 +2903,8 @@ with tex_launcher:
     )
     if quick_tex.open:
         workspace = st.session_state.get("learning_workspace")
-        career_chat = workspace in (MONEY_WORKSPACE, CAREER_WORKSPACE) or not active_subject
+        chat_subject = CAREER_SUBJECT if workspace in (MONEY_WORKSPACE, CAREER_WORKSPACE) else (active_subject or course_title)
         with quick_tex, st.container(key="quick_tex_chat"):
             render_ai_tutor_chat(
-                widget_prefix="quick_tex", compact=True, subject=CAREER_SUBJECT if career_chat else active_subject,
+                widget_prefix="quick_tex", compact=True, subject=chat_subject,
             )

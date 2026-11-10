@@ -1,5 +1,5 @@
 {
-  "catalog_version": "0.1.0",
+  "catalog_version": "0.2.0",
   "qualification_framework": "Report 191 (NATED) Engineering Studies",
   "authority": {
     "name": "South African Department of Higher Education and Training",
@@ -8,7 +8,7 @@
     "verification_rule": "A subject's official content, code, module sequence, assessment weighting, and examination requirements must be checked against the applicable DHET syllabus before being marked verified."
   },
   "n_levels": ["N4", "N5", "N6"],
-  "catalog_status": "user_scope_recorded_official_validation_pending",
+  "catalog_status": "subject_levels_cross_checked_with_dhet",
   "programmes": [
     {
       "programme_id": "electrical_instrumentation",
@@ -31,7 +31,7 @@
         {"subject_id": "mathematics", "subject_name": "Mathematics", "levels": ["N4", "N5", "N6"]},
         {"subject_id": "industrial_electronics", "subject_name": "Industrial Electronics", "levels": ["N4", "N5", "N6"]},
         {"subject_id": "electrotechnics", "subject_name": "Electrotechnics", "levels": ["N4", "N5", "N6"]},
-        {"subject_id": "power_machines", "subject_name": "Power Machines", "levels": ["N4", "N5", "N6"]}
+        {"subject_id": "power_machines", "subject_name": "Power Machines", "levels": ["N5", "N6"]}
       ]
     },
     {
@@ -41,8 +41,8 @@
       "official_award_title_status": "pending_official_verification",
       "subjects": [
         {"subject_id": "mathematics", "subject_name": "Mathematics", "levels": ["N4", "N5", "N6"]},
-        {"subject_id": "power_machines", "subject_name": "Power Machines", "levels": ["N4", "N5", "N6"]},
-        {"subject_id": "strength_of_materials_structures", "subject_name": "Strength of Materials and Structures", "levels": ["N4", "N5", "N6"]},
+        {"subject_id": "power_machines", "subject_name": "Power Machines", "levels": ["N5", "N6"]},
+        {"subject_id": "strength_of_materials_structures", "subject_name": "Strength of Materials and Structures", "levels": ["N5", "N6"]},
         {"subject_id": "mechanical_drawing_design", "subject_name": "Mechanical Drawing and Design", "levels": ["N4", "N5", "N6"]}
       ]
     },
@@ -54,8 +54,7 @@
       "subjects": [
         {"subject_id": "mathematics", "subject_name": "Mathematics", "levels": ["N4", "N5", "N6"]},
         {"subject_id": "building_structural_construction", "subject_name": "Building and Structural Construction", "levels": ["N4", "N5", "N6"]},
-        {"subject_id": "building_structural_surveying", "subject_name": "Building and Structural Surveying", "levels": ["N4", "N5", "N6"]},
-        {"subject_id": "structural_steel_detailing", "subject_name": "Structural Steel and Detailing", "levels": ["N4", "N5", "N6"]}
+        {"subject_id": "building_structural_surveying", "subject_name": "Building and Structural Surveying", "levels": ["N4", "N5", "N6"]}
       ]
     },
     {
@@ -66,8 +65,8 @@
       "subjects": [
         {"subject_id": "mathematics", "subject_name": "Mathematics", "levels": ["N4", "N5", "N6"]},
         {"subject_id": "chemical_plant_operation", "subject_name": "Chemical Plant Operation", "levels": ["N4", "N5", "N6"]},
-        {"subject_id": "chemical_technology", "subject_name": "Chemical Technology", "levels": ["N4", "N5", "N6"]},
-        {"subject_id": "chemistry", "subject_name": "Chemistry", "levels": ["N4", "N5", "N6"]}
+        {"subject_id": "chemical_technology", "subject_name": "Chemical Technology", "levels": ["N6"]},
+        {"subject_id": "chemistry", "subject_name": "Chemistry", "levels": ["N4", "N5"]}
       ]
     }
   ]

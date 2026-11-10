@@ -11,6 +11,7 @@ HOME_MODELS = {
     **{code: tuple(topics) for code, topics in N4_LAB_TOPICS.items()},
     "INST-N5": ("rotameter", "venturi", "bourdon", "pid_loop"),
     "IE-N5": ("bridge_rectifier_3d", "opamp_inv", "bjt_structure"),
+    "IE-N6": ("rc_response", "wheatstone", "scr_waveform", "pid_loop", "logic_gate_board"),
     "MATH-N5": ("derivative", "riemann", "revolve"),
     "DIGI-N4": ("logic_gate_board", "full_adder_3d", "kmap4"),
     "DIGI-N5": ("weighted_dac_3d", "flash_adc_3d"),
@@ -20,6 +21,7 @@ LAB_SUBJECTS = {
     **N4_NAMES,
     "INST-N5": "Industrial Instruments N5",
     "IE-N5": "Industrial Electronics N5",
+    "IE-N6": "Industrial Electronics N6",
     "MATH-N5": "Mathematics N5",
     "DIGI-N4": "Digital Electronics N4",
     "DIGI-N5": "Digital Electronics N5 — visualization preview",
@@ -51,7 +53,7 @@ def render_home_model(subject_code, *, height=350):
     # small preview's canvas clear; the full lab retains the detailed heading.
     document = document.replace("</head>", """<style>
     #title{display:none}
-    #stage{background:radial-gradient(ellipse at 50% 35%,#123047 0%,#0b1524 72%)}
+    #stage{background:radial-gradient(ellipse at 48% 38%,#173e50 0%,#0a1120 74%)}
     #btns button{padding:5px 6px;font-size:11px}
     #hint{font-size:11px}
     </style></head>""")

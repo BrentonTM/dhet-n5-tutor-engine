@@ -2,6 +2,8 @@
 
 import streamlit as st
 
+from ui.industrial_electronics_n6 import CODE as IE_N6, FLASHCARDS as INDUSTRIAL_ELECTRONICS_N6
+
 
 DIGITAL = {
     "Number systems and codes": (
@@ -148,6 +150,7 @@ DECKS = {
     "DIGI-N5": {**DIGITAL, **DIGITAL_N5},
     "IE-N4": INDUSTRIAL_ELECTRONICS,
     "IE-N5": {**INDUSTRIAL_ELECTRONICS, **INDUSTRIAL_ELECTRONICS_N5},
+    IE_N6: INDUSTRIAL_ELECTRONICS_N6,
     "INST-N5": INSTRUMENTS,
     "MATH-N4": MATH,
     "MATH-N5": {**MATH, **MATH_N5},

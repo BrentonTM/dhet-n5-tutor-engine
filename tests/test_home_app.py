@@ -133,11 +133,15 @@ class HomeAppTests(unittest.TestCase):
         self.assertEqual(app.text_input(key="custom_topic_INST-N5").value, "My custom flow problem")
         self.assertTrue(any("Saved lesson content" in element.value for element in app.markdown))
 
-    def test_planned_course_keeps_the_account_controls(self):
+    def test_reference_course_has_its_own_curriculum_and_exam_resources(self):
         app = self.home()
         next(box for box in app.selectbox if box.label == "N-level:").select("N6").run()
-        self.assertEqual(len(app.exception), 0)
-        self.assertTrue(any("not been integrated" in message.value for message in app.info))
+        app.button(key="home_open_study_materials").click().run()
+        self.assertFalse(app.exception)
+        self.assertTrue(any("Partial fractions" in entry.value for entry in app.markdown))
+        urls = [element.proto.url for element in app.get("link_button")]
+        self.assertTrue(any("N6%20Mathematics.pdf" in url for url in urls))
+        self.assertTrue(any("mathematics-n6" in url and "memo" in url for url in urls))
         self.assertEqual(app.button(key="student_logout").label, "Sign out")
 
     def test_new_n4_courses_route_to_their_own_models_and_questions(self):

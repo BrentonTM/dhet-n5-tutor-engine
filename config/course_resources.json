@@ -1,0 +1,1378 @@
+{
+  "policy_url": "https://www.dhet.gov.za/Technical%20and%20Vocational%20Education%20and%20Training%20Co/Report%20191%20Part%202%20%28N4%20-%20N6%29.pdf",
+  "steel_archive": "https://mytvet.co.za/structural-steel-detailing",
+  "courses": {
+    "mathematics-N4": {
+      "name": "Mathematics",
+      "code": "16030164",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N4%20Mathematics.pdf",
+      "implementation": "January 2021",
+      "modules": [
+        "Determinants",
+        "Complex numbers",
+        "Trigonometry",
+        "Graph sketching",
+        "Differential calculus",
+        "Integration"
+      ],
+      "source_note": "The syllabus cover prints code 1603164. The examination papers identify Mathematics N4 as 16030164.",
+      "study_links": [
+        {
+          "label": "OpenStax calculus",
+          "url": "https://openstax.org/details/books/calculus-volume-2"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/mathematics-n4-november-2023-question-paper-pdf-jmr-957.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/mathematics-n4-november-2023-memo-pdf-iwl-399.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/mathematics-n4-november-2022-question-paper-pdf-rbq-117.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/09/mathematics-n4-november-2022-memo-pdf-mdx-248.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n4/mathematics-n4-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n4pastpapers/mathematics"
+        }
+      ]
+    },
+    "mathematics-N5": {
+      "name": "Mathematics",
+      "code": "16030175",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N5%20Mathematics_Revised.pdf",
+      "implementation": "August 2022",
+      "modules": [
+        "Limits and continuity",
+        "Differentiation",
+        "Applications of differentiation",
+        "Integration techniques",
+        "Definite integrals",
+        "Applications of definite integrals",
+        "Second moments of area and moments of inertia",
+        "Differential equations"
+      ],
+      "source_note": "The syllabus cover prints code 1603164. The examination papers identify Mathematics N5 as 16030175.",
+      "study_links": [
+        {
+          "label": "OpenStax calculus",
+          "url": "https://openstax.org/details/books/calculus-volume-2"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Mathematics-23-Nov-2023.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Mathematics-23-Nov-2023-Memorundum.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Mathematics-November-2022.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Mathematics-November-2022-Memorandum.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/mathematics-n5-question-papers-and-memos-afrikaans-wiskunde-n5/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n5pastpapers/mathematics"
+        }
+      ]
+    },
+    "mathematics-N6": {
+      "name": "Mathematics",
+      "code": "16030186",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N6%20Mathematics.pdf",
+      "implementation": "January 2023",
+      "modules": [
+        "Differentiation",
+        "Integration techniques",
+        "Partial fractions",
+        "Differential equations",
+        "Areas and volumes",
+        "Centroids and centres of gravity",
+        "Second moments of area, moments of inertia and centres of fluid pressure",
+        "Combined differentiation and integration"
+      ],
+      "source_note": "The syllabus cover prints code 1603164. The examination papers identify Mathematics N6 as 16030186.",
+      "study_links": [
+        {
+          "label": "OpenStax calculus",
+          "url": "https://openstax.org/details/books/calculus-volume-2"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Mathematics-22-Nov-2023studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Mathematics-22-Nov-2023-Memorundumstudypaperscoza.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Mathematics-November-2022studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Mathematics-November-2022-Memorandumstudypaperscoza.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n6/mathematics-n6-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/mathematics"
+        }
+      ]
+    },
+    "industrial_electronics-N4": {
+      "name": "Industrial Electronics",
+      "code": "8080164",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N4%20Industrial%20Electronics.pdf",
+      "implementation": "May 2024",
+      "modules": [
+        "Direct current theory",
+        "Alternating current theory",
+        "Electronic power control",
+        "Power supplies",
+        "Amplifiers",
+        "Transducers and electronic testing equipment"
+      ],
+      "study_links": [
+        {
+          "label": "Lessons in Electric Circuits",
+          "url": "https://www.ibiblio.org/kuphaldt/electricCircuits/"
+        },
+        {
+          "label": "LTspice circuit tutorials and simulator",
+          "url": "https://www.analog.com/en/resources/design-tools-and-calculators/ltspice-simulator.html"
+        },
+        {
+          "label": "Macmillan guide to the 2024 curriculum changes",
+          "url": "https://www.macmillaneducation.co.za/files/downloads/tvet/TVET%20Curriculum%20Guide%205_WPDF.pdf"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/industrial-electronics-n4-november-2023-question-paper-pdf-nwl-884.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/industrial-electronics-n4-november-2023-memo-pdf-aww-715.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/industrial-electronics-n4-november-2022-question-paper-pdf-vmn-519.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/industrial-electronics-n4-november-2022-memo-pdf-lqa-424.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n4/industrial-electronics-n4-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n4pastpapers/industrial-electronics"
+        }
+      ]
+    },
+    "industrial_electronics-N5": {
+      "name": "Industrial Electronics",
+      "code": "8080175",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N5%20Industrial%20Electronics.pdf",
+      "implementation": "September 2024",
+      "modules": [
+        "Alternating current theory",
+        "Power supplies",
+        "Amplifiers",
+        "Integrated circuits and transducers",
+        "Electronic phase control",
+        "Measuring instruments",
+        "Oscillators"
+      ],
+      "study_links": [
+        {
+          "label": "Lessons in Electric Circuits",
+          "url": "https://www.ibiblio.org/kuphaldt/electricCircuits/"
+        },
+        {
+          "label": "LTspice circuit tutorials and simulator",
+          "url": "https://www.analog.com/en/resources/design-tools-and-calculators/ltspice-simulator.html"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Industrial-Electronics-27-Nov-2023.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Industrial-Electronics-27-Nov-2023-Memorandum.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Industrial-Electronics-November-2022.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Industrial-Electronics-November-2022-Memorandum.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/industrial-electronics-n5-question-papers-and-memos-afrikaans-industriele-elektronika-n5/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n5pastpapers/industrial-electronics"
+        }
+      ]
+    },
+    "industrial_electronics-N6": {
+      "name": "Industrial Electronics",
+      "code": "8080186",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N6%20Industrial%20Electronics.pdf",
+      "implementation": "January 2025",
+      "modules": [
+        "Transients",
+        "Transducers",
+        "Ultrasonics, X-rays and radioactivity",
+        "Automatic inspection, testing and NDT",
+        "Electronic safety devices",
+        "Electronic power control",
+        "Thyristors and SCR speed control",
+        "Programmable logic controllers",
+        "Robotics"
+      ],
+      "study_links": [
+        {
+          "label": "Lessons in Electric Circuits",
+          "url": "https://www.ibiblio.org/kuphaldt/electricCircuits/"
+        },
+        {
+          "label": "LTspice circuit tutorials and simulator",
+          "url": "https://www.analog.com/en/resources/design-tools-and-calculators/ltspice-simulator.html"
+        },
+        {
+          "label": "Future Managers N6 learning resources",
+          "url": "https://www.futuremanagers.com/microsites/n6indelec/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Industrial-Electronics-28-Nov-2023studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Industrial-Electronics-28-Nov-2023-Memorandumstudypaperscoza.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Industrial-Electronics-November-2022studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Industrial-Electronics-November-2022-Memorandumstudypaperscoza.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n6/industrial-electronics-n6-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/industrial-electronics"
+        }
+      ]
+    },
+    "digital_electronics-N4": {
+      "name": "Digital Electronics",
+      "code": "8080354",
+      "study_links": [
+        {
+          "label": "Lessons in Electric Circuits",
+          "url": "https://www.ibiblio.org/kuphaldt/electricCircuits/"
+        },
+        {
+          "label": "MIT digital logic lecture notes",
+          "url": "https://ocw.mit.edu/courses/6-111-introductory-digital-systems-laboratory-spring-2006/pages/lecture-notes/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/digital-electronics-n4-november-2022-question-paper-pdf-qeh-712.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/digital-electronics-n4-november-2022-memo-pdf-tmh-847.pdf"
+        },
+        {
+          "session": "August 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/digital-electronics-n4-august-2021-question-paper-pdf-jmu-130.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/digital-electronics-n4-august-2021-memo-pdf-vei-138.pdf",
+          "note": "The memo cover gives the month and year without a day."
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n4/digital-electronics-n4-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n4pastpapers/digital-electronics"
+        }
+      ]
+    },
+    "digital_electronics-N5": {
+      "name": "Digital Electronics",
+      "code": "8080365",
+      "study_links": [
+        {
+          "label": "Lessons in Electric Circuits",
+          "url": "https://www.ibiblio.org/kuphaldt/electricCircuits/"
+        },
+        {
+          "label": "MIT digital logic lecture notes",
+          "url": "https://ocw.mit.edu/courses/6-111-introductory-digital-systems-laboratory-spring-2006/pages/lecture-notes/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Digital-Electronics-1-Dec-2023.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Digital-Electronics-1-Dec-2023-Memorandum.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Digital-Electronics-November-2022.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Digital-Electronics-November-2022-Memorandum.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/digital-electronics-n5-question-papers-and-memos-afrikaans-digitale-elektronika-n5/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n5pastpapers/digital-electronics"
+        }
+      ]
+    },
+    "digital_electronics-N6": {
+      "name": "Digital Electronics",
+      "code": "8080376",
+      "study_links": [
+        {
+          "label": "Lessons in Electric Circuits",
+          "url": "https://www.ibiblio.org/kuphaldt/electricCircuits/"
+        },
+        {
+          "label": "MIT digital logic lecture notes",
+          "url": "https://ocw.mit.edu/courses/6-111-introductory-digital-systems-laboratory-spring-2006/pages/lecture-notes/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "April 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/digital-electronics-n6-april-2021-question-paper-pdf-hfe-838.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/digital-electronics-n6-april-2021-memo-pdf-bsg-885.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n6/digital-electronics-n6-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/digital-electronics"
+        }
+      ]
+    },
+    "industrial_instruments-N4": {
+      "name": "Industrial Instruments",
+      "code": "8080194",
+      "study_links": [
+        {
+          "label": "Lessons in Industrial Instrumentation",
+          "url": "https://ibiblio.org/kuphaldt/socratic/sinst/doc/liii.html"
+        },
+        {
+          "label": "Instrumentation and process control worksheets",
+          "url": "https://www.ibiblio.org/kuphaldt/socratic/sinst/doc/practice.html"
+        }
+      ],
+      "archive_pairs": [
+        {
+          "session": "August 2026",
+          "paper": "https://www.educoast.co.za/doc/industrial-instruments-dhet-nated-august-question-paper-2bba5f23",
+          "memo": "https://www.educoast.co.za/doc/industrial-instruments-dhet-nated-august-memorandum-91f4b5c0"
+        },
+        {
+          "session": "April 2026",
+          "paper": "https://www.educoast.co.za/doc/industrial-instruments-dhet-nated-april-question-paper-8943062f",
+          "memo": "https://www.educoast.co.za/doc/industrial-instruments-dhet-nated-april-memorandum-e9621f8f"
+        }
+      ],
+      "archives": [
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n4pastpapers/industrial-instruments"
+        }
+      ]
+    },
+    "industrial_instruments-N5": {
+      "name": "Industrial Instruments",
+      "code": "8080205",
+      "study_links": [
+        {
+          "label": "Lessons in Industrial Instrumentation",
+          "url": "https://ibiblio.org/kuphaldt/socratic/sinst/doc/liii.html"
+        },
+        {
+          "label": "Instrumentation and process control worksheets",
+          "url": "https://www.ibiblio.org/kuphaldt/socratic/sinst/doc/practice.html"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "April 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/industrial-instruments-n5-april-2021-question-paper-pdf-kpj-566.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/industrial-instruments-n5-april-2021-memo-pdf-omz-780.pdf"
+        },
+        {
+          "session": "April 2020",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/industrial-instruments-n5-april-2020-question-paper-pdf-ilz-316.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/industrial-instruments-n5-april-2020-memo-pdf-vve-106.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/industrial-instruments-n5-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n5pastpapers/industrial-instruments"
+        }
+      ]
+    },
+    "industrial_instruments-N6": {
+      "name": "Industrial Instruments",
+      "code": "8080216",
+      "study_links": [
+        {
+          "label": "Lessons in Industrial Instrumentation",
+          "url": "https://ibiblio.org/kuphaldt/socratic/sinst/doc/liii.html"
+        },
+        {
+          "label": "Instrumentation and process control worksheets",
+          "url": "https://www.ibiblio.org/kuphaldt/socratic/sinst/doc/practice.html"
+        }
+      ],
+      "archive_pairs": [
+        {
+          "session": "August 2026",
+          "paper": "https://www.educoast.co.za/doc/industrial-instruments-dhet-nated-august-question-paper-eefddd9d",
+          "memo": "https://www.educoast.co.za/doc/industrial-instruments-dhet-nated-august-memorandum-7458547a"
+        },
+        {
+          "session": "April 2026",
+          "paper": "https://www.educoast.co.za/doc/industrial-instruments-dhet-nated-april-question-paper-83e256b8",
+          "memo": "https://www.educoast.co.za/doc/industrial-instruments-dhet-nated-april-memorandum-6ca20eef"
+        }
+      ],
+      "archives": [
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/industrial-instruments"
+        }
+      ]
+    },
+    "electrotechnics-N4": {
+      "name": "Electrotechnics",
+      "code": "8080074",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N4%20Electrotechnics.pdf",
+      "implementation": "January 2021",
+      "modules": [
+        "Principles of electricity",
+        "DC machines",
+        "AC theory",
+        "Transformers",
+        "AC machines",
+        "AC power generation and supply",
+        "Measuring instruments"
+      ],
+      "study_links": [
+        {
+          "label": "Lessons in Electric Circuits",
+          "url": "https://www.ibiblio.org/kuphaldt/electricCircuits/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/electrotechnics-n4-november-2023-question-paper-pdf-wfw-664.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/electrotechnics-n4-november-2023-memo-pdf-guf-437.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/electrotechnics-n4-november-2022-question-paper-pdf-bda-454.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/electrotechnics-n4-november-2022-memo-pdf-krf-468.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n4/electrotechnics-n4-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n4pastpapers/electrotechnics"
+        }
+      ]
+    },
+    "electrotechnics-N5": {
+      "name": "Electrotechnics",
+      "code": "8080085",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N5%20Electrotechnics.pdf",
+      "implementation": "May 2021",
+      "modules": [
+        "DC machines",
+        "AC theory",
+        "Transformers",
+        "Power measurement in three-phase systems",
+        "AC machines",
+        "AC power generation and supply"
+      ],
+      "study_links": [
+        {
+          "label": "Lessons in Electric Circuits",
+          "url": "https://www.ibiblio.org/kuphaldt/electricCircuits/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Electrotechnics-28-Nov-2023.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Electrotechnics-28-Nov-2023-Memorandum.pdf"
+        },
+        {
+          "session": "August 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Electrotechnics-August-2021.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Electrotechnics-August-2021-Memorandum.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/electrotechnics-n5-question-papers-and-memos-afrikaans-elektrotegniek-n5/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n5pastpapers/electrotechnics"
+        }
+      ]
+    },
+    "electrotechnics-N6": {
+      "name": "Electrotechnics",
+      "code": "8080096",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N6%20Electrotechnics.pdf",
+      "implementation": "January 2021",
+      "modules": [
+        "DC machines",
+        "AC theory",
+        "Transformers",
+        "AC machines",
+        "AC power generation and supply"
+      ],
+      "source_note": "The syllabus cover prints code 8080086. The examination papers identify Electrotechnics N6 as 8080096.",
+      "study_links": [
+        {
+          "label": "Lessons in Electric Circuits",
+          "url": "https://www.ibiblio.org/kuphaldt/electricCircuits/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Electotechnics-Dec-2023studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Electrotechnics-Dec-2023-Memorandumstudypaperscoza.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Electrotechnics-November-2022studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Electrotechnics-November-2022-Memorandumstudypaperscoza.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n6/electrotechnics-n6-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/electrotechnics"
+        }
+      ]
+    },
+    "power_machines-N5": {
+      "name": "Power Machines",
+      "code": "8190035",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N5%20Power%20Machines.pdf",
+      "implementation": "September 2024",
+      "modules": [
+        "Thermodynamics",
+        "Air compressors",
+        "Steam generation and nuclear power",
+        "Condensers",
+        "Gas turbines",
+        "Renewable energy systems"
+      ],
+      "study_links": [
+        {
+          "label": "MIT thermodynamics and propulsion notes",
+          "url": "https://web.mit.edu/16.unified/www/FALL/thermodynamics/notes/notes.html"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-POWER-MACHINES-6-DEC-2023.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-POWER-MACHINES-6-DEC-2023-MEMORANDUM.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Power-Machines-November-2022.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Power-Machines-November-2022-Memorandum.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/power-machines-n5-question-papers-and-memos-afrikaans-kragmasjiene-n5/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n5pastpapers/power-machines"
+        }
+      ]
+    },
+    "power_machines-N6": {
+      "name": "Power Machines",
+      "code": "8190046",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N6%20Power%20Machines.pdf",
+      "implementation": "January 2025",
+      "modules": [
+        "Internal combustion engines",
+        "Air compressors",
+        "Nozzles",
+        "Steam generation and nuclear power",
+        "Steam turbines",
+        "Renewable energy systems"
+      ],
+      "study_links": [
+        {
+          "label": "MIT thermodynamics and propulsion notes",
+          "url": "https://web.mit.edu/16.unified/www/FALL/thermodynamics/notes/notes.html"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-POWER-MACHINES-7-DEC-2023studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-POWER-MACHINES-7-DEC-2023-MEMORANDUMstudypaperscoza.pdf"
+        },
+        {
+          "session": "December 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Power-Machines-December-2022studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Power-Machines-December-2022-Memorandumstudypaperscoza.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n6/power-machines-n6-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/power-machines"
+        }
+      ]
+    },
+    "strength_of_materials_structures-N5": {
+      "name": "Strength of Materials and Structures",
+      "code": "8060065",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N5%20Strength%20of%20Materials%20and%20Structures.pdf",
+      "implementation": "August 2022",
+      "modules": [
+        "Stress, strain and tensile testing",
+        "Strain energy",
+        "Compound bars and thermal stresses",
+        "Thin cylinders and Mohr’s circle",
+        "Simple beam bending",
+        "Columns and struts",
+        "Torsion of circular shafts",
+        "Structural frameworks",
+        "Section tables"
+      ],
+      "study_links": [
+        {
+          "label": "Engineering Statics interactive textbook",
+          "url": "https://engineeringstatics.org/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Strength-of-Materials-and-Structures-December-2022.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Strength-pf-Materials-and-Structures-December-2022-Memorandum.pdf"
+        },
+        {
+          "session": "April 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Strength-of-Materials-and-Structures-April-2021.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Strength-of-Materials-and-Structures-April-2021-Memorandum.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/strength-of-materials-and-structures-n5-question-papers-and-memos-afrikaans-sterkte-van-materiale-en-strukture-n5/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n5pastpapers/strength-of-materials-and-structures"
+        }
+      ]
+    },
+    "strength_of_materials_structures-N6": {
+      "name": "Strength of Materials and Structures",
+      "code": "8060076",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N6%20Strength%20of%20Materials%20and%20Structures.pdf",
+      "implementation": "January 2023",
+      "modules": [
+        "Thick cylinders",
+        "Cable tension",
+        "Combined shaft bending and torsion",
+        "Beam bending and deflection",
+        "Combined direct and bending stresses",
+        "Beam shear stress",
+        "Close-coiled helical springs",
+        "Stress transformation",
+        "Three-dimensional frameworks"
+      ],
+      "study_links": [
+        {
+          "label": "Engineering Statics interactive textbook",
+          "url": "https://engineeringstatics.org/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-STRENGTH-OF-MATERIALS-AND-STRUCTURES-6-DEC-2023studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-STRENGTH-OF-MATERIALS-AND-STRUCTURES-6-DEC-2023-MEMORANDUMstudypaperscoza.pdf"
+        },
+        {
+          "session": "August 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Strength-of-Materials-and-Structures-August-2021studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Strength-of-Materials-and-Structures-August-2021-Memorandumstudypaperscoza.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n6/strength-of-materials-and-structures-n6-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/strength-of-materials-and-structures"
+        }
+      ]
+    },
+    "mechanical_drawing_design-N4": {
+      "name": "Mechanical Draughting",
+      "code": "8090204",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N4%20Mechanical%20Draughting.pdf",
+      "implementation": "May 2024",
+      "modules": [
+        "Loci",
+        "Cam profiles",
+        "Sectional drawing",
+        "Detail drawings",
+        "Assembly drawing"
+      ],
+      "study_links": [
+        {
+          "label": "Engineering Statics interactive textbook",
+          "url": "https://engineeringstatics.org/"
+        },
+        {
+          "label": "Macmillan guide to the 2024 curriculum changes",
+          "url": "https://www.macmillaneducation.co.za/files/downloads/tvet/TVET%20Curriculum%20Guide%205_WPDF.pdf"
+        }
+      ],
+      "archive_pairs": [
+        {
+          "session": "August 2026",
+          "paper": "https://www.educoast.co.za/doc/mechanical-draughting-dhet-nated-august-question-paper-8845d61d",
+          "memo": "https://www.educoast.co.za/doc/mechanical-draughting-dhet-nated-august-memorandum-f491ac92"
+        },
+        {
+          "session": "April 2026",
+          "paper": "https://www.educoast.co.za/doc/mechanical-draughting-dhet-nated-april-question-paper-597c9e2a",
+          "memo": "https://www.educoast.co.za/doc/mechanical-draughting-dhet-nated-april-memorandum-f03cb0a0"
+        }
+      ],
+      "archives": [
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n4pastpapers/mechanical-draughting"
+        }
+      ]
+    },
+    "mechanical_drawing_design-N5": {
+      "name": "Mechanical Drawing and Design",
+      "code": "8090075",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N5%20Mechanical%20Drawing%20and%20Design.pdf",
+      "implementation": "September 2024",
+      "modules": [
+        "Ultimate and working stresses",
+        "Thin shells and riveted joints",
+        "Welded joints",
+        "Power transmission shafts",
+        "Keys, keyways, taper pins and splines",
+        "Couplings",
+        "Cotter and knuckle joints",
+        "Engine details",
+        "Belt drives"
+      ],
+      "study_links": [
+        {
+          "label": "Engineering Statics interactive textbook",
+          "url": "https://engineeringstatics.org/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "April 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Mechanical-Drawing-and-Design-April-2021.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Mechanical-Drawing-and-Design-April-2021-Memorandum.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/mechanical-drawing-and-design-n5-question-papers-and-memos-afrikaans-meganiese-tekening-en-ontwerp-n5/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n5pastpapers/mechanical-drawing-and-design"
+        }
+      ]
+    },
+    "mechanical_drawing_design-N6": {
+      "name": "Mechanical Drawing and Design",
+      "code": "8090086",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N6%20Mechanical%20Drawing%20and%20Design.pdf",
+      "implementation": "January 2025",
+      "modules": [
+        "Belt drives",
+        "Pulley and gearwheel design",
+        "Spur gears and gear drives",
+        "Shaft bending and torsion",
+        "Plain bearings",
+        "Bearing lubrication",
+        "Clutches",
+        "Columns and struts",
+        "Cams"
+      ],
+      "study_links": [
+        {
+          "label": "Engineering Statics interactive textbook",
+          "url": "https://engineeringstatics.org/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Mechanical-Drawing-and-Design-Dec-2023studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Mechanical-Drawing-and-Design-Dec-2023-Memorandumstudypaperscoza.pdf"
+        },
+        {
+          "session": "August 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Mechanical-Drawing-and-Design-August-2021studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Mechanical-Drawing-and-Design-August-2021-Memorandumstudypaperscoza.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n6/mechanical-drawing-and-design-n6-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/mechanical-drawing-and-design"
+        }
+      ]
+    },
+    "building_structural_construction-N4": {
+      "name": "Building and Structural Construction",
+      "code": "8060004",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N4%20Building%20and%20Structural%20Construction.pdf",
+      "implementation": "January 2022",
+      "modules": [
+        "Foundations",
+        "Damp-proofing",
+        "Brickwork bonds",
+        "Arches",
+        "Steel door frames and windows",
+        "Roofs",
+        "Roof covering",
+        "Guttering",
+        "Ceilings",
+        "Structural steelwork"
+      ],
+      "study_links": [
+        {
+          "label": "Engineering Statics interactive textbook",
+          "url": "https://engineeringstatics.org/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/building-and-structural-construction-n4-december-2023-question-paper-pdf-mcj-777.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/building-and-structural-construction-n4-december-2023-memo-pdf-wdx-684.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/building-and-structural-construction-n4-november-2022-question-paper-pdf-fku-363.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/building-and-structural-construction-n4-november-2022-memo-pdf-qez-594.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n4/building-and-structural-construction-n4-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n4pastpapers/building-and-structural-construction"
+        }
+      ]
+    },
+    "building_structural_construction-N5": {
+      "name": "Building and Structural Construction",
+      "code": "8060015",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N5%20Building%20and%20Structural%20Construction.pdf",
+      "implementation": "April 2022",
+      "modules": [
+        "Reinforced concrete foundations",
+        "Reinforced concrete columns",
+        "Reinforced concrete beams and slabs",
+        "Concrete and steel staircases",
+        "Bending schedules",
+        "Structural steelwork",
+        "Design work"
+      ],
+      "study_links": [
+        {
+          "label": "Engineering Statics interactive textbook",
+          "url": "https://engineeringstatics.org/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Building-and-Structural-Construction-7-Dec-2023-1.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Building-and-Structural-Construction-7-Dec-2023-Memorandum-1.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Building-and-Structural-Construction-November-2022.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Building-and-Structural-Construction-November-2022-Memorandum.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/building-and-structural-construction-n5-question-papers-and-memos-afrikaans-bou-en-strukturele-konstruksie-n5/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n5pastpapers/building-and-structural-construction"
+        }
+      ]
+    },
+    "building_structural_construction-N6": {
+      "name": "Building and Structural Construction",
+      "code": "8060026",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N6%20Building%20and%20Structural%20Construction.pdf",
+      "implementation": "January 2023",
+      "modules": [
+        "Concrete",
+        "Bending schedules",
+        "Iron and steel"
+      ],
+      "study_links": [
+        {
+          "label": "Engineering Statics interactive textbook",
+          "url": "https://engineeringstatics.org/"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/building-and-structural-construction-n6-november-2022-question-paper-pdf-fkr-554.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/building-and-structural-construction-n6-november-2022-memo-pdf-gcw-523.pdf"
+        },
+        {
+          "session": "April 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Building-and-Structural-Construction-April-2021studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Building-and-Structural-Construction-April-2021-Memorandumstudypaperscoza.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n6/building-and-structural-construction-n6-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/building-and-structural-construction"
+        }
+      ]
+    },
+    "building_structural_surveying-N4": {
+      "name": "Building and Structural Surveying",
+      "code": "8060034",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N4%20Buliding%20and%20Structural%20Surveying.pdf",
+      "implementation": "January 2022",
+      "modules": [
+        "Surveying principles",
+        "Linear measurement",
+        "Height measurement",
+        "Basic concepts",
+        "Angular measurement",
+        "Setting out",
+        "Areas and volumes",
+        "Plane table surveying",
+        "Compass surveying"
+      ],
+      "study_links": [
+        {
+          "label": "NPTEL levelling methods",
+          "url": "https://archive.nptel.ac.in/content/storage2/courses/105107122/modules/module4/index.htm"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/building-and-structural-surveying-n4-december-2023-question-paper-pdf-tkk-460.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/building-and-structural-surveying-n4-december-2023-memo-pdf-okr-464.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/building-and-structural-surveying-n4-november-2022-question-paper-pdf-jyf-569.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/building-and-structural-surveying-n4-november-2022-memo-pdf-kov-565.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n4/building-and-structural-surveying-n4-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n4pastpapers/building-and-structural-surveying"
+        }
+      ]
+    },
+    "building_structural_surveying-N5": {
+      "name": "Building and Structural Surveying",
+      "code": "8060045",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N5%20Building%20and%20Structural%20Surveying.pdf",
+      "implementation": "April 2023",
+      "modules": [
+        "Basic surveying concepts",
+        "Linear measurement",
+        "Height measurement",
+        "Building surveys",
+        "Angular measurement",
+        "Setting out"
+      ],
+      "study_links": [
+        {
+          "label": "NPTEL levelling methods",
+          "url": "https://archive.nptel.ac.in/content/storage2/courses/105107122/modules/module4/index.htm"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Building-and-Structural-Surveying-21-November-2023.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Building-and-Structural-Surveying-21-November-2023-Memorundum.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Building-and-Strucutral-Surveying-November-2022-1.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Building-and-Structural-Surveying-November-2022-Memorandum.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/building-and-structural-surveying-n5-question-papers-and-memos-afrikaans-bou-en-strukturele-opmeting-n5/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n5pastpapers/building-and-structural-surveying"
+        }
+      ]
+    },
+    "building_structural_surveying-N6": {
+      "name": "Building and Structural Surveying",
+      "code": "8060056",
+      "syllabus": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N6%20Building%20and%20Structural%20Surveying.pdf",
+      "implementation": "April 2023",
+      "modules": [
+        "Angular measurement",
+        "Traversing",
+        "Tacheometry",
+        "Contouring",
+        "Setting out",
+        "Road construction"
+      ],
+      "source_note": "The syllabus cover prints code 8060034. The examination papers identify Building and Structural Surveying N6 as 8060056.",
+      "study_links": [
+        {
+          "label": "NPTEL levelling methods",
+          "url": "https://archive.nptel.ac.in/content/storage2/courses/105107122/modules/module4/index.htm"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Building-and-Structural-Surveying-November-2022studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Building-and-Structural-Surveying-November-2022-Memorandumstudypaperscoza.pdf"
+        },
+        {
+          "session": "April 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Building-and-Structural-Surveying-April-2021studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Building-and-Structural-Surveying-April-2021-Memorandumstudypaperscoza.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n6/building-and-structural-surveying-n6-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/building-and-structural-surveying"
+        }
+      ]
+    },
+    "chemical_plant_operation-N4": {
+      "name": "Chemical Plant Operation",
+      "code": "8050004",
+      "study_links": [
+        {
+          "label": "NPTEL material balance worked lesson",
+          "url": "https://archive.nptel.ac.in/content/storage2/courses/103103037/module2/lec1/2.html"
+        },
+        {
+          "label": "Instrumentation and process control worksheets",
+          "url": "https://www.ibiblio.org/kuphaldt/socratic/sinst/doc/practice.html"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/chemical-plant-operation-n4-december-2023-question-paper-pdf-dym-837.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/chemical-plant-operation-n4-december-2023-memo-pdf-yjp-425.pdf"
+        },
+        {
+          "session": "August 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/chemical-plant-operation-n4-august-2021-question-paper-pdf-uqt-750.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/chemical-plant-operation-n4-august-2021-memo-pdf-xyk-670.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n4/chemical-plant-operation-n4-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n4pastpapers/chemical-plant-operation"
+        }
+      ]
+    },
+    "chemical_plant_operation-N5": {
+      "name": "Chemical Plant Operation",
+      "code": "8050015",
+      "study_links": [
+        {
+          "label": "NPTEL material balance worked lesson",
+          "url": "https://archive.nptel.ac.in/content/storage2/courses/103103037/module2/lec1/2.html"
+        },
+        {
+          "label": "Instrumentation and process control worksheets",
+          "url": "https://www.ibiblio.org/kuphaldt/socratic/sinst/doc/practice.html"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Chemical-Plant-Operation-1-Dec-2023.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Chemical-Plant-Operation-1-Dec-2023-Memorandum.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Chemical-Plant-Operation-November-2022.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Chemical-Plant-Operations-November-2022-Memorandum.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/chemical-plant-operation-n5-question-papers-and-memos-afrikaans-chemiese-aanlegbedryf-n5/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n5pastpapers/chemical-plant-operation"
+        }
+      ]
+    },
+    "chemical_plant_operation-N6": {
+      "name": "Chemical Plant Operation",
+      "code": "8050026",
+      "study_links": [
+        {
+          "label": "NPTEL material balance worked lesson",
+          "url": "https://archive.nptel.ac.in/content/storage2/courses/103103037/module2/lec1/2.html"
+        },
+        {
+          "label": "Instrumentation and process control worksheets",
+          "url": "https://www.ibiblio.org/kuphaldt/socratic/sinst/doc/practice.html"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Chemical-Plant-Operation-24-Nov-2023studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Chemical-Plant-Operation-24-Nov-2023-Memorandumstudypaperscoza.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Chemical-Plant-Operations-November-2022studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Chemical-Plant-Operations-November-2022-Memorandumstudypaperscoza.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n6/chemical-plant-operation-n6-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/chemical-plant-operation"
+        }
+      ]
+    },
+    "chemical_technology-N6": {
+      "name": "Chemical Technology",
+      "code": "15040106",
+      "study_links": [
+        {
+          "label": "NPTEL material balance worked lesson",
+          "url": "https://archive.nptel.ac.in/content/storage2/courses/103103037/module2/lec1/2.html"
+        },
+        {
+          "label": "OpenStax Chemistry 2e",
+          "url": "https://openstax.org/details/books/chemistry-2e"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Chemical-Technology-November-2022studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Chemical-Technology-November-2022-Memorandumstudypaperscoza.pdf"
+        },
+        {
+          "session": "August 2021",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Chemical-Technology-August-2021studypaperscoza.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N6-Chemical-Technology-August-2021-Memorandumstudypaperscoza.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n6/chemical-technology-n6-past-exam-question-papers-and-memos/"
+        },
+        {
+          "label": "EduCoast archive",
+          "url": "https://www.educoast.co.za/za/n6pastpapers/chemical-technology"
+        }
+      ]
+    },
+    "chemistry-N4": {
+      "name": "Chemistry",
+      "code": "15040004",
+      "study_links": [
+        {
+          "label": "OpenStax Chemistry 2e",
+          "url": "https://openstax.org/details/books/chemistry-2e"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "November 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/chemistry-n4-november-2023-question-paper-pdf-hqo-617.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/chemistry-n4-november-2023-memo-pdf-suz-288.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2026/01/chemistry-n4-november-2022-question-paper-pdf-zvk-485.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2026/01/chemistry-n4-november-2022-memo-pdf-ght-844.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n4/chemistry-n4-past-exam-question-papers-and-memos/"
+        }
+      ]
+    },
+    "chemistry-N5": {
+      "name": "Chemistry",
+      "code": "15040015",
+      "study_links": [
+        {
+          "label": "OpenStax Chemistry 2e",
+          "url": "https://openstax.org/details/books/chemistry-2e"
+        }
+      ],
+      "pairs": [
+        {
+          "session": "December 2023",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Chemistry-Dec-2023.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Chemistry-Dec-2023-Memorandum.pdf"
+        },
+        {
+          "session": "November 2022",
+          "paper": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Chemistry-November-2022.pdf",
+          "memo": "https://studypapers.co.za/wp-content/uploads/2025/09/N5-Chemistry-November-2022-Memorandum.pdf"
+        }
+      ],
+      "archives": [
+        {
+          "label": "StudyPapers archive",
+          "url": "https://studypapers.co.za/n5/chemistry-n5-question-papers-and-memos-afrikaans-chemie-n5/"
+        }
+      ]
+    }
+  }
+}
