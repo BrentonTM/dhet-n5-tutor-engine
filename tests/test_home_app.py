@@ -74,6 +74,9 @@ class HomeAppTests(unittest.TestCase):
         self.assertEqual(len(app.exception), 0)
         self.assertEqual(app.session_state["learning_workspace"], "🤖 Tutor & lab")
         self.assertEqual(app.selectbox(key="interactive_3d_lab_diagram_Industrial Instruments N5").value, "venturi")
+        lab_models = [node for node in app.get("iframe") if 'var SPEC={"title": "Venturi meter"' in node.proto.srcdoc]
+        self.assertEqual(len(lab_models), 1)
+        self.assertFalse(any("Lock prediction" in button.label for button in app.button))
 
     def test_course_change_updates_the_live_gallery_and_tip_content(self):
         app = self.home()

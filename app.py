@@ -1440,58 +1440,6 @@ SUBJECT_MODULES = {
 }
 
 
-LAB_SUBJECT_CODES = {
-    **{name: code for code, name in N4_NAMES.items()},
-    "Mathematics N5": "MATH-N5",
-    "Digital Electronics N4": "DIGI-N4",
-    "Digital Electronics N5 — visualization preview": "DIGI-N5",
-    "Industrial Electronics N5": "IE-N5",
-    "Industrial Instruments N5": "INST-N5",
-}
-LAB_TOPIC_BY_DIAGRAM = {
-    "derivative": "Differentiation",
-    "riemann": "The definite integral",
-    "revolve": "Areas and volumes",
-    "second_moment": "Second moment of area and moment of inertia",
-    "ode_decay": "Differential equations",
-    "unit_circle": "Integration techniques",
-    "pascal": "Applications of differentiation",
-    "logic_gate_board": "Logic Gates, Boolean Algebra and K-Maps",
-    "kmap4": "Logic Gates, Boolean Algebra and K-Maps",
-    "full_adder_3d": "Combinational Circuits",
-    "weighted_dac_3d": "M1: Digital-to-Analog and Analog-to-Digital Converters",
-    "flash_adc_3d": "M1: Digital-to-Analog and Analog-to-Digital Converters",
-    "phasor": "Alternating Current Theory",
-    "rc_response": "Alternating Current Theory",
-    "bridge_rectifier_3d": "Power Supplies",
-    "rectifier": "Power Supplies",
-    "bjt_structure": "Amplifiers",
-    "load_line": "Amplifiers",
-    "opamp_inv": "Amplifiers",
-    "opamp_noninv": "Amplifiers",
-    "timer555": "Oscillators",
-    "wheatstone": "Measuring Instruments",
-    "lvdt": "Integrated Circuits and Transducers",
-    "scr_structure": "Electronic Phase Control",
-    "scr_waveform": "Electronic Phase Control",
-    "cro": "Measuring Instruments",
-    "lc_tank": "Oscillators",
-    "lcd_cell": "Liquid Crystal Display",
-    "rotameter": "Flow Measurement",
-    "venturi": "Flow Measurement",
-    "orifice": "Flow Measurement",
-    "weir": "Flow Measurement",
-    "target_flow": "Flow Measurement",
-    "manometer": "Flow Measurement",
-    "bourdon": "General Instrumentation Concepts and Terminology",
-    "strain_gauge": "General Instrumentation Concepts and Terminology",
-    "rtd_tc": "General Instrumentation Concepts and Terminology",
-    "tank_level": "Flow Measurement",
-    "ph_probe": "pH and Conductivity Measurement",
-    "pid_loop": "Automatic Control",
-    "step_response": "Automatic Control",
-}
-
 FLASHCARDS_DATA = {
     **{code: [{"q": row[2], "a": row[3]} for row in rows]
        for code, rows in N4_MODULES.items()},
@@ -1881,6 +1829,45 @@ with st.sidebar.expander("📐 N4 formula quick reference" if active_subject in 
     st.markdown('</div>', unsafe_allow_html=True)
 
 
+st.html("""
+<style>
+    .st-key-floating_tex_launcher {
+        position: fixed;
+        width: max-content;
+        right: calc(1rem + env(safe-area-inset-right, 0px));
+        bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+        z-index: 10;
+    }
+    .st-key-floating_tex_launcher button {
+        min-height: 44px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, .35);
+    }
+    /* Keep the chat above its launcher after Streamlit measures the empty popover. */
+    [data-testid="stPopoverBody"]:has(.st-key-quick_tex_chat) {
+        left: auto !important;
+        top: auto !important;
+        transform: none !important;
+        right: calc(1rem + env(safe-area-inset-right, 0px));
+        bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+        width: min(25rem, calc(100vw - 2rem - env(safe-area-inset-right, 0px)));
+        min-width: 0;
+        max-height: min(29rem, calc(100dvh - 8rem - env(safe-area-inset-bottom, 0px))) !important;
+        padding: 1rem;
+    }
+    .st-key-quick_tex_chat_input {
+        position: sticky;
+        bottom: 0;
+        z-index: 1;
+        background: #0a1120;
+    }
+    .stMainBlockContainer:has(.st-key-floating_tex_launcher) {
+        padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+    }
+</style>
+""")
+tex_launcher = st.container(key="floating_tex_launcher", width="content")
+
+
 # --- Main App Tabs ---
 pending_workspace = st.session_state.pop("pending_workspace", None)
 if pending_workspace:
@@ -2268,7 +2255,7 @@ if tab_tutor.open:
                 st.markdown("#### 🎯 Your tailored study session")
                 st.caption(
                     "Tex uses your recent topic checks, review dates, recurring missed concepts, "
-                    "optional confidence ratings and 3D lab reflections. It does not assign a fixed learning style."
+                    "optional confidence ratings and any past lab reflections. It does not assign a fixed learning style."
                 )
                 st.markdown(
                     f"**Next topic:** {adaptive_plan['topic'] or default_topic}  \n"
@@ -2579,155 +2566,56 @@ if tab_tutor.open:
 
         if sub_tab6.open:
             with sub_tab6:
-                if sub_tab6.open:
-                    st.markdown("### 🧊 Interactive 3D engineering lab")
-                    st.caption("How to operate a 3D model: drag empty space to rotate · scroll or pinch to zoom · right-drag to pan where supported · hover or click a labelled component to inspect it · adjust sliders or input switches, then use Reset.")
+                st.markdown("### 🧊 Interactive 3D engineering lab")
+                st.caption("How to operate a 3D model: drag empty space to rotate · scroll or pinch to zoom · right-drag to pan where supported · hover or click a labelled component to inspect it · adjust sliders or input switches, then use Reset.")
 
-                    from ui.diagram_engine import render_diagram3d
-                    from ui.diagram_registry import get_spec, title_of
+                from ui.diagram_engine import render_diagram3d
+                from ui.diagram_registry import get_spec, title_of
 
-                    lab_profiles = {
-                        **{N4_NAMES[code]: list(topics) for code, topics in N4_LAB_TOPICS.items()},
-                        "Mathematics N5": ["derivative", "riemann", "revolve", "second_moment", "ode_decay", "unit_circle", "pascal"],
-                        "Digital Electronics N4": ["logic_gate_board", "kmap4", "full_adder_3d"],
-                        "Digital Electronics N5 — visualization preview": ["weighted_dac_3d", "flash_adc_3d"],
-                        "Industrial Electronics N5": ["phasor", "rc_response", "bridge_rectifier_3d", "rectifier", "bjt_structure", "load_line", "opamp_inv", "opamp_noninv", "timer555", "wheatstone", "lvdt", "scr_structure", "scr_waveform", "cro", "lc_tank", "lcd_cell"],
-                        "Industrial Instruments N5": ["rotameter", "venturi", "orifice", "weir", "target_flow", "manometer", "bourdon", "strain_gauge", "rtd_tc", "tank_level", "ph_probe", "pid_loop", "step_response"],
-                    }
-                    lab_subjects = list(lab_profiles)
-                    preferred_lab_subject = LAB_SUBJECTS.get(active_subject, "Digital Electronics N5 — visualization preview")
-                    lab_subject = st.selectbox(
-                        "Lab subject:",
-                        lab_subjects,
-                        index=0 if "interactive_3d_lab_subject" in st.session_state else lab_subjects.index(preferred_lab_subject),
-                        key="interactive_3d_lab_subject",
-                    )
+                lab_profiles = {
+                    **{N4_NAMES[code]: list(topics) for code, topics in N4_LAB_TOPICS.items()},
+                    "Mathematics N5": ["derivative", "riemann", "revolve", "second_moment", "ode_decay", "unit_circle", "pascal"],
+                    "Digital Electronics N4": ["logic_gate_board", "kmap4", "full_adder_3d"],
+                    "Digital Electronics N5 — visualization preview": ["weighted_dac_3d", "flash_adc_3d"],
+                    "Industrial Electronics N5": ["phasor", "rc_response", "bridge_rectifier_3d", "rectifier", "bjt_structure", "load_line", "opamp_inv", "opamp_noninv", "timer555", "wheatstone", "lvdt", "scr_structure", "scr_waveform", "cro", "lc_tank", "lcd_cell"],
+                    "Industrial Instruments N5": ["rotameter", "venturi", "orifice", "weir", "target_flow", "manometer", "bourdon", "strain_gauge", "rtd_tc", "tank_level", "ph_probe", "pid_loop", "step_response"],
+                }
+                lab_subjects = list(lab_profiles)
+                preferred_lab_subject = LAB_SUBJECTS.get(active_subject, "Digital Electronics N5 — visualization preview")
+                lab_subject = st.selectbox(
+                    "Lab subject:",
+                    lab_subjects,
+                    index=0 if "interactive_3d_lab_subject" in st.session_state else lab_subjects.index(preferred_lab_subject),
+                    key="interactive_3d_lab_subject",
+                )
 
-                    if lab_subject == "Digital Electronics N5 — visualization preview":
-                        st.warning("This DAC scene is an interactive study aid. The standalone Digital Electronics N5 curriculum map still needs authoritative syllabus verification.")
-                    elif lab_subject == "Digital Electronics N4":
-                        st.caption("N4 lab scope includes logic gates, full adders and K-maps. Memory Systems are excluded from your confirmed N4 scope.")
+                if lab_subject == "Digital Electronics N5 — visualization preview":
+                    st.warning("This DAC scene is an interactive study aid. The standalone Digital Electronics N5 curriculum map still needs authoritative syllabus verification.")
+                elif lab_subject == "Digital Electronics N4":
+                    st.caption("N4 lab scope includes logic gates, full adders and K-maps. Memory Systems are excluded from your confirmed N4 scope.")
 
-                    if lab_subject == "Industrial Electronics N5":
-                        st.markdown("#### Guided 3D engineering diagrams")
+                if lab_subject == "Industrial Electronics N5":
+                    st.markdown("#### Guided 3D engineering diagrams")
 
-                    diagram_ids = lab_profiles[lab_subject]
-                    diagram_id = st.selectbox(
-                        "Interactive model:",
-                        diagram_ids,
-                        format_func=title_of,
-                        key=f"interactive_3d_lab_diagram_{lab_subject}",
-                    )
-                    lab_challenges = {
-                        "rotameter": "Predict where the float will sit. Raise flow, then change specific gravity while holding flow steady. Explain why the water-calibrated indication shifts.",
-                        "logic_gate_board": "Try A/B = 00, 01, 10 and 11. Record AND, OR, XOR and NAND; explain why XOR differs from OR.",
-                        "kmap4": "Set four edge-adjacent minterms to 1. Identify the largest valid group, including wraparound adjacency.",
-                        "full_adder_3d": "Set A = 1, B = 1 and Cin = 1. Predict SUM and CARRY before toggling the inputs.",
-                        "weighted_dac_3d": "Set D3D2D1D0 = 1010. Calculate Vout from the resistor weights, then compare with the readout.",
-                        "flash_adc_3d": "Move Vin just below and above a comparator threshold. Observe the thermometer count, binary code and quantization error.",
-                        "derivative": "Keep the point fixed and reduce h. Compare the secant slope with the exact tangent slope.",
-                        "riemann": "Increase the number of strips. Observe how the sum approaches the area under the curve.",
-                        "opamp_inv": "Double Rf while keeping R1 and Vin fixed. Predict the gain and check whether the output clips.",
-                        "opamp_noninv": "Change Rf and R1. Relate the measured gain to 1 + Rf/R1.",
-                        "rectifier": "Compare half-wave and full-wave output, then increase the filter size and observe ripple.",
-                        "bridge_rectifier_3d": "Move phase through both half-cycles and identify the conducting diode pair. Then change C and RLoad; predict the ripple change.",
-                        "scr_structure": "Apply forward anode voltage with the gate off, then trigger the gate. Describe the state change.",
-                        "scr_waveform": "Increase firing angle α. Predict how the conduction angle and average output change.",
-                        "venturi": "Increase inlet velocity. Compare throat velocity with the change in differential pressure.",
-                        "bourdon": "Increase pressure and follow the tube tip, linkage and pointer response.",
-                        "rtd_tc": "Change process temperature. Compare how the RTD resistance and thermocouple EMF are represented.",
-                        "pid_loop": "Change the error and controller gains. Observe how P, I and D terms contribute to the control-valve output.",
-                    }
-                    lab_challenge = lab_challenges.get(
-                        diagram_id,
-                        "Rotate the model, hover each labelled part, then change one control at a time and explain the updated readouts.",
-                    )
-                    lab_code = LAB_SUBJECT_CODES.get(lab_subject)
-                    lab_topic = N4_LAB_TOPICS.get(lab_code, LAB_TOPIC_BY_DIAGRAM).get(diagram_id)
-                    prediction_key = "lab_prediction_" + re.sub(r"[^A-Za-z0-9_-]+", "_", f"{lab_subject}_{diagram_id}")
-                    locked_key = f"{prediction_key}_locked"
-                    saved_key = f"{prediction_key}_saved"
-                    locked_prediction = bool(st.session_state.get(locked_key, False))
+                diagram_ids = lab_profiles[lab_subject]
+                diagram_id = st.selectbox(
+                    "Interactive model:",
+                    diagram_ids,
+                    format_func=title_of,
+                    key=f"interactive_3d_lab_diagram_{lab_subject}",
+                )
+                diagram_spec = get_spec(diagram_id)
+                if diagram_spec:
+                    render_diagram3d(diagram_spec, height=680)
+                else:
+                    st.error("This model could not be loaded. Check the diagram registry and its source module.")
 
-                    st.markdown("#### 🧠 Predict → explore → explain")
-                    if not locked_prediction:
-                        st.info("Make a brief prediction before opening the model. Then change one control and compare what happens.")
-                        st.caption("**Topic challenge:** " + lab_challenge)
-                        prediction_text = st.text_area(
-                            "What do you expect the model to show?",
-                            key=f"{prediction_key}_text",
-                            max_chars=600,
-                            height=90,
-                            placeholder="State the direction of change, expected output, or component behaviour.",
-                        )
-                        prediction_confidence = st.radio(
-                            "How sure are you?",
-                            ["Unsure", "Somewhat sure", "Very sure"],
-                            index=1,
-                            horizontal=True,
-                            key=f"{prediction_key}_confidence",
-                        )
-                        if st.button("Lock prediction and open the model", key=f"{prediction_key}_lock_button"):
-                            if not prediction_text.strip():
-                                st.warning("Write a short prediction first. One sentence is enough.")
-                            else:
-                                st.session_state[locked_key] = True
-                                st.session_state[f"{prediction_key}_confidence_value"] = {
-                                    "Unsure": 1, "Somewhat sure": 2, "Very sure": 3
-                                }[prediction_confidence]
-                                st.rerun()
-                    else:
-                        st.success("Prediction locked. Now inspect the model, change one control, and compare the result.")
-                        st.caption("**Topic challenge:** " + lab_challenge)
-                        if st.button("Start a new prediction", key=f"{prediction_key}_reset_button"):
-                            for state_key in (
-                                locked_key, saved_key, f"{prediction_key}_text",
-                                f"{prediction_key}_confidence", f"{prediction_key}_confidence_value",
-                                f"{prediction_key}_reflection",
-                            ):
-                                st.session_state.pop(state_key, None)
-                            st.rerun()
-                        diagram_spec = get_spec(diagram_id)
-                        if diagram_spec:
-                            render_diagram3d(diagram_spec, height=680)
-                        else:
-                            st.error("This model could not be loaded. Check the diagram registry and its source module.")
-
-                        st.caption("After you adjust a control, compare the readout with your prediction.")
-                        reflection = st.radio(
-                            "How did the result compare?",
-                            ["It matched", "It partly matched", "It was different"],
-                            index=None,
-                            horizontal=True,
-                            key=f"{prediction_key}_reflection",
-                        )
-                        if not st.session_state.get(saved_key):
-                            if st.button("Save this lab reflection", key=f"{prediction_key}_save_button"):
-                                if reflection is None:
-                                    st.info("Choose the reflection that best describes what you observed.")
-                                elif lab_code and lab_topic:
-                                    save_study_records("lab", [{
-                                        "subject": lab_code,
-                                        "topic": lab_topic,
-                                        "matched": reflection == "It matched",
-                                        "confidence": st.session_state.get(f"{prediction_key}_confidence_value", 2),
-                                        "attempted_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                                    }])
-                                    st.session_state[saved_key] = True
-                                    st.success("Reflection recorded. It can guide your next study suggestion.")
-                                    show_study_history_status()
-                                else:
-                                    st.session_state[saved_key] = True
-                                    st.success("Reflection saved for this browser session.")
-                        elif st.session_state.get(saved_key):
-                            st.caption("Reflection recorded. Course-linked reflections can guide your next study suggestion.")
-
-                    if lab_subject == "Industrial Electronics N5":
-                        st.divider()
-                        st.markdown("#### 🧰 Build and simulate this topic")
-                        st.caption(f"Use the interactive {title_of(diagram_id)} model above, then build a matching circuit below. Add components, connect breadboard holes and Arduino pins, run the built-in Blink sketch or load a supported .ino sketch, and compare your predicted values with the DC meter.")
-                        from ui.circuit_lab import render_circuit_lab
-                        render_circuit_lab(height=1030, focus_topic=title_of(diagram_id))
+                if lab_subject == "Industrial Electronics N5":
+                    st.divider()
+                    st.markdown("#### 🧰 Build and simulate this topic")
+                    st.caption(f"Use the interactive {title_of(diagram_id)} model above, then build a matching circuit below. Add components, connect breadboard holes and Arduino pins, run the built-in Blink sketch or load a supported .ino sketch, and compare your predicted values with the DC meter.")
+                    from ui.circuit_lab import render_circuit_lab
+                    render_circuit_lab(height=1030, focus_topic=title_of(diagram_id))
 
 # TAB 5: Formula & Reference Hub
 if tab_formulas.open:
@@ -2785,7 +2673,7 @@ if tab_analytics.open:
             lab_history=st.session_state.get("lab_prediction_history", []),
         )
         st.caption(
-            "These suggestions use your topic checks and lab reflections to spot repeated gaps and topics due for review."
+            "These suggestions use your topic checks and any past lab reflections to spot repeated gaps and topics due for review."
         )
         st.info(
             f"**Suggested next:** {adaptive_plan['topic'] or 'Choose a topic'} · "
@@ -2816,7 +2704,7 @@ if tab_analytics.open:
                 for kind, row in recent
             ], hide_index=True)
         else:
-            st.caption("Complete a topic check, ask for practice feedback, submit a mock exam, or save a course-linked lab reflection to build your history.")
+            st.caption("Complete a topic check, ask for practice feedback, or submit a mock exam to build your history.")
 
         st.markdown("### 📍 Topic map")
         if modules:
@@ -2925,3 +2813,11 @@ if tab_analytics.open:
             width="stretch",
         )
 
+
+with tex_launcher:
+    quick_tex = st.popover(
+        "Ask Tex", icon=":material/chat:", type="primary", key="quick_tex", on_change="rerun"
+    )
+    if quick_tex.open:
+        with quick_tex, st.container(key="quick_tex_chat"):
+            render_ai_tutor_chat(widget_prefix="quick_tex", compact=True)
