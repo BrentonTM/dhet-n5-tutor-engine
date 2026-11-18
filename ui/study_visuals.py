@@ -4,7 +4,7 @@ import re
 
 import streamlit as st
 
-from ui import diagrams_study  # Registers the additional circuit models.
+from ui import diagrams_curriculum, diagrams_study  # Registers additional study models.
 from ui.diagram_engine import build_html
 from ui.diagram_lib import CY, OR, ST, cyl, param
 from ui.diagram_registry import get_spec, title_of
@@ -67,6 +67,19 @@ MATCHES = {
 
 LESSON_TOPICS = {
     "DIGI": {
+        "number systems and codes": ("binary_place_value",),
+        "number systems": ("binary_place_value",),
+        "logic device characteristics": ("logic_thresholds",),
+        "flip flops and latches": ("register_bits",),
+        "encoder decoder realisation": ("binary_decoder",),
+        "parity error detection and ascii code": ("logic_gate_board",),
+        "code converters": ("binary_decoder", "binary_place_value"),
+        "addition and multiplication": ("full_adder_3d",),
+        "division and two s complement": ("binary_place_value",),
+        "party line circuits ttl and mos logic": ("logic_thresholds",),
+        "computer architecture memory systems": ("memory_address", "register_bits"),
+        "contact bounce elimination and data storage interfaces": ("switch_bounce", "register_bits"),
+        "input output devices": ("memory_address", "logic_thresholds"),
         "logic gates boolean algebra and k maps": ("logic_gate_board", "kmap4"),
         "combinational circuits": ("full_adder_3d",),
         "counters and shift registers": ("ripple_counter_3d",),
@@ -91,10 +104,15 @@ LESSON_TOPICS = {
         "general instrumentation concepts and terminology": ("current_loop_3d", "bourdon", "rtd_tc"),
         "flow measurement": ("orifice", "venturi", "rotameter", "weir", "target_flow"),
         "density humidity and viscosity measurement": ("manometer",),
-        "ph and conductivity measurement": ("ph_probe",),
+        "ph and conductivity measurement": ("ph_probe", "conductivity_cell"),
         "automatic control": ("pid_loop", "step_response"),
     },
     "MATH": {
+        "determinants": ("determinant_area",),
+        "complex numbers": ("complex_plane",),
+        "functions and graphs": ("parabola_transform",),
+        "limits and continuity": ("removable_limit",),
+        "applications of differentiation": ("derivative",),
         "integration techniques": ("riemann",),
         "areas and volumes": ("riemann", "revolve"),
         "differential equations": ("ode_decay",),
@@ -102,6 +120,17 @@ LESSON_TOPICS = {
 }
 
 TRY_THIS = {
+    "determinant_area": "Change a and d until ad = 1. Watch the two vectors become collinear.",
+    "complex_plane": "Change the imaginary part and compare z with its conjugate.",
+    "parabola_transform": "Move the turning point, then reverse the sign of a.",
+    "removable_limit": "Bring both points toward the hole and compare their readouts.",
+    "binary_place_value": "Compare 0111 and 1000 under both interpretations.",
+    "binary_decoder": "Change one input bit and track which output lights.",
+    "logic_thresholds": "Increase the input from 0 V to 5 V and locate the undefined region.",
+    "register_bits": "Change the input and click Clock edge to capture the new word.",
+    "memory_address": "Select address 3, then toggle the external input and watch the readout.",
+    "switch_bounce": "Lengthen the bounce or stability interval and compare both traces.",
+    "conductivity_cell": "Keep conductivity fixed and double the electrode spacing.",
     "logic_gate_board": "Set A and B to 1. Compare the AND, XOR and NAND traces.",
     "full_adder_3d": "Set A = B = 1 and change carry-in. Trace which gate drives each output.",
     "kmap4": "Turn on all four corner cells. Trace how adjacency wraps around the edges.",
