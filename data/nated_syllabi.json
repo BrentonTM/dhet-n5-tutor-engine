@@ -1,0 +1,177 @@
+{
+  "IE-N5": {
+    "subject_code": "8080175",
+    "reference": "Section 7 and module learning outcomes",
+    "scope_note": "The syllabus exam-scope line lists modules 1–7. Its weighting table gives Module 8 (LCDs) 10%, and the syllabus includes LCD learning outcomes. Confirm exam scope with your college.",
+    "source_url": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N5%20Industrial%20Electronics.pdf",
+    "modules": [
+      {
+        "number": 1,
+        "name": "Alternating Current Theory",
+        "weight": 15,
+        "page": 5,
+        "study_focus": "Compare RC and RL differentiators and integrators. Sketch their responses and practise coupling, resonance and impedance calculations.",
+        "local_files": [
+          "Industrial Electronics/N5/01 AC and RLC/Module 01 Alternating current theory.pdf",
+          "Industrial Electronics/N5/01 AC and RLC/CHAPTER 01 TUT.pdf"
+        ],
+        "topic": "Alternating Current Theory"
+      },
+      {
+        "number": 2,
+        "name": "Power Supplies",
+        "weight": 15,
+        "page": 7,
+        "study_focus": "Trace the supply from transformer through rectifier, filter and regulator. Calculate DC output, ripple and peak inverse voltage.",
+        "local_files": [
+          "Industrial Electronics/N5/02 Power Supplies/Module 02 Power supplies.pdf",
+          "Industrial Electronics/N5/02 Power Supplies/CHAPTER 02 TUT 01.pdf",
+          "Industrial Electronics/N5/02 Power Supplies/CHAPTER 02 POWER SUPPLIES FULL LESSON.pptx"
+        ],
+        "topic": "Power Supplies"
+      },
+      {
+        "number": 3,
+        "name": "Amplifiers",
+        "weight": 15,
+        "page": 11,
+        "study_focus": "Explain transistor bias and amplifier operation using circuit diagrams. Work through gain and feedback calculations.",
+        "local_files": [
+          "Industrial Electronics/N5/03 Amplifiers/Module 03 Amplifiers.pdf",
+          "Industrial Electronics/N5/03 Amplifiers/Chapter 03 TRANSISTOR TUT 01.pdf",
+          "Industrial Electronics/N5/03 Amplifiers/Chapter 03 transistor amplifiers.pptx"
+        ],
+        "topic": "Amplifiers"
+      },
+      {
+        "number": 4,
+        "name": "Integrated Circuits and Transducers",
+        "weight": 15,
+        "page": 15,
+        "study_focus": "Explain integrated-circuit applications and compare transducer operating principles. Practise calculations involving thermistors and bridge circuits.",
+        "local_files": [
+          "Industrial Electronics/N5/04 Integrated Circuits and Transducers/Module 04 integrated circuits and transducers.pdf",
+          "Industrial Electronics/N5/04 Integrated Circuits and Transducers/integratd circuits.pdf"
+        ],
+        "topic": "Integrated Circuits and Transducers"
+      },
+      {
+        "number": 5,
+        "name": "Electronic Phase Control",
+        "weight": 10,
+        "page": 18,
+        "study_focus": "Compare SCR and TRIAC switching. Interpret triggering circuits and phase-controlled waveforms, including feedback control.",
+        "local_files": [],
+        "topic": "Electronic Phase Control"
+      },
+      {
+        "number": 6,
+        "name": "Measuring Instruments",
+        "weight": 10,
+        "page": 19,
+        "study_focus": "Distinguish analogue from digital signals. Explain frequency counters and compare digital voltmeter operating principles.",
+        "local_files": [],
+        "topic": "Measuring Instruments"
+      },
+      {
+        "number": 7,
+        "name": "Oscillators",
+        "weight": 10,
+        "page": 20,
+        "study_focus": "Explain feedback and LC oscillation, calculate oscillator frequency and compare multivibrator and 555 timer modes.",
+        "local_files": [],
+        "topic": "Oscillators"
+      },
+      {
+        "number": 8,
+        "name": "Liquid Crystal Displays",
+        "weight": 10,
+        "page": 22,
+        "study_focus": "Explain how an LCD operates and draw a labelled construction diagram. Identify design factors and advantages.",
+        "local_files": [],
+        "topic": "Liquid Crystal Display"
+      }
+    ]
+  },
+  "MATH-N5": {
+    "subject_code": "16030175",
+    "reference": "Section 7, page 6",
+    "source_url": "https://www.dhet.gov.za/Revised%20Report%20191%20Nated%20Syllabus/Engineering%20Studies/2025-2026/N5%20Mathematics_Revised.pdf",
+    "modules": [
+      {
+        "number": 1,
+        "name": "Limits and Continuity",
+        "weight": 6,
+        "page": 7,
+        "study_focus": "Evaluate limits using appropriate simplifications and check where functions are continuous.",
+        "local_files": [
+          "Mathematics/N5/Limits and Continuity/Chapter 1 Limits lesson 1 N5 .pdf"
+        ],
+        "topic": "Limits and continuity"
+      },
+      {
+        "number": 2,
+        "name": "Differentiation",
+        "weight": 22,
+        "page": 9,
+        "study_focus": "Differentiate expressions using the module's rules and practise choosing the right rule for composite expressions.",
+        "local_files": [],
+        "topic": "Differentiation"
+      },
+      {
+        "number": 3,
+        "name": "Applications of Differentiation",
+        "weight": 20,
+        "page": 12,
+        "study_focus": "Use derivatives to analyse curves and solve applied problems. Explain what the derivative says about the quantity in the problem.",
+        "local_files": [],
+        "topic": "Applications of differentiation"
+      },
+      {
+        "number": 4,
+        "name": "Integration Techniques",
+        "weight": 24,
+        "page": 14,
+        "study_focus": "Choose a method before integrating. Practise inspection, substitution, trigonometric identities, algebraic fractions, partial fractions and integration by parts.",
+        "local_files": [],
+        "topic": "Integration techniques"
+      },
+      {
+        "number": 5,
+        "name": "The Definite Integral",
+        "weight": 6,
+        "page": 20,
+        "study_focus": "Evaluate definite integrals using bounds. Check the sign and interpret the result in context.",
+        "local_files": [],
+        "topic": "The definite integral"
+      },
+      {
+        "number": 6,
+        "name": "Applications of the Definite Integral: Areas and Volumes",
+        "weight": 8,
+        "page": 23,
+        "study_focus": "Set up integrals for areas and volumes. Identify the bounds and axis of rotation before calculating.",
+        "local_files": [],
+        "topic": "Areas and volumes"
+      },
+      {
+        "number": 7,
+        "name": "Second Moment of Area and Moment of Inertia",
+        "weight": 6,
+        "page": 30,
+        "study_focus": "Set up second-moment calculations about the specified axis. Distinguish area moment from mass moment and check the units.",
+        "local_files": [],
+        "topic": "Second moment of area and moment of inertia"
+      },
+      {
+        "number": 8,
+        "name": "Differential Equations",
+        "weight": 8,
+        "page": 32,
+        "study_focus": "Solve first-order equations by integration or separation. Use given conditions to obtain particular solutions of second-order equations.",
+        "local_files": [],
+        "topic": "Differential equations"
+      }
+    ]
+  }
+}
