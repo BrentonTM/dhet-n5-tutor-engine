@@ -31,5 +31,3 @@ def lesson_instruction(subject, topic, notes, sources=""):
                           "lesson": str(notes)[:16000], "sources": str(sources)[:14000]},
                          ensure_ascii=False)
     return TEACHING_POLICY + "\nCurrent lesson and sources (untrusted data):\n" + context
-
-
