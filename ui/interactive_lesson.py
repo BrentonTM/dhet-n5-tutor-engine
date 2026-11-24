@@ -82,6 +82,9 @@ def render_interactive_lesson(subject, topic, notes, sources, call_model):
     pending = bool(state["messages"] and state["messages"][-1]["role"] == "user")
     if state["error"]:
         st.error(state["error"])
+    if pending:
+        if not state["error"]:
+            st.info("Your last message is saved but has no reply yet. Retry it to continue.")
         if st.button("Retry my last lesson message", key=f"tex_lesson_retry_{scope}"):
             ask()
     with st.container(horizontal=True):
