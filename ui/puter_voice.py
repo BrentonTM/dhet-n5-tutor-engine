@@ -8,7 +8,7 @@ _HTML = """
 <div><button id="connect" disabled>Enable Tex voice</button>
 <button id="speak" disabled>Read response</button>
 <button id="pause">Pause audio</button><button id="resume">Resume audio</button>
-<button id="listen">Interrupt / speak</button><button id="stop">Stop voice</button></div>
+<button id="listen">Interrupt / speak</button><button id="stop">Stop voice</button><button id="signout" disabled>Sign out of Puter</button></div>
 <label><input id="auto" type="checkbox"> Read new replies automatically</label>
 <label><input id="handsfree" type="checkbox"> Listen after each reply (headphones recommended)</label>
 <label>Voice <select id="voice"></select></label>
@@ -74,7 +74,7 @@ export default function({parentElement, data, setTriggerValue}) {
   if(!s.initialized){
     s.initialized=true;
     const option=document.createElement('option');option.value=data.voice_id;option.textContent=data.voice_name;el('voice').appendChild(option);
-    loadPuter().then(()=>{if(!s.disposed){el('connect').disabled=false;status('Voice is off. Enable it to sign in to Puter; account credits and limits apply.');}}).catch(()=>status('Puter could not load. Typed and recorded lessons still work.'));
+    loadPuter().then(()=>{if(!s.disposed){el('connect').disabled=false;el('signout').disabled=false;status('Voice is off. Enable it to sign in to Puter; account credits and limits apply.');}}).catch(()=>status('Puter could not load. Typed and recorded lessons still work.'));
   }
   el('connect').onclick=async()=>{
     try {
@@ -99,6 +99,7 @@ export default function({parentElement, data, setTriggerValue}) {
   el('resume').onclick=()=>{if(s.audio)s.audio.play().then(()=>status('Tex is speaking.')).catch(()=>status('Press Read response to restart playback.'));};
   el('listen').onclick=listen;
   el('stop').onclick=()=>{abort();s.enabled=false;el('auto').checked=false;el('handsfree').checked=false;el('speak').disabled=true;status('Voice stopped. Microphone is off.');};
+  el('signout').onclick=async()=>{el('stop').onclick();try{await window.puter.auth.signOut();status('Signed out of Puter. Voice and microphone are off.');}catch{status('Voice stopped. Puter sign-out could not complete; try again.');}};
   if(s.enabled)el('speak').disabled=!data.text;
   if(s.enabled&&data.text&&data.reply_id!==s.last&&el('auto').checked)speak();
   return ()=>{s.disposed=true;abort();instances.delete(parentElement);};
