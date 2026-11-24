@@ -81,17 +81,19 @@ export default function({parentElement, data, setTriggerValue}) {
       const puter=window.puter;
       if(!puter){status('Voice is still loading. Try again shortly.');return;}
       if(!puter.auth.isSignedIn())await puter.auth.signIn();
-      s.enabled=true;el('speak').disabled=!s.data.text;status('Voice enabled. Click Read response or Interrupt / speak.');
+      s.enabled=true;el('speak').disabled=true;status('Checking available teaching voices…');
       try {
         const result=await puter.ai.txt2speech.listVoices({provider:'elevenlabs'});
         const voices=Array.isArray(result)?result:result.voices;
         if(Array.isArray(voices)&&voices.length){
-          const valid=voices.map(v=>({id:v.id||v.voice_id||v.voice,name:v.name||v.voice_id||v.id})).filter(v=>v.id&&v.name);
+          const candidates=voices.map(v=>({id:v.id||v.voice_id||v.voice,name:v.name||v.voice_id||v.id})).filter(v=>v.id&&v.name);
+          const valid=candidates.filter(v=>v.id===data.voice_id||/professional british male|clear, engaging educator|warm, captivating storyteller|informative, educational|complex concept explainer/i.test(v.name)).slice(0,8);
           if(valid.length){el('voice').replaceChildren();for(const v of valid){const opt=document.createElement('option');opt.value=v.id;opt.textContent=v.name;el('voice').appendChild(opt);}
-          const preferred=valid.find(v=>v.id===data.voice_id)||valid.find(v=>/eldrin|crisp british/i.test(v.name));
-          if(preferred)el('voice').value=preferred.id;else status('Preferred voice is unavailable through Puter. Choose an available ElevenLabs voice.');}
+          const preferred=valid.find(v=>v.id===data.voice_id)||valid.find(v=>/professional british male/i.test(v.name));
+          if(preferred)el('voice').value=preferred.id;else status('Preferred voice is unavailable through Puter. Choose an available teaching voice.');}
         }
       }catch{status('Voice enabled; the voice list could not load. Try the selected voice.');}
+      el('speak').disabled=!s.data.text;status('Voice enabled. Click Read response or Interrupt / speak.');
     }catch{status('Puter sign-in was cancelled or blocked. Allow its sign-in popup and try again.');}
   };
   el('speak').onclick=speak;

@@ -11,8 +11,8 @@ They can be downloaded or cleared. Changing the lesson creates a fresh conversat
 
 No ElevenLabs developer API key or separate ElevenLabs agent is required. The
 learner enables voice and signs in to Puter. Puter account credits, provider access
-and limits apply. The preferred voice is **Eldrin – Crisp British Baritone**,
-`6WwXjDDEMyNmFG95zycZ`. The current provider voice list is available after sign-in;
+and limits apply. The preferred voice is **James – Professional British Male**,
+`lUTamkMw7gOzZbFIwmq4`. A curated list of teaching voices from the current provider catalog is available after sign-in;
 if the preferred voice is unavailable, the learner can choose another listed voice.
 Speech uses `eleven_flash_v2_5` and is split into requests of at most 2,800 characters.
 The voice panel is also available within the general Tex chat.

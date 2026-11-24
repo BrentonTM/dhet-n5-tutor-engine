@@ -2,8 +2,8 @@
 
 import json
 
-VOICE_ID = "6WwXjDDEMyNmFG95zycZ"
-VOICE_NAME = "Eldrin · Crisp British Baritone"
+VOICE_ID = "lUTamkMw7gOzZbFIwmq4"
+VOICE_NAME = "James · Professional British Male"
 
 TEACHING_POLICY = """You are Tex, a warm, articulate educational thinking partner for South African
 NATED N4–N6 students. Be conversational, patient and concise. Your job is to help the
