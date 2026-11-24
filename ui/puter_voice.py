@@ -18,7 +18,7 @@ _HTML = """
   </div>
   <button id="speak" class="play-reply" disabled>Play reply <span aria-hidden="true">↗</span></button>
   <p class="meta">ElevenLabs via Puter · account limits apply</p>
-  <details class="settings"><summary>Voice settings</summary>
+  <details class="settings"><summary>Settings</summary>
     <div class="playback"><button id="pause">Pause audio</button><button id="resume">Resume audio</button></div>
     <label class="check"><input id="auto" type="checkbox"> Read new replies automatically</label>
     <label class="check"><input id="handsfree" type="checkbox"> Listen after each reply</label>
@@ -38,10 +38,10 @@ _HTML = """
 _CSS = """
 :host {color:var(--st-text-color, #e7eef6);font-family:var(--st-font,system-ui,sans-serif);}
 * {box-sizing:border-box;}
-.tex-console {--tex-accent:#6ee7dd;--tex-ink:var(--st-text-color,#e7eef6);width:100%;min-width:0;
+.tex-console {--tex-accent:#6ee7dd;--tex-ink:var(--st-text-color,#e7eef6);width:100%;min-width:0;position:relative;
   padding:16px;border:1px solid var(--st-border-color,#28384c);border-radius:22px;
   background:var(--st-secondary-background-color,#101b2c);color:var(--tex-ink);overflow:hidden;}
-header {display:flex;justify-content:space-between;align-items:center;gap:12px;}
+header {padding-right:72px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
 .wordmark {font-size:15px;font-weight:750;letter-spacing:.22em;}.dot{color:var(--tex-accent);}
 .phase {font-size:10px;letter-spacing:.14em;opacity:.6;border:1px solid var(--st-border-color,#28384c);border-radius:20px;padding:5px 8px;}
 .orb-stage {height:106px;display:grid;place-items:center;position:relative;}
@@ -62,8 +62,9 @@ button:disabled {opacity:.35;cursor:default;}
 .play-reply {width:100%;margin-top:5px;border:0;min-height:30px;padding:6px;opacity:.75;}
 .play-reply span{padding-left:8px;color:var(--tex-accent);}
 .meta{text-align:center;font-size:10px;opacity:.5;margin:5px 0 0;}
-.settings {margin-top:9px;border-top:1px solid var(--st-border-color,#28384c);padding-top:10px;}
-summary {cursor:pointer;font-size:12px;opacity:.7;list-style-position:inside;}
+.settings {margin:0;padding:0;border:0;}
+.settings[open] {margin-top:10px;border-top:1px solid var(--st-border-color,#28384c);padding-top:10px;}
+summary {position:absolute;top:14px;right:14px;cursor:pointer;font-size:11px;opacity:.7;list-style:none;padding:4px;}
 .playback{display:flex;gap:8px;margin:14px 0;}.playback button{flex:1;}
 .check{display:flex;align-items:center;gap:9px;margin:14px 0;font-size:12px;line-height:1.4;}.check input{accent-color:#45bfb5;}
 .field{display:block;font-size:11px;opacity:.85;margin:14px 0;}select{display:block;width:100%;max-width:100%;margin-top:6px;
