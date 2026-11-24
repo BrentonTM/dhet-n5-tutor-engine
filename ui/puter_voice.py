@@ -3,6 +3,7 @@
 import hashlib
 import streamlit as st
 from ui.tex_voice import VOICE_ID, VOICE_NAME
+from ui.tex_app_control import decode_action
 
 _HTML = """
 <div><button id="connect" disabled>Enable Tex voice</button>
@@ -112,6 +113,7 @@ _VOICE = st.components.v2.component("tex_puter_voice", html=_HTML, js=_JS)
 
 
 def render_puter_voice(text, *, key):
+    text = decode_action(text)[0]
     st.caption("Optional ElevenLabs voice through Puter. Enabling it requires Puter sign-in; your account's credits and limits apply. Only Tex's spoken reply goes to Puter/ElevenLabs. Live microphone transcription uses your browser's speech service, then sends the transcript to Gemini. You can always type or record below.")
     return _VOICE(data={"text": text, "reply_id": hashlib.sha256(text.encode()).hexdigest(),
                         "voice_id": VOICE_ID, "voice_name": VOICE_NAME},

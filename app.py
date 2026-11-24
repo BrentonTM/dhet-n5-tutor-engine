@@ -589,7 +589,7 @@ def render_ai_tutor_chat(
     if st.session_state.tutor_chat:
         for message in st.session_state.tutor_chat[-12:]:
             with st.chat_message(message["role"], avatar=":material/psychology:" if message["role"] == "assistant" else None):
-                st.markdown(message["content"])
+                st.markdown(decode_action(message["content"])[0] if message["role"] == "assistant" else message["content"])
                 if message.get("audio"):
                     st.audio(message["audio"], format="audio/wav")
     elif compact:
@@ -597,7 +597,8 @@ def render_ai_tutor_chat(
 
     latest_reply = next((message["content"] for message in reversed(st.session_state.tutor_chat)
                          if message["role"] == "assistant"), "")
-    with st.expander("Talk with Tex · ElevenLabs voice", expanded=False, on_change="rerun") as voice_panel:
+    with st.expander("Talk with Tex · ElevenLabs voice", expanded=False,
+                     key=f"{widget_prefix}_voice_panel_{subject}", on_change="rerun") as voice_panel:
         if voice_panel.open:
             voice_result = render_puter_voice(latest_reply, key=f"{widget_prefix}_puter_{subject}")
             voice_turn = getattr(voice_result, "utterance", None)
@@ -1177,7 +1178,7 @@ def _call_tex(contents, *, system_instruction=None):
             return reply, error
         raw_reply = reply
         reply, action = decode_action(reply)
-        if "<tex_action>" in raw_reply and action is None:
+        if re.search(r"<[a-z_]*action>", raw_reply) and action is None:
             return "I could not apply that app request. Tell me which feature you want to open.", None
     if action:
         if not can_act:
@@ -2057,7 +2058,7 @@ if tex_navigation:
         st.session_state["tex_action_receipt"] = issue
     else:
         open_learning_workspace(workspace, section)
-        st.session_state["quick_tex"] = False
+        # Keep the floating conversation mounted so voiced follow-ups survive navigation.
         topic = tex_navigation.get("topic", "")
         if topic and active_subject:
             if topic in SUBJECT_MODULES.get(active_subject, []):

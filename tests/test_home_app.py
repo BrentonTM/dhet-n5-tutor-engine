@@ -29,6 +29,18 @@ class HomeAppTests(unittest.TestCase):
         self.assertEqual(len(app.exception), 0)
         return app
 
+    def test_floating_tex_coexists_with_home_and_survives_navigation(self):
+        app = self.home()
+        app.session_state["quick_tex"] = True
+        app.run()
+        self.assertFalse(app.exception)
+        app.chat_input(key="quick_tex_chat_input").set_value("Open the 3D lab").run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["learning_workspace"], "🤖 Tutor & lab")
+        self.assertEqual(app.session_state["tutor_section"], "🧊 3D lab")
+        self.assertTrue(app.session_state["quick_tex"])
+        self.model.assert_not_called()
+
     def test_home_shortcuts_open_practice_and_native_recorder(self):
         app = self.home()
         self.assertTrue(any("Breezy" in title.value for title in app.title))

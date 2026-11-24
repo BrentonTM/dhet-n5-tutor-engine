@@ -1,7 +1,7 @@
 """Conversation policies and bounded, role-preserving context for Tex."""
 
 import json
-from ui.tex_app_control import HUMOUR
+from ui.tex_app_control import HUMOUR, decode_action
 
 MODES = ("Hint", "Check", "Explain")
 
@@ -42,6 +42,8 @@ def recent_turns(messages, max_turns=20, max_chars=24000):
         if message.get("role") not in {"user", "assistant"} or message.get("error"):
             continue
         text = str(message.get("content", ""))[:6000]
+        if message["role"] == "assistant":
+            text = decode_action(text)[0]
         if used + len(text) > max_chars:
             break
         result.append({"role": message["role"], "content": text, "audio": message.get("audio")})

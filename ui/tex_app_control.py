@@ -47,8 +47,11 @@ def action_requested(text, audio=False):
 
 def decode_action(reply):
     """Strip tool markup from visible/spoken text, rejecting multiple or malformed actions."""
-    matches = re.findall(r"<tex_action>(.*?)</tex_action>", str(reply), re.S)
-    clean = re.sub(r"<tex_action>.*?(?:</tex_action>|$)", "", str(reply), flags=re.S).strip()
+    # Some providers expand "tex" to "text" despite the schema in the prompt.
+    # Accept that spelling only; the action still goes through the same validator.
+    normalized = str(reply).replace("<text_action>", "<tex_action>").replace("</text_action>", "</tex_action>")
+    matches = re.findall(r"<tex_action>(.*?)</tex_action>", normalized, re.S)
+    clean = re.sub(r"<[a-z_]*action>.*?(?:</[a-z_]*action>|$)", "", normalized, flags=re.S).strip()
     if len(matches) != 1 or len(matches[0]) > 2000:
         return clean, None
     try:

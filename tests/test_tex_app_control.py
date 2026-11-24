@@ -44,6 +44,9 @@ class TexAppControlTests(unittest.TestCase):
         text, action = decode_action('I will open the lab. <tex_action>{"feature":"lab"}</tex_action>')
         self.assertEqual(text, "I will open the lab.")
         self.assertEqual(action, {"feature": "lab"})
+        text, action = decode_action('Opening Venturi. <text_action>{"feature":"lab","model":"venturi"}</text_action>')
+        self.assertEqual(action, {"feature": "lab", "model": "venturi"})
+        self.assertNotIn("action", text)
         self.assertIsNone(decode_action('<tex_action>{"feature":"lab"}</tex_action><tex_action>{}</tex_action>')[1])
         self.assertEqual(decode_action('Hello <tex_action>bad JSON')[0], 'Hello')
 
