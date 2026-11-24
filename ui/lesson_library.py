@@ -14,7 +14,8 @@ def terms(text):
     words = re.findall(r"[a-z0-9]{2,}", text)
     stop = {"and", "the", "for", "with", "from", "original", "module", "chapter", "general",
             "principles", "introduction", "applications", "application", "theory",
-            "of", "in", "to", "by", "is", "as", "an", "on", "at", "or"}
+            "of", "in", "to", "by", "is", "as", "an", "on", "at", "or",
+            "measurement", "measurements", "measuring"}
     return {word.rstrip("s") for word in words if word not in stop}
 
 
@@ -28,13 +29,14 @@ def lesson_resources(base_dir, subject, topic, focus=""):
     """Search all indexed sources for this subject, then fairly budget relevant pages."""
     path = Path(base_dir) / "data" / "lesson_library.json.gz"
     if not path.is_file():
-        return {"context": "", "sources": [], "scanned": [], "available": 0}
+        return {"context": "", "sources": [], "scanned": [], "scan_paths": [], "available": 0}
     library = _read_index(str(path), path.stat().st_mtime_ns)
     query = terms(topic)
     expanded = query | terms(focus)
     candidates = []
     available = 0
     scanned = []
+    scan_paths = []
     for document in library["documents"]:
         if subject not in document["subjects"]:
             continue
@@ -43,6 +45,8 @@ def lesson_resources(base_dir, subject, topic, focus=""):
         if not document["pages"]:
             if title_hits:
                 scanned.append(document["title"])
+                if document.get("path"):
+                    scan_paths.append(document["path"])
             continue
         ranked = []
         for page in document["pages"]:
@@ -85,5 +89,24 @@ def lesson_resources(base_dir, subject, topic, focus=""):
             })
     return {
         "context": "\n\n".join(excerpts), "sources": sources,
-        "scanned": scanned, "available": available,
+        "scanned": scanned, "scan_paths": scan_paths, "available": available,
     }
+
+
+@st.cache_data(show_spinner=False, max_entries=16)
+def scanned_reference_preview(base_dir, relative_path):
+    """Preserve the first three pages of a topic-matched scan as visual context."""
+    from io import BytesIO
+    from pypdf import PdfReader, PdfWriter
+
+    root = Path(base_dir).resolve()
+    path = (root / relative_path).resolve()
+    if not path.is_relative_to(root / "Learning material"):
+        raise ValueError("Scan must come from the study-material library")
+    reader = PdfReader(path)
+    writer = PdfWriter()
+    for page in reader.pages[:3]:
+        writer.add_page(page)
+    output = BytesIO()
+    writer.write(output)
+    return output.getvalue(), min(3, len(reader.pages))

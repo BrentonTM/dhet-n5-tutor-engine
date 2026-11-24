@@ -198,7 +198,7 @@ from ui.plant_fault_lab import render_fault_bench, render_worked_diagnosis
 from ui.study_visuals import render_study_visual, study_models
 from ui.exam_readiness import render_exam_readiness
 from ui.course_resources import render_curriculum, render_exam_resources
-from ui.lesson_library import lesson_resources
+from ui.lesson_library import lesson_resources, scanned_reference_preview
 from ui.lab_workspace import render_engineering_lab
 from ui.n4_courses import N4_CODES, N4_MODULES, N4_NAMES, starter_questions, syllabus_url
 from ui.n6_visuals import N6_FORMULA_CARDS, N6_LAB_MODELS, N6_VISUAL_TOPICS
@@ -2557,8 +2557,8 @@ if active_subject and tab_tutor.open:
                             )
                     if resources["scanned"]:
                         st.caption(
-                            "Some matching scans have no searchable text. Use their original PDF or image "
-                            "in Ask Tex for a visual explanation."
+                            "Matching scans have no searchable text. Visual previews of up to three pages "
+                            "are used where available."
                         )
 
                     lesson_minutes = focus_minutes - quiz_minutes
@@ -2592,6 +2592,16 @@ if active_subject and tab_tutor.open:
                             if source["path"].startswith("data/past_papers/sources/"):
                                 paper_pages.setdefault(source["path"], set()).add(source["page"])
                         if genai_types is not None:
+                            for source_path in resources["scan_paths"][:1]:
+                                try:
+                                    data, page_count = scanned_reference_preview(BASE_DIR, source_path)
+                                    contents.append(
+                                        f"Scanned study reference: {source_path}, preview pages 1–{page_count}. "
+                                        "Explain only what is visible and relevant. Other pages were not supplied."
+                                    )
+                                    contents.append(genai_types.Part.from_bytes(data=data, mime_type="application/pdf"))
+                                except (OSError, ValueError):
+                                    logger.warning("A scanned lesson preview could not be attached.")
                             for source_path, pages in list(paper_pages.items())[:3]:
                                 try:
                                     data = cached_question_pdf(source_path, source_path, sorted(pages)[:2])
