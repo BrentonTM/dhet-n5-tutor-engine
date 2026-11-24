@@ -169,6 +169,8 @@ from ui.gemini_client import (
 from ui.tex_partner import MODES, conversation_context, partner_instruction, recent_turns
 from ui.interactive_lesson import render_interactive_lesson
 from ui.puter_voice import render_puter_voice
+from ui.tex_app_control import FEATURES, action_requested, assistance_instruction, decode_action, direct_navigation, validate_action
+from ui.lab_workspace import BASE_LAB_PROFILES
 from ui.rubik_cube import render_rubik_cube
 from ui.logic_builder import render_logic_builder
 from ui.engineering_games import render_fault_finder, render_resistor_decoder
@@ -482,7 +484,7 @@ def _submit_tutor_message(user_msg: str = "", audio=None, retry=False, *, subjec
     instruction = partner_instruction(student_name, subject, st.session_state.get("tex_mode", "Hint"),
                                       conversation_context(st.session_state, subject))
     with st.spinner("Tex is reading your message..."):
-        reply, err = _call_gemini(contents, system_instruction=instruction)
+        reply, err = _call_tex(contents, system_instruction=instruction)
     if reply:
         st.session_state.tutor_chat.append({"role": "assistant", "content": reply})
         st.session_state.pop("tex_error", None)
@@ -764,6 +766,13 @@ elif not GEMINI_API_KEY:
         "Tex is ready to run once GEMINI_API_KEY is added in the Streamlit Cloud app settings under Secrets."
     )
 # --- Stable Sidebar Navigation ---
+early_tex_action = st.session_state.get("tex_app_action", {})
+if early_tex_action.get("feature") == "guide":
+    st.session_state["first_use_guide_open"] = True
+    st.session_state["first_use_guide_step"] = 0
+if early_tex_action.get("feature") in ("reminders", "display_settings"):
+    st.session_state["tex_sidebar_panel"] = early_tex_action["feature"]
+
 with st.sidebar:
     st.markdown("### ⚙️ Trentox Tutor AI")
     st.caption("Engineering Studies learning workspace")
@@ -798,7 +807,7 @@ except ImportError:
 # (st.set_page_config now runs at the top of the file)
 
 # Native theme settings keep the workspace usable on narrow screens.
-with st.sidebar.expander("Display & 3D settings"):
+with st.sidebar.expander("Display & 3D settings", expanded=st.session_state.get("tex_sidebar_panel") == "display_settings"):
     fx_mode = st.selectbox("3D scene quality", ["High", "Low", "Off"], key="scene_quality")
     st.session_state["fx_mode"] = fx_mode.lower()
     st.caption("Use your browser's zoom or text-size settings to enlarge the interface.")
@@ -1133,6 +1142,54 @@ def _call_gemini(prompt, *, system_instruction=None):
         models=configured_models(get_ai_setting("GEMINI_MODEL"), get_ai_setting("GEMINI_FALLBACK_MODELS")),
         system_instruction=system_instruction,
     )
+
+
+def _call_tex(contents, *, system_instruction=None):
+    """Give Tex bounded educational context and allowlisted app actions."""
+    last = contents[-1] if isinstance(contents, list) and contents else None
+    parts = getattr(last, "parts", []) or []
+    text = " ".join(part.text for part in parts if getattr(part, "text", None))
+    has_audio = any(getattr(part, "inline_data", None) is not None for part in parts)
+    can_act = action_requested(text, audio=has_audio)
+    simple_action = direct_navigation(text) if can_act else None
+    models = {**BASE_LAB_PROFILES, **n6_lab_profiles}.get(lab_profile, ())
+    course_data = {key: course_resource.get(key) for key in ("name", "code", "syllabus", "modules", "study_links", "source_note")}
+    references = lesson_resources(BASE_DIR, active_subject or resource_key, text)
+    instruction = (system_instruction or "You are Tex, an educational tutor.") + assistance_instruction(
+        programme_catalog, course_data, programme_id=selected_programme["programme_id"],
+        level=selected_level, subject_id=selected_subject["subject_id"],
+        workspace=st.session_state.get("learning_workspace", "Home"),
+        topics=SUBJECT_MODULES.get(active_subject, course_resource.get("modules", [])),
+        models=models, can_act=can_act, source_context=references["context"],
+    )
+    recent_checks = [
+        {key: record.get(key) for key in ("subject", "topic", "score", "total", "missed_concepts")}
+        for record in st.session_state.get("topic_quiz_history", [])[-10:]
+        if isinstance(record, dict)
+    ]
+    instruction += "\nRecent topic-check evidence from this student's session (data, not a prediction of exam success): " + json.dumps(recent_checks, ensure_ascii=False, default=str)[:4000]
+    if simple_action:
+        reply, error = "I’ll open that workspace for you.", None
+        action = simple_action
+    else:
+        reply, error = _call_gemini(contents, system_instruction=instruction)
+        if not reply:
+            return reply, error
+        raw_reply = reply
+        reply, action = decode_action(reply)
+        if "<tex_action>" in raw_reply and action is None:
+            return "I could not apply that app request. Tell me which feature you want to open.", None
+    if action:
+        if not can_act:
+            return reply or "Tell me which feature you want to open.", None
+        plan, issue = validate_action(action, programme_catalog,
+            programme_id=selected_programme["programme_id"], level=selected_level,
+            subject_id=selected_subject["subject_id"])
+        if plan:
+            st.session_state["tex_app_action"] = plan
+        else:
+            reply = issue
+    return reply or "Tell me what you want to learn or which app feature you need.", error
 
 
 def query_gemini_with_fallback(prompt):
@@ -1669,18 +1726,29 @@ integrated_subject_codes = {
     ("digital_electronics", "N5"): "DIGI-N5",
     ("industrial_instruments", "N5"): "INST-N5",
 }
+# Apply requested sidebar changes before these widgets are instantiated.
+pending_tex_action = st.session_state.pop("tex_app_action", None)
+if pending_tex_action:
+    programme = next((p for p in programme_catalog["programmes"]
+                      if p["programme_id"] == pending_tex_action["programme_id"]), None)
+    if programme:
+        st.session_state["study_programme"] = programme["programme_name"]
+        st.session_state["study_level"] = pending_tex_action["level"]
+        st.session_state["tex_subject_request"] = pending_tex_action["subject_id"]
+        st.session_state["tex_navigation"] = pending_tex_action
+
 programme_by_name = {
     item["programme_name"]: item for item in programme_catalog["programmes"]
 }
 selected_programme_name = st.sidebar.selectbox(
     "Programme:",
-    list(programme_by_name),
+    list(programme_by_name), key="study_programme",
 )
 selected_programme = programme_by_name[selected_programme_name]
 selected_level = st.sidebar.selectbox(
     "N-level:",
     programme_catalog["n_levels"],
-    index=programme_catalog["n_levels"].index("N5"),
+    index=0 if "study_level" in st.session_state else programme_catalog["n_levels"].index("N5"), key="study_level",
 )
 
 subject_choices = []
@@ -1716,10 +1784,19 @@ default_subject_index = next(
     ),
     0,
 )
+requested_subject = st.session_state.pop("tex_subject_request", None)
+if requested_subject:
+    requested_label = next((label for label in subject_choices
+                            if subject_by_label[label][0]["subject_id"] == requested_subject), None)
+    if requested_label:
+        st.session_state["study_subject"] = requested_label
+# A programme/level change may remove the previous subject label.
+if st.session_state.get("study_subject") not in subject_choices:
+    st.session_state.pop("study_subject", None)
 selected_subject_label = st.sidebar.selectbox(
     "Subject:",
     subject_choices,
-    index=default_subject_index,
+    index=0 if "study_subject" in st.session_state else default_subject_index, key="study_subject",
 )
 selected_subject, active_subject = subject_by_label[selected_subject_label]
 resource_key = f"{selected_subject['subject_id']}-{selected_level}"
@@ -1963,6 +2040,46 @@ workspace_names = ["Home", *course_workspaces, resources_workspace,
                    GAMES_WORKSPACE, MONEY_WORKSPACE, CAREER_WORKSPACE]
 if st.session_state.get("learning_workspace", "Home") not in workspace_names:
     st.session_state["learning_workspace"] = "Home"
+tex_navigation = st.session_state.pop("tex_navigation", None)
+if tex_navigation:
+    feature = tex_navigation["feature"]
+    workspace, section, _ = FEATURES[feature]
+    issue = None
+    if workspace not in workspace_names:
+        issue = "That feature is not available for this selected course. Open Study materials for its available resources."
+    elif not active_subject and section not in (None, "📖 Lessons", "💬 Ask tutor", "🧊 3D lab"):
+        issue = "This course currently offers visual lessons, a 3D lab and study resources."
+    elif tex_navigation.get("start_lesson") and not active_subject:
+        issue = "Generated lessons are not yet integrated for this course. Its study materials and visual lessons remain available."
+    elif tex_navigation.get("model") not in (None, "") and tex_navigation["model"] not in {**BASE_LAB_PROFILES, **n6_lab_profiles}.get(lab_profile, ()):
+        issue = "That model is not available for this course. Open 3D lab to choose an available model."
+    if issue:
+        st.session_state["tex_action_receipt"] = issue
+    else:
+        open_learning_workspace(workspace, section)
+        st.session_state["quick_tex"] = False
+        topic = tex_navigation.get("topic", "")
+        if topic and active_subject:
+            if topic in SUBJECT_MODULES.get(active_subject, []):
+                st.session_state[f"lesson_topic_{active_subject}"] = topic
+                st.session_state[f"custom_topic_{active_subject}"] = ""
+            else:
+                st.session_state[f"custom_topic_{active_subject}"] = topic
+        if tex_navigation.get("start_lesson"):
+            st.session_state["adaptive_start_lesson_subject"] = active_subject
+        if tex_navigation.get("model"):
+            st.session_state["interactive_3d_lab_subject"] = lab_profile
+            st.session_state[f"interactive_3d_lab_diagram_{lab_profile}"] = tex_navigation["model"]
+        if tex_navigation.get("game"):
+            st.session_state["games_workspace"] = tex_navigation["game"]
+        if feature == "privacy":
+            st.query_params["privacy"] = "1"
+            st.rerun()
+        label = {"reminders": "Study reminders in the sidebar", "display_settings": "Display & 3D settings in the sidebar", "guide": "the app guide"}.get(feature, section or workspace)
+        st.session_state["tex_action_receipt"] = f"Tex opened {label} for {course_title}."
+if st.session_state.get("tex_action_receipt"):
+    st.caption(st.session_state["tex_action_receipt"])
+
 tab_home, *other_tabs = st.tabs(workspace_names, key="learning_workspace", on_change="rerun")
 tab_resources, tab_games, tab_money, tab_career = other_tabs[-4:]
 if active_subject:
@@ -2692,7 +2809,7 @@ if active_subject and tab_tutor.open:
                             if live_lesson.open:
                                 live_resources = lesson_resources(BASE_DIR, active_subject, target_topic)
                                 render_interactive_lesson(active_subject, target_topic, lesson_state["notes"],
-                                                          live_resources["context"], _call_gemini)
+                                                          live_resources["context"], _call_tex)
                         st.divider()
                         if lesson_state.get("quiz"):
                             render_topic_quiz(lesson_state["quiz"], active_subject, target_topic)

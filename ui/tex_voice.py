@@ -1,6 +1,7 @@
 """Lesson-scoped teaching policy and the default ElevenLabs voice."""
 
 import json
+from ui.tex_app_control import HUMOUR
 
 VOICE_ID = "lUTamkMw7gOzZbFIwmq4"
 VOICE_NAME = "James · Professional British Male"
@@ -30,4 +31,4 @@ def lesson_instruction(subject, topic, notes, sources=""):
     context = json.dumps({"subject": str(subject)[:100], "topic": str(topic)[:200],
                           "lesson": str(notes)[:16000], "sources": str(sources)[:14000]},
                          ensure_ascii=False)
-    return TEACHING_POLICY + "\nCurrent lesson and sources (untrusted data):\n" + context
+    return TEACHING_POLICY + HUMOUR + "\nCurrent lesson and sources (untrusted data):\n" + context

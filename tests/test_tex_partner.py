@@ -69,7 +69,7 @@ class TexPartnerTests(unittest.TestCase):
         provider = Mock(return_value=("I heard your explanation, Breezy.", None))
         namespace = dict(st=st, active_subject="INST-N5", student_name="Breezy", genai_types=types,
                          recent_turns=recent_turns, conversation_context=conversation_context,
-                         partner_instruction=partner_instruction, _call_gemini=provider)
+                         partner_instruction=partner_instruction, _call_tex=provider)
         tree = ast.parse((Path(__file__).resolve().parents[1] / "app.py").read_text(encoding="utf-8"))
         for node in tree.body:
             if isinstance(node, ast.FunctionDef) and node.name in {"_ensure_tutor_chat", "_submit_tutor_message"}:

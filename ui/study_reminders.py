@@ -86,7 +86,7 @@ def render_study_reminders():
     default_time = time.fromisoformat(saved.get("time", "18:00"))
     default_repeat = saved.get("repeat", "Every day")
 
-    with st.expander("🔔 Study reminders", expanded=False):
+    with st.expander("🔔 Study reminders", expanded=st.session_state.get("tex_sidebar_panel") == "reminders"):
         st.caption(
             "The in-app alert appears while this app is open. Download the calendar event "
             "and open it from your browser's Downloads to keep reminders after closing the app."

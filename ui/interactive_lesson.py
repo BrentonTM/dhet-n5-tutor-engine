@@ -64,7 +64,7 @@ def render_interactive_lesson(subject, topic, notes, sources, call_model):
 
     if not state["messages"]:
         if st.button("Start interactive lesson", key=f"tex_lesson_start_{scope}"):
-            ask("Start this lesson with a short introduction and ask me one question about what I already know.")
+            ask("Introduce the selected topic briefly and ask one question about what I already know.")
         return
 
     for message in state["messages"][-12:]:
