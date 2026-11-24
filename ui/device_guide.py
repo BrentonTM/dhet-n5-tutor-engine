@@ -8,7 +8,7 @@ import streamlit as st
 
 from ui.guide_preferences import claim_first_guide, guide_cookie_name
 from ui.guide_steps import GUIDE_STEPS
-from ui.guide_overlay import render_overlay
+from ui.guide_overlay import render_overlay, read_browser_preference
 from ui.tex_app_control import FEATURES
 
 logger = logging.getLogger(__name__)
@@ -16,10 +16,13 @@ _NAV_KEYS = ("learning_workspace", "tutor_section", "quick_tex", "tex_sidebar_pa
 
 
 def _cookie_seen(name):
+    browser_seen = read_browser_preference(name)
     try:
-        return st.context.cookies.get(name) == "1"
+        if st.context.cookies.get(name) == "1":
+            return True
     except (AttributeError, TypeError):
-        return False
+        pass
+    return browser_seen
 
 
 def initialize_guide(state, student_id, dsn, cookie_seen, claim=None):
@@ -57,7 +60,11 @@ def end_guide(state):
 
 def render_first_use_guide(student_id="session", dsn=None):
     cookie = guide_cookie_name(student_id)
-    initialize_guide(st.session_state, student_id, dsn, _cookie_seen(cookie))
+    seen = _cookie_seen(cookie)
+    if seen is None:
+        st.caption("Loading your guide preference…")
+        return
+    initialize_guide(st.session_state, student_id, dsn, seen)
     if st.button("📘 Replay the app guide", key="replay_first_use_guide", width="stretch"):
         st.session_state["first_use_guide_step"] = 0
         st.session_state["first_use_guide_open"] = True
@@ -75,8 +82,6 @@ def render_first_use_guide(student_id="session", dsn=None):
             st.rerun()
     if st.session_state.get("first_use_guide_open"):
         st.caption("Guide preference saved to your account." if st.session_state.get("_guide_persistence") == "account" else "Guide preference saved in this browser.")
-    # The account-specific cookie is a fallback when account storage is unavailable.
-    st.html("<script>document.cookie = " + json.dumps(cookie + "=1; Path=/; Max-Age=31536000; SameSite=Lax; Secure") + ";</script>", unsafe_allow_javascript=True)
 
 
 def available_steps(workspaces, integrated, has_lab, resource_key=""):

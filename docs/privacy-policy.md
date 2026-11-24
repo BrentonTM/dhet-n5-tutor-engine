@@ -28,7 +28,7 @@ Your chats, recordings, uploaded work and written answers are excluded from the 
 
 Interactive lesson conversations stay in the current study session and can be downloaded or ended and cleared. Stop voice turns off Tex's audio and live microphone. Puter sign-in is separate from Google/Trentox sign-in; use **Sign out of Puter** in the voice panel to remove that browser connection. Clearing a Trentox conversation does not delete provider records.
 
-A first-use guide flag and first-shown time may be stored under your internal learner identifier to prevent repeat automatic tours. When account storage is unavailable, an account-specific browser cookie remembers this choice on that browser. You can replay the guide manually.
+A first-use guide flag and first-shown time may be stored under your internal learner identifier to prevent repeat automatic tours. When account storage is unavailable, an account-specific local storage flag and browser cookie remember this choice on that browser. They contain no email or study content. Clearing site data removes that browser preference. You can replay the guide manually.
 
 ## Privacy and deletion requests
 

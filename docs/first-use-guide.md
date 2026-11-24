@@ -16,9 +16,9 @@ insert returns an automatic-launch claim, including across concurrent tabs/devic
 The runtime database role must be able to create/access that small table. A schema
 example is supplied below for installations with separate migration permissions.
 
-If the database is unavailable, an account-specific browser cookie prevents repeat
+If the database is unavailable, an account-specific browser storage flag (with a cookie fallback) prevents repeat
 automatic tours in that browser. This fallback cannot synchronize the choice to another
-device or survive cleared cookies. The sidebar reports whether account or browser
+device or survive cleared site data. The sidebar reports whether account or browser
 storage is in use. The flag is independent of whether all guide steps were completed.
 
 The overlay bundles Driver.js 1.14.0 and its MIT license locally in `ui/vendor/driver`.

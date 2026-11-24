@@ -97,3 +97,25 @@ _TOUR = st.components.v2.component("trentox_feature_guide", html="<span aria-hid
 
 def render_overlay(data):
     return _TOUR(data=data, key="first_use_feature_overlay", on_action_change=lambda: None, height=0)
+
+
+_PREFERENCE = st.components.v2.component("trentox_guide_preference", html="<span aria-hidden='true'></span>", js=r"""
+const checked = new WeakMap();
+export default function({parentElement,data,setStateValue}) {
+  if(checked.get(parentElement)===data.name)return;
+  checked.set(parentElement,data.name);
+  let seen=false;
+  try {seen=localStorage.getItem(data.name)==='1';localStorage.setItem(data.name,'1');}catch{}
+  try {seen=seen||document.cookie.split(';').some(part=>part.trim()===data.name+'=1');
+    document.cookie=data.name+'=1; Path=/; Max-Age=31536000; SameSite=Lax; Secure';}catch{}
+  setStateValue('preference',{name:data.name,seen});
+}
+""")
+
+
+def read_browser_preference(name):
+    result = _PREFERENCE(data={"name": name}, key="guide_browser_preference", on_preference_change=lambda: None, height=0)
+    value = result.get("preference")
+    if isinstance(value, dict) and value.get("name") == name and isinstance(value.get("seen"), bool):
+        return value["seen"]
+    return None
