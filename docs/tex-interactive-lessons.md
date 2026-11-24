@@ -78,3 +78,15 @@ follow-up questions. The full Ask tutor view continues to show a longer transcri
 The console respects reduced-motion preferences and uses keyboard focus outlines
 and a live status region. It shares the same voice implementation in interactive
 lessons. No separate ElevenLabs key is required.
+
+
+## First-time starter prompts
+
+Home, Ask tutor and the floating Tex panel include **New here? Try a prompt**
+for an empty conversation, renamed **Starter prompts** once the conversation begins.
+The list remains accessible throughout the session. Selecting a button sends the
+full prompt as an ordinary user message, with the current course and lesson context.
+Buttons offer Meet Tex, step-by-step teaching, answer checking, a 3D model, study
+materials, a quiz, a study plan, document summarization, voice help and the app guide.
+Hover help shows the full wording before selection. The canonical prompts are in
+`ui/tex_partner.py` as `STARTER_PROMPTS`.

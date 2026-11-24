@@ -166,7 +166,7 @@ from ui.gemini_client import (
     LEARNER_LANGUAGE_INSTRUCTION, VOICE_TRANSCRIPTION_PROMPT,
     configured_models, generate_reply, parse_voice_transcript,
 )
-from ui.tex_partner import MODES, conversation_context, partner_instruction, recent_turns
+from ui.tex_partner import MODES, STARTER_PROMPTS, conversation_context, partner_instruction, recent_turns
 from ui.interactive_lesson import render_interactive_lesson
 from ui.puter_voice import render_puter_voice
 from ui.tex_app_control import FEATURES, action_requested, assistance_instruction, decode_action, direct_navigation, validate_action
@@ -517,6 +517,14 @@ def render_ai_tutor_chat(
             "Ask about the selected subject, its topics, or an exam question. "
             "Tex builds on your ideas, checks your reasoning, and explains when you need it."
         )
+
+    with st.expander("New here? Try a prompt" if not st.session_state.tutor_chat else "Starter prompts",
+                     key=f"{widget_prefix}_starter_prompts_{subject}"):
+        st.caption("Choose a prompt to send it to Tex. It will use your selected course and current lesson.")
+        with st.container(horizontal=True):
+            for index, (label, prompt) in enumerate(STARTER_PROMPTS):
+                if st.button(label, key=f"{widget_prefix}_starter_{index}_{subject}", help=prompt):
+                    _submit_tutor_message(prompt, subject=subject)
 
     latest_reply = next((message["content"] for message in reversed(st.session_state.tutor_chat)
                          if message["role"] == "assistant"), "")

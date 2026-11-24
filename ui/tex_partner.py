@@ -5,6 +5,19 @@ from ui.tex_app_control import HUMOUR, decode_action
 
 MODES = ("Hint", "Check", "Explain")
 
+STARTER_PROMPTS = (
+    ("Meet Tex", "Hi Tex, I'm new here. Give me a short, friendly welcome, explain how we can learn together, and ask one simple question to help me begin. Use my selected course and preferred name. Keep it under 100 words."),
+    ("Teach me step by step", "Explain one useful idea from my current lesson or selected course in simple language. Use an everyday analogy, show a short example, then ask one question and wait for my answer."),
+    ("Check my answer", "Help me check my working. Ask me for the question and my answer or a picture of my work. Explain where to upload it. Once I share it, check my reasoning and units and help me fix the first mistake."),
+    ("Explore a 3D model", "Open the 3D lab"),
+    ("Find study materials", "Open study materials"),
+    ("Quiz me", "Ask me one short question about my current lesson or selected course. Wait for my answer, then explain what I got right and what to improve. Keep it friendly and use a little humour if it helps."),
+    ("Plan a study session", "Help me plan a manageable 20-minute study session for my selected course. Use any available evidence about topics I need to practise, and ask what I find difficult rather than guessing."),
+    ("Summarize a document", "Where can I upload a picture or document for Tex to summarize or analyze? Explain the steps briefly, including which document action to select. Do not claim to have read a file until I share one."),
+    ("Help me use voice", "Explain briefly how to enable Tex's voice, sign in to Puter if needed, speak, interrupt and stop. Mention account usage limits and the typed or recorded-answer alternatives."),
+    ("Show the app guide", "Open the app guide"),
+)
+
 
 def partner_instruction(username, subject, mode="Hint", context=""):
     mode = mode if mode in MODES else "Hint"

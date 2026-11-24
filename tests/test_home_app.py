@@ -41,6 +41,17 @@ class HomeAppTests(unittest.TestCase):
         self.assertTrue(app.session_state["quick_tex"])
         self.model.assert_not_called()
 
+    def test_first_time_prompt_sends_welcome_and_remains_available(self):
+        app = self.home()
+        app.button(key="home_tex_starter_0_INST-N5").click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual(self.model.call_count, 1)
+        request = self.model.call_args.args[0]
+        self.assertIn("I'm new here", request[-1].parts[0].text)
+        self.assertIn("INST-N5", self.model.call_args.kwargs["system_instruction"])
+        self.assertTrue(any(expander.label == "Starter prompts" for expander in app.expander))
+        self.assertTrue(any(button.label == "Meet Tex" for button in app.button))
+
     def test_home_shortcuts_open_practice_and_native_recorder(self):
         app = self.home()
         self.assertTrue(any("Breezy" in title.value for title in app.title))
