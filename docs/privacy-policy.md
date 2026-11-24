@@ -6,7 +6,7 @@ This policy explains how Trentox Tutor AI handles information in its web app. Co
 
 ## Information we use
 
-- **Sign-in and profile.** Google and Streamlit handle Google sign-in. The sign-in integration receives verified Google account information, which can include your account identifier, name and email address. Trentox checks the sign-in and derives an internal learner identifier to keep study sessions separate. You choose a nickname for Tex. Trentox does not receive your Google password.
+- **Sign-in and profile.** Streamlit handles sign-in through configured providers: Google, and Microsoft or Apple through a compatible broker when enabled. The sign-in integration receives verified provider account information, which can include your account identifier, name and email address. Trentox checks the sign-in and derives an internal learner identifier to keep study sessions separate. You choose a nickname for Tex. Trentox does not receive your provider password. Accounts from different providers are not automatically linked by email.
 - **Study activity.** Trentox uses your selected course, answers, scores, confidence ratings, progress, lab reflections and reminder preferences to provide the study workspace. Importing a progress file sends that file to the app for processing. Downloaded progress reports and calendar files are saved wherever you choose on your device.
 - **AI requests.** When you ask Tex for help, generate a lesson or quiz, submit work for review, or request transcription, Trentox sends the information needed for that feature to Google Gemini. This may include your nickname, recent chat context, study context, typed work, recordings, transcripts, or a submitted document, image or text extracted from it. Remove names, student numbers and other private information from work you send for AI feedback.
 - **Optional voice.** Opening the voice panel loads Puter.js from js.puter.com, which receives standard connection information. Enabling voice signs you in to Puter. When you request speech or opt into automatic playback, Tex's spoken reply is sent through Puter to ElevenLabs. Puter account credits and limits apply. Live microphone transcription uses your browser's speech-recognition service, then sends the transcript to Gemini. The recorded-answer input sends recordings to Gemini instead. You may type without enabling either microphone.
@@ -27,6 +27,8 @@ Your chats, recordings, uploaded work and written answers are excluded from the 
 **Money Class and Career readiness.** When account history is available, Trentox saves module completion and completion dates for the Employability Meter. Practice budgets and CV drafts stay in your active session. If you choose Tex feedback on your CV, Trentox sends the draft and recent chat context to Google Gemini. Add private contact details to the downloaded draft on your device.
 
 Interactive lesson conversations stay in the current study session and can be downloaded or ended and cleared. Stop voice turns off Tex's audio and live microphone. Puter sign-in is separate from Google/Trentox sign-in; use **Sign out of Puter** in the voice panel to remove that browser connection. Clearing a Trentox conversation does not delete provider records.
+
+A first-use guide flag and first-shown time may be stored under your internal learner identifier to prevent repeat automatic tours. When account storage is unavailable, an account-specific browser cookie remembers this choice on that browser. You can replay the guide manually.
 
 ## Privacy and deletion requests
 

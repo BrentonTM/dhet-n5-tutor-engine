@@ -1,98 +1,164 @@
-"""First-use walkthrough built from native Streamlit controls."""
+"""Once-only onboarding and a replayable tour anchored to the real app controls."""
+
+import json
+import logging
+from uuid import uuid4
 
 import streamlit as st
 
-_GUIDE_COOKIE = "trentox_tutor_guide_seen_v1"
-_GUIDE_COOKIE_SCRIPT = (
-    "<script>document.cookie = '" + _GUIDE_COOKIE +
-    "=1; Path=/; Max-Age=31536000; SameSite=Lax; Secure';</script>"
-)
-_GUIDE_STEPS = [
-    (
-        "Choose what you are learning",
-        "Use Study path in the sidebar to select your programme, N-level and subject. "
-        "Lessons, practice and examples then follow that selection.",
-        "You can change the course selection whenever you need.",
-    ),
-    (
-        "Study one topic, then check it",
-        "Open Lessons in Tutor & lab. Choose a comfortable focus block, work through "
-        "the explanation and example, then answer the short topic quiz.",
-        "Missed concepts appear in your progress view and review queue.",
-    ),
-    (
-        "Make the theory visible",
-        "Open 3D lab to rotate and inspect a model or practise a circuit. Follow the "
-        "operating tips beside each model.",
-        "Drag to rotate and scroll to zoom where the model supports it.",
-    ),
-    (
-        "Ask, practise and review",
-        "Use Quick AI tutor for Socratic hints, upload worked answers for feedback, "
-        "and try Exam practice. The progress view shows topics to revisit.",
-        "Set a study reminder in the sidebar or add one to your device calendar.",
-    ),
-]
+from ui.guide_preferences import claim_first_guide, guide_cookie_name
+from ui.guide_steps import GUIDE_STEPS
+from ui.guide_overlay import render_overlay
+from ui.tex_app_control import FEATURES
+
+logger = logging.getLogger(__name__)
+_NAV_KEYS = ("learning_workspace", "tutor_section", "quick_tex", "tex_sidebar_panel")
 
 
-@st.dialog("Welcome to Trentox Tutor AI", width="large")
-def _show_guide_dialog():
-    step_index = int(st.session_state.get("first_use_guide_step", 0))
-    step_index = min(max(step_index, 0), len(_GUIDE_STEPS) - 1)
-    title, body, tip = _GUIDE_STEPS[step_index]
-
-    st.caption("FIRST-USE GUIDE · STEP " + str(step_index + 1) + " OF " + str(len(_GUIDE_STEPS)))
-    st.progress((step_index + 1) / len(_GUIDE_STEPS))
-    st.subheader(title)
-    st.write(body)
-    st.info("Tip: " + tip)
-
-    back_col, later_col, next_col = st.columns([1, 1, 1])
-    with back_col:
-        if step_index > 0 and st.button("Back", key="guide_back"):
-            st.session_state["first_use_guide_step"] = step_index - 1
-            st.rerun()
-    with later_col:
-        if st.button("Not now", key="guide_later"):
-            st.session_state["first_use_guide_open"] = False
-            st.session_state["first_use_guide_dismissed"] = True
-            st.rerun()
-    with next_col:
-        label = "Finish guide" if step_index == len(_GUIDE_STEPS) - 1 else "Next"
-        if st.button(label, key="guide_next", type="primary"):
-            if step_index == len(_GUIDE_STEPS) - 1:
-                st.session_state["first_use_guide_open"] = False
-                st.session_state["first_use_guide_complete"] = True
-            else:
-                st.session_state["first_use_guide_step"] = step_index + 1
-            st.rerun()
-
-
-def _cookie_says_guide_is_complete():
+def _cookie_seen(name):
     try:
-        return st.context.cookies.get(_GUIDE_COOKIE) == "1"
+        return st.context.cookies.get(name) == "1"
     except (AttributeError, TypeError):
         return False
 
 
-def render_first_use_guide():
-    """Show the guide once per browser profile, with a native replay control."""
-    if "first_use_guide_complete" not in st.session_state:
-        st.session_state["first_use_guide_complete"] = _cookie_says_guide_is_complete()
-    if "first_use_guide_open" not in st.session_state:
-        st.session_state["first_use_guide_open"] = not st.session_state["first_use_guide_complete"]
-    if "first_use_guide_dismissed" not in st.session_state:
-        st.session_state["first_use_guide_dismissed"] = False
-    if "first_use_guide_step" not in st.session_state:
-        st.session_state["first_use_guide_step"] = 0
+def initialize_guide(state, student_id, dsn, cookie_seen, claim=None):
+    """Claim before displaying: skipping, closing or finishing all count as seen."""
+    if state.get("_guide_profile") == student_id:
+        return
+    already_seen_here = state.get("_guide_profile") in (None, student_id) and bool(state.get("first_use_guide_complete") or state.get("first_use_guide_dismissed"))
+    claim = claim or claim_first_guide
+    first = not cookie_seen
+    persistence = "browser"
+    if dsn:
+        try:
+            first = claim(dsn, student_id)
+            persistence = "account"
+        except Exception as exc:
+            logger.warning("Guide preference sync failed: %s", type(exc).__name__)
+    state["_guide_profile"] = student_id
+    state["_guide_persistence"] = persistence
+    state["first_use_guide_open"] = first and not already_seen_here
+    state["first_use_guide_step"] = 0
+    state["first_use_guide_complete"] = not first or already_seen_here
+    state["first_use_guide_dismissed"] = False
+    state["_guide_cookie"] = guide_cookie_name(student_id)
 
-    if st.button("📘 Replay the app guide", key="replay_first_use_guide", use_container_width=True):
+
+def end_guide(state):
+    state["first_use_guide_open"] = False
+    state["first_use_guide_complete"] = True
+    state["first_use_guide_dismissed"] = True
+    if state.get("_guide_original_navigation") is not None:
+        state["_guide_restore_navigation"] = state.pop("_guide_original_navigation")
+    state.pop("_guide_route_id", None)
+    state.pop("_guide_current_id", None)
+
+
+def render_first_use_guide(student_id="session", dsn=None):
+    cookie = guide_cookie_name(student_id)
+    initialize_guide(st.session_state, student_id, dsn, _cookie_seen(cookie))
+    if st.button("📘 Replay the app guide", key="replay_first_use_guide", width="stretch"):
         st.session_state["first_use_guide_step"] = 0
         st.session_state["first_use_guide_open"] = True
         st.session_state["first_use_guide_dismissed"] = False
+        st.session_state.pop("_guide_route_id", None)
+    if st.session_state.get("first_use_guide_open"):
+        ids = st.session_state.get("_guide_step_ids", [row["id"] for row in GUIDE_STEPS])
+        position = min(max(int(st.session_state.get("first_use_guide_step", 0)), 0), len(ids) - 1)
+        current = next(row for row in GUIDE_STEPS if row["id"] == ids[position])
+        if current["feature"] in ("reminders", "display_settings"):
+            st.session_state["tex_sidebar_panel"] = current["feature"]
+        st.caption(f"App guide · step {position + 1} of {len(ids)}")
+        if st.button("Close guide", key="close_first_use_guide", width="stretch"):
+            end_guide(st.session_state)
+            st.rerun()
+    if st.session_state.get("first_use_guide_open"):
+        st.caption("Guide preference saved to your account." if st.session_state.get("_guide_persistence") == "account" else "Guide preference saved in this browser.")
+    # The account-specific cookie is a fallback when account storage is unavailable.
+    st.html("<script>document.cookie = " + json.dumps(cookie + "=1; Path=/; Max-Age=31536000; SameSite=Lax; Secure") + ";</script>", unsafe_allow_javascript=True)
 
-    if st.session_state["first_use_guide_open"]:
-        _show_guide_dialog()
 
-    if st.session_state["first_use_guide_complete"]:
-        st.html(_GUIDE_COOKIE_SCRIPT, unsafe_allow_javascript=True)
+def available_steps(workspaces, integrated, has_lab, resource_key=""):
+    result = []
+    for row in GUIDE_STEPS:
+        workspace, section, _ = FEATURES[row["feature"]]
+        if workspace not in workspaces:
+            continue
+        if not integrated and row["id"] in ("starters", "tex", "voice"):
+            prefix = f"visual_tutor_{resource_key}" if has_lab else f"resources_{resource_key}"
+            suffix = {"starters": "starter_prompts", "tex": "chat_input", "voice": "puter"}[row["id"]]
+            row = {**row, "feature": "ask_tutor" if has_lab else "resources", "target": f"{prefix}_{suffix}"}
+        if not integrated and section not in (None, "📖 Lessons", "💬 Ask tutor", "🧊 3D lab"):
+            continue
+        if not integrated and row["id"] in ("lessons", "interactive", "quiz"):
+            continue
+        if row["id"] == "lab" and not has_lab:
+            continue
+        if row["id"] == "home" and not has_lab:
+            row = {**row, "body": "Home shows your selected course and shortcuts to its available study materials. Open the course outline, exam archive or Tex to begin.", "tip": "Available tools follow the programme, level and subject selected in Study path."}
+        result.append(row)
+    return result
+
+
+def prepare_feature_guide(workspaces, *, integrated, has_lab, resource_key=""):
+    restore = st.session_state.pop("_guide_restore_navigation", None)
+    if restore is not None:
+        for key in _NAV_KEYS:
+            if key in restore:
+                st.session_state[key] = restore[key]
+            else:
+                st.session_state.pop(key, None)
+    if not st.session_state.get("first_use_guide_open"):
+        return None
+    rows = available_steps(workspaces, integrated, has_lab, resource_key)
+    st.session_state["_guide_step_ids"] = [row["id"] for row in rows]
+    position = min(max(int(st.session_state.get("first_use_guide_step", 0)), 0), len(rows) - 1)
+    st.session_state["first_use_guide_step"] = position
+    row = rows[position]
+    if row["id"] == "finish" and st.session_state.get("_guide_persistence") == "browser":
+        row = {**row, "tip": "This browser remembers that you have seen the guide. Replay is always your choice."}
+    if "_guide_original_navigation" not in st.session_state:
+        st.session_state["_guide_original_navigation"] = {key: st.session_state[key] for key in _NAV_KEYS if key in st.session_state}
+    if st.session_state.get("_guide_route_id") != row["id"]:
+        workspace, section, _ = FEATURES[row["feature"]]
+        st.session_state["learning_workspace"] = workspace
+        if section:
+            st.session_state["tutor_section"] = section
+        st.session_state["quick_tex"] = False
+        if row["sidebar"]:
+            st.set_page_config(initial_sidebar_state="expanded")
+        st.session_state["_guide_route_id"] = row["id"]
+    st.session_state["_guide_current_id"] = row["id"]
+    return {"step": row, "number": position + 1, "total": len(rows),
+            "items": [{"id": item["id"], "title": item["title"]} for item in rows], "token": str(uuid4())}
+
+
+def apply_guide_action(state, action):
+    if not isinstance(action, dict) or action.get("id") == state.get("_guide_last_action"):
+        return False
+    if not state.get("first_use_guide_open") or action.get("step") != state.get("_guide_current_id"):
+        return False
+    ids = state.get("_guide_step_ids", [])
+    kind = action.get("kind")
+    if kind not in ("next", "back", "stop", "jump"):
+        return False
+    if kind == "jump" and action.get("target") not in ids:
+        return False
+    state["_guide_last_action"] = action.get("id")
+    index = int(state.get("first_use_guide_step", 0))
+    if kind == "stop" or (kind == "next" and index == len(ids) - 1):
+        end_guide(state)
+    elif kind == "jump":
+        state["first_use_guide_step"] = ids.index(action["target"])
+    else:
+        state["first_use_guide_step"] = max(0, min(len(ids) - 1, index + (1 if kind == "next" else -1)))
+    return True
+
+
+def render_feature_guide(data):
+    if data is None:
+        return
+    result = render_overlay(data)
+    if apply_guide_action(st.session_state, getattr(result, "action", None)):
+        st.rerun()

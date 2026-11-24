@@ -54,7 +54,7 @@ def ui_stub(claims=None, state=None):
     )
     for command in ("container", "form", "popover"):
         setattr(ui, command, MagicMock())
-    for command in ("title", "badge", "caption", "markdown", "info", "error", "link_button", "login", "logout"):
+    for command in ("title", "badge", "caption", "markdown", "info", "error", "link_button", "login", "logout", "image"):
         setattr(ui, command, Mock())
     ui.button = Mock(return_value=False)
     ui.text_input = Mock(return_value="")
@@ -288,8 +288,8 @@ class StudentIdentityTests(unittest.TestCase):
         ui.secrets = {}
         with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
             identity.require_student()
-        ui.button.assert_called_once()
-        self.assertTrue(ui.button.call_args.kwargs["disabled"])
+        self.assertEqual(ui.button.call_count, 3)
+        self.assertTrue(all(call.kwargs["disabled"] for call in ui.button.call_args_list))
 
     def test_login_button_calls_only_native_google_flow(self):
         ui = ui_stub(claims=SimpleNamespace(is_logged_in=False))
@@ -400,7 +400,8 @@ class StudentIdentityTests(unittest.TestCase):
         with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
             identity.require_student()
         ui.link_button.assert_called_once()
-        self.assertFalse(ui.button.call_args.kwargs["disabled"])
+        google = next(call for call in ui.button.call_args_list if call.kwargs["key"] == "student_google_login")
+        self.assertFalse(google.kwargs["disabled"])
 
     def test_logout_clears_all_learner_data_before_native_logout(self):
         state = {"tutor_chat": ["private"], "exam_answers": {1: "answer"}, "_student_display_name": "Breezy"}

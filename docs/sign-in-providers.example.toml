@@ -1,0 +1,15 @@
+# Append provider tables to the existing Streamlit Secrets.
+# Do not replace the existing [auth] or Google configuration.
+
+[auth.microsoft]
+client_id = "REPLACE_MICROSOFT_APPLICATION_ID"
+client_secret = "REPLACE_MICROSOFT_CLIENT_SECRET"
+server_metadata_url = "https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0/.well-known/openid-configuration"
+
+# Apple via a compatible OIDC broker with Apple enabled.
+[auth.apple]
+client_id = "REPLACE_BROKER_CLIENT_ID"
+client_secret = "REPLACE_BROKER_CLIENT_SECRET"
+expected_issuer = "https://REPLACE_TENANT.auth0.com/"
+server_metadata_url = "https://REPLACE_TENANT.auth0.com/.well-known/openid-configuration"
+client_kwargs = { scope = "openid email profile", prompt = "login" }

@@ -155,7 +155,7 @@ def show_study_history_status():
 sync_study_history()
 apply_study_history()
 
-from ui.device_guide import render_first_use_guide
+from ui.device_guide import render_first_use_guide, prepare_feature_guide, render_feature_guide
 from ui.study_reminders import open_exam_calendar_workspace, render_study_reminders
 from ui import exam_questions as _exam_questions
 # A running Streamlit process can still hold the previous helper after a git update.
@@ -789,7 +789,7 @@ if early_tex_action.get("feature") in ("reminders", "display_settings"):
 with st.sidebar:
     st.markdown("### ⚙️ Trentox Tutor AI")
     st.caption("Engineering Studies learning workspace")
-    render_first_use_guide()
+    render_first_use_guide(student["student_id"], history_database)
     render_study_reminders()
     st.markdown("---")
 # Configure Matplotlib for headless Streamlit rendering
@@ -2093,6 +2093,8 @@ if tex_navigation:
 if st.session_state.get("tex_action_receipt"):
     st.caption(st.session_state["tex_action_receipt"])
 
+feature_guide = prepare_feature_guide(workspace_names, integrated=bool(active_subject), has_lab=bool(lab_profile), resource_key=resource_key)
+
 tab_home, *other_tabs = st.tabs(workspace_names, key="learning_workspace", on_change="rerun")
 tab_resources, tab_games, tab_money, tab_career = other_tabs[-4:]
 if active_subject:
@@ -3225,3 +3227,7 @@ with tex_launcher:
             render_ai_tutor_chat(
                 widget_prefix="quick_tex", compact=True, subject=chat_subject,
             )
+
+
+# Draw only after the selected feature and its controls have reached the page.
+render_feature_guide(feature_guide)

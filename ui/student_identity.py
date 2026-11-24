@@ -1,4 +1,4 @@
-"""Google OIDC entry and a per-session name for Tex.
+"""Verified OIDC entry and a per-session name for Tex.
 
 Only Streamlit's verified ``st.user`` grants access. Session values, URL
 parameters and the chosen display name never authenticate a learner.
@@ -8,6 +8,8 @@ import hashlib
 import html
 import json
 import logging
+import re
+from pathlib import Path
 import math
 import time
 import unicodedata
@@ -119,6 +121,68 @@ def google_auth_configuration_issues(secrets):
         return ["Secrets configuration could not be read"]
 
 
+def additional_provider_ready(secrets, provider):
+    """Only enable providers with real credentials and a pinned OIDC issuer."""
+    try:
+        auth = secrets.get("auth", {})
+        settings = auth.get(provider, {})
+        if not isinstance(settings, Mapping) or not settings:
+            return False
+        values = [auth.get("redirect_uri"), auth.get("cookie_secret"), settings.get("client_id"), settings.get("client_secret")]
+        if any(not isinstance(value, str) or not value.strip() or value.strip().upper().startswith(("REPLACE", "YOUR_", "CHANGE_")) for value in values):
+            return False
+        if len(auth["cookie_secret"]) < 32 or not _valid_redirect_uri(auth["redirect_uri"]):
+            return False
+        metadata = settings.get("server_metadata_url", "")
+        if provider == "microsoft":
+            return bool(re.fullmatch(r"https://login\.microsoftonline\.com/[0-9a-fA-F-]{36}/v2\.0/\.well-known/openid-configuration", metadata))
+        if provider == "apple":
+            # Apple's direct form_post callback is incompatible with Streamlit's
+            # GET-only callback. A configured OIDC broker handles Apple's exchange.
+            issuer = settings.get("expected_issuer", "")
+            url = urlsplit(issuer)
+            return bool(url.scheme == "https" and url.hostname and not url.username and not url.password
+                        and not url.query and not url.fragment and url.hostname != "appleid.apple.com"
+                        and "YOUR_" not in issuer.upper() and "REPLACE" not in issuer.upper()
+                        and metadata == issuer.rstrip("/") + "/.well-known/openid-configuration")
+        return False
+    except (AttributeError, TypeError, ValueError, KeyError, FileNotFoundError):
+        return False
+
+
+def identity_from_configured_provider(claims, secrets):
+    issuer = claims.get("iss")
+    if issuer in {"accounts.google.com", "https://accounts.google.com"}:
+        if not google_auth_ready(secrets):
+            raise ValueError("Google is not configured.")
+        _, settings, _ = _google_provider_settings(secrets["auth"])
+        return student_id_from_claims(claims, client_id=settings["client_id"]), "Google"
+    for provider, label in (("microsoft", "Microsoft"), ("apple", "Apple")):
+        if not additional_provider_ready(secrets, provider):
+            continue
+        settings = secrets["auth"][provider]
+        expected = (settings["server_metadata_url"].removesuffix("/.well-known/openid-configuration")
+                    if provider == "microsoft" else settings["expected_issuer"])
+        if issuer != expected:
+            continue
+        subject = claims.get("sub")
+        issued, expires = claims.get("iat"), claims.get("exp")
+        if not isinstance(subject, str) or not subject.strip():
+            raise ValueError("The provider did not return a subject.")
+        if any(type(value) not in (int, float) or not math.isfinite(value) for value in (issued, expires)) or not 0 < issued < expires:
+            raise ValueError("Invalid identity timestamps.")
+        if issued > time.time() + 60 or time.time() >= issued + STUDY_SESSION_SECONDS:
+            raise ValueError("The study session has expired.")
+        audience = claims.get("aud")
+        audience = [audience] if isinstance(audience, str) else audience
+        if not isinstance(audience, list) or not all(isinstance(value, str) for value in audience) or settings["client_id"] not in audience:
+            raise ValueError("The identity belongs to another app.")
+        if (len(audience) > 1 or claims.get("azp") is not None) and claims.get("azp") != settings["client_id"]:
+            raise ValueError("Unexpected authorized party.")
+        return hashlib.sha256((expected + "\0" + subject).encode()).hexdigest(), label
+    raise ValueError("The identity issuer is not configured for this app.")
+
+
 def _configuration_reference(issues):
     """Expose fixed support codes, never configuration values or exception text."""
     labels = (
@@ -212,35 +276,46 @@ def _entry_card(title, subtitle):
 
 def _render_login(ready, embedded, runtime_view=False, configuration_reference=""):
     with st.container(horizontal_alignment="center"):
-        with st.container(width=560, border=True, key="student_entry",
-                          horizontal_alignment="center", gap="small"):
+        with st.container(width=500, border=True, key="student_entry", horizontal_alignment="center", gap="small"):
             _entry_card("Trentox Tutor AI", "Build understanding, one step at a time.")
-            st.markdown("Meet **Tex**, your AI study partner for engineering.",
-                        text_alignment="center")
+            st.markdown("Your course. Your pace. **Tex by your side.**", text_alignment="center")
+            st.caption("Choose how to sign in", text_alignment="center")
             if embedded:
-                st.info("Open Trentox directly to sign in securely with Google.")
+                st.info("Open Trentox directly to sign in securely.")
                 st.link_button("Open secure sign-in", APP_URL, type="primary", width="stretch")
             else:
                 if runtime_view:
                     st.link_button("Open the main Trentox app", APP_URL, width="stretch")
                 if not ready:
-                    message = "Google sign-in is being set up. Please check back soon."
+                    message = "Sign-in is being set up. Please check back soon."
                     if configuration_reference:
                         message += f" Support reference: {configuration_reference}."
                     st.info(message, icon=":material/info:")
-                if st.button("Continue with Google", type="primary", width="stretch",
-                             disabled=not ready, key="student_google_login") and ready:
-                    try:
-                        provider_name, _, _ = _google_provider_settings(st.secrets["auth"])
-                        if provider_name is None:
-                            st.login()
-                        else:
-                            st.login(provider_name)
-                    except Exception as exc:
-                        logger.warning("Google sign-in could not start: %s", type(exc).__name__)
-                        st.error("Google sign-in could not start. Please try again or contact the app owner.")
-            st.caption("Sign in", text_alignment="center")
-            st.caption(":material/lock: Your password is protected by Google.", text_alignment="center")
+                availability = {"google": google_auth_ready(st.secrets),
+                                "microsoft": additional_provider_ready(st.secrets, "microsoft"),
+                                "apple": additional_provider_ready(st.secrets, "apple")}
+                for provider, label in (("google", "Google"), ("microsoft", "Microsoft"), ("apple", "Apple")):
+                    with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+                        symbol = Path(__file__).resolve().parents[1] / "assets" / "signin" / f"{provider}.svg"
+                        st.image(symbol, width=24, alt=label)
+                        clicked = st.button(f"Continue with {label}", width="stretch", type="secondary",
+                            disabled=not availability[provider], key=f"student_{provider}_login",
+                            help=None if availability[provider] else f"{label} sign-in is awaiting provider setup.")
+                    if clicked and availability[provider]:
+                        try:
+                            if provider == "google":
+                                name, _, _ = _google_provider_settings(st.secrets["auth"])
+                                st.login(name) if name else st.login()
+                            else:
+                                st.login(provider)
+                        except Exception as exc:
+                            logger.warning("Sign-in could not start: provider=%s category=%s", provider, type(exc).__name__)
+                            st.error(f"{label} sign-in could not start. Please try again or contact the app owner.")
+                        st.stop()
+                pending = [name for key, name in (("microsoft", "Microsoft"), ("apple", "Apple")) if not availability[key]]
+                if pending:
+                    st.caption(" and ".join(pending) + " sign-in: provider setup pending.", text_alignment="center")
+            st.caption(":material/lock: Your password stays with your sign-in provider.", text_alignment="center")
 
 
 def require_student():
@@ -250,7 +325,7 @@ def require_student():
     data loads. No configured provider or valid verified identity means stop.
     """
     issues = google_auth_configuration_issues(st.secrets)
-    ready = not issues
+    ready = not issues or additional_provider_ready(st.secrets, "microsoft") or additional_provider_ready(st.secrets, "apple")
     if not ready:
         logger.warning("Google sign-in configuration incomplete: %s",
                        "; ".join(issues))
@@ -258,13 +333,12 @@ def require_student():
     embedded = bool(st.context.is_embedded)
     runtime_view = urlsplit(url).path.startswith("/~/+/")
     if not ready or embedded or not st.user.is_logged_in:
-        reset_student_state(preserve=("student_google_login",))
+        reset_student_state(preserve=("student_google_login", "student_microsoft_login", "student_apple_login"))
         _render_login(ready, embedded, runtime_view, _configuration_reference(issues))
         st.stop()
 
     try:
-        _, provider, _ = _google_provider_settings(st.secrets["auth"])
-        student_id = student_id_from_claims(st.user, client_id=provider["client_id"])
+        student_id, provider_label = identity_from_configured_provider(st.user, st.secrets)
     except ValueError:
         reset_student_state(preserve=("student_invalid_logout",))
         st.error("Your sign-in has expired or could not be verified. Please sign in again.")
@@ -276,11 +350,12 @@ def require_student():
         reset_student_state()
         st.session_state[_OWNER_KEY] = student_id
 
+    st.session_state["_student_auth_provider"] = provider_label
     display_name, error = validate_display_name(st.session_state.get(_NAME_KEY))
     if error:
         with st.container(horizontal_alignment="center"):
             with st.container(width=540, border=True, key="student_onboarding"):
-                _entry_card("What should Tex call you?", "You're signed in with Google. Choose a username for this study session.")
+                _entry_card("What should Tex call you?", "You're signed in securely. Choose a username for this study session.")
                 with st.form("student_name_form"):
                     entered = st.text_input("Your Tex username", max_chars=32, placeholder="For example, Breezy",
                                             autocomplete="nickname", key="student_name_entry")
@@ -302,7 +377,7 @@ def require_student():
 def render_student_menu(student):
     """Account controls; call from the top bar or sidebar after require_student."""
     with st.popover(student["display_name"], icon=":material/account_circle:", key="student_account_menu"):
-        st.caption("Signed in with Google")
+        st.caption("Signed in with " + st.session_state.get("_student_auth_provider", "Google"))
         st.markdown(f"Tex calls you **{html.escape(student['display_name'])}**.")
         st.caption("View your study activity in Analytics.")
         if st.button("Change Tex username", key="student_change_name", width="stretch"):
