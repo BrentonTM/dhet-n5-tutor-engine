@@ -167,6 +167,8 @@ from ui.gemini_client import (
     configured_models, generate_reply, parse_voice_transcript,
 )
 from ui.tex_partner import MODES, conversation_context, partner_instruction, recent_turns
+from ui.interactive_lesson import render_interactive_lesson
+from ui.puter_voice import render_puter_voice
 from ui.rubik_cube import render_rubik_cube
 from ui.logic_builder import render_logic_builder
 from ui.engineering_games import render_fault_finder, render_resistor_decoder
@@ -590,6 +592,17 @@ def render_ai_tutor_chat(
                     st.audio(message["audio"], format="audio/wav")
     elif compact:
         st.write(f"Hi {student_name}. What are we working through today? Tell me what you think, or where you got stuck.")
+
+    latest_reply = next((message["content"] for message in reversed(st.session_state.tutor_chat)
+                         if message["role"] == "assistant"), "")
+    with st.expander("Talk with Tex · ElevenLabs voice", expanded=False, on_change="rerun") as voice_panel:
+        if voice_panel.open:
+            voice_result = render_puter_voice(latest_reply, key=f"{widget_prefix}_puter_{subject}")
+            voice_turn = getattr(voice_result, "utterance", None)
+            if isinstance(voice_turn, dict) and voice_turn.get("id") != st.session_state.get("tex_voice_seen"):
+                st.session_state["tex_voice_seen"] = voice_turn.get("id")
+                if isinstance(voice_turn.get("text"), str) and voice_turn["text"].strip():
+                    _submit_tutor_message(voice_turn["text"], subject=subject)
 
     if st.session_state.get("tex_error"):
         st.error(st.session_state["tex_error"])
@@ -2675,6 +2688,11 @@ if active_subject and tab_tutor.open:
                 if lesson_state.get("subject") == active_subject and lesson_state.get("topic") == target_topic:
                     if lesson_state.get("notes"):
                         st.markdown(lesson_state["notes"])
+                        with st.expander("Interactive lesson with Tex", expanded=False, on_change="rerun") as live_lesson:
+                            if live_lesson.open:
+                                live_resources = lesson_resources(BASE_DIR, active_subject, target_topic)
+                                render_interactive_lesson(active_subject, target_topic, lesson_state["notes"],
+                                                          live_resources["context"], _call_gemini)
                         st.divider()
                         if lesson_state.get("quiz"):
                             render_topic_quiz(lesson_state["quiz"], active_subject, target_topic)
