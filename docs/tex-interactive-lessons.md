@@ -65,3 +65,16 @@ It avoids ridicule and keeps numerical work precise. A student can ask for a ser
 tone at any time.
 
 Additional checks: `python -m unittest tests.test_tex_app_control tests.test_home_app -q`.
+
+
+## Minimal Tex interface
+
+Home and the floating Ask Tex panel show a compact voice console with an animated
+status orb and Enable voice, Talk to Tex, Stop and Play reply controls. Voice
+settings, playback pause/resume, account sign-out and automatic listening/playback
+are inside a disclosure. Response style is collapsible. The compact conversation
+shows its latest four messages; recent conversation context is still retained for
+follow-up questions. The full Ask tutor view continues to show a longer transcript.
+The console respects reduced-motion preferences and uses keyboard focus outlines
+and a live status region. It shares the same voice implementation in interactive
+lessons. No separate ElevenLabs key is required.

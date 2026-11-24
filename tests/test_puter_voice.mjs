@@ -5,7 +5,7 @@ const source=fs.readFileSync(new URL('../ui/puter_voice.py', import.meta.url),'u
 const render=(await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'))).default;
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const nodes=new Map();
-function element(){return {disabled:false,checked:false,value:'',textContent:'',appendChild(item){if(!this.value)this.value=item.value;},replaceChildren(){this.value='';}};}
+function element(){return {dataset:{},disabled:false,checked:false,value:'',textContent:'',appendChild(item){if(!this.value)this.value=item.value;},replaceChildren(){this.value='';}};}
 for(const id of ['connect','speak','pause','resume','listen','stop','auto','handsfree','voice','lang','status'])nodes.set('#'+id,element());
 const parentElement={querySelector(id){if(!nodes.has(id))nodes.set(id,element());return nodes.get(id);}};
 globalThis.document={createElement:element};

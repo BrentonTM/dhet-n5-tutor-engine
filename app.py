@@ -510,11 +510,7 @@ def render_ai_tutor_chat(
     if pending_message:
         _submit_tutor_message(pending_message, subject=subject)
     if compact:
-        st.subheader("Tex · your thinking partner", anchor=False)
-        if subject == CAREER_SUBJECT:
-            st.caption("Ask about a fictional money example or get help with career skills.")
-        else:
-            st.caption(f"Ask about {subject}, request a hint, or upload your worked answer for feedback.")
+        st.caption(f"{subject} · Your learning copilot")
     else:
         st.subheader("Tex · your thinking partner", anchor=False)
         st.markdown(
@@ -522,14 +518,28 @@ def render_ai_tutor_chat(
             "Tex builds on your ideas, checks your reasoning, and explains when you need it."
         )
 
+    latest_reply = next((message["content"] for message in reversed(st.session_state.tutor_chat)
+                         if message["role"] == "assistant"), "")
+
+    def voice_controls():
+        voice_result = render_puter_voice(latest_reply, key=f"{widget_prefix}_puter_{subject}")
+        voice_turn = getattr(voice_result, "utterance", None)
+        if isinstance(voice_turn, dict) and voice_turn.get("id") != st.session_state.get("tex_voice_seen"):
+            st.session_state["tex_voice_seen"] = voice_turn.get("id")
+            if isinstance(voice_turn.get("text"), str) and voice_turn["text"].strip():
+                _submit_tutor_message(voice_turn["text"], subject=subject)
+
+    if compact:
+        voice_controls()
+
     def mode_changed(mode_key):
         st.session_state["tex_mode"] = st.session_state[mode_key] or "Hint"
 
-    mode_key = f"{widget_prefix}_response_mode"
-    st.segmented_control("How should Tex help?", MODES,
-                         default=st.session_state.get("tex_mode", "Hint"), key=mode_key,
-                         on_change=mode_changed, args=(mode_key,))
-
+    with st.expander("Response style", expanded=not compact):
+        mode_key = f"{widget_prefix}_response_mode"
+        st.segmented_control("How should Tex help?", MODES,
+                             default=st.session_state.get("tex_mode", "Hint"), key=mode_key,
+                             on_change=mode_changed, args=(mode_key,))
     if include_upload:
         with st.expander("📄 Upload an answer for feedback", expanded=False):
             st.caption(
@@ -587,25 +597,19 @@ def render_ai_tutor_chat(
                     st.error(saved_review["error"])
 
     if st.session_state.tutor_chat:
-        for message in st.session_state.tutor_chat[-12:]:
+        for message in st.session_state.tutor_chat[-4 if compact else -12:]:
             with st.chat_message(message["role"], avatar=":material/psychology:" if message["role"] == "assistant" else None):
                 st.markdown(decode_action(message["content"])[0] if message["role"] == "assistant" else message["content"])
                 if message.get("audio"):
                     st.audio(message["audio"], format="audio/wav")
     elif compact:
-        st.write(f"Hi {student_name}. What are we working through today? Tell me what you think, or where you got stuck.")
+        st.write(f"Hi {student_name}. What shall we work through?")
 
-    latest_reply = next((message["content"] for message in reversed(st.session_state.tutor_chat)
-                         if message["role"] == "assistant"), "")
-    with st.expander("Talk with Tex · ElevenLabs voice", expanded=False,
-                     key=f"{widget_prefix}_voice_panel_{subject}", on_change="rerun") as voice_panel:
-        if voice_panel.open:
-            voice_result = render_puter_voice(latest_reply, key=f"{widget_prefix}_puter_{subject}")
-            voice_turn = getattr(voice_result, "utterance", None)
-            if isinstance(voice_turn, dict) and voice_turn.get("id") != st.session_state.get("tex_voice_seen"):
-                st.session_state["tex_voice_seen"] = voice_turn.get("id")
-                if isinstance(voice_turn.get("text"), str) and voice_turn["text"].strip():
-                    _submit_tutor_message(voice_turn["text"], subject=subject)
+    if not compact:
+        with st.expander("Talk with Tex · ElevenLabs voice", expanded=False,
+                         key=f"{widget_prefix}_voice_panel_{subject}", on_change="rerun") as voice_panel:
+            if voice_panel.open:
+                voice_controls()
 
     if st.session_state.get("tex_error"):
         st.error(st.session_state["tex_error"])
@@ -613,7 +617,7 @@ def render_ai_tutor_chat(
             if st.button("Try that message again", key=f"{widget_prefix}_retry"):
                 _submit_tutor_message(retry=True, subject=subject)
     st.caption("When you send a message, its text or recording and recent chat context go to Google Gemini.")
-    submission = st.chat_input("Ask Tex anything…", key=f"{widget_prefix}_chat_input",
+    submission = st.chat_input("Ask Tex or open a tool…", key=f"{widget_prefix}_chat_input",
                                max_chars=6000, accept_audio=True, max_upload_size=8, submit_mode="disable")
     if submission:
         if isinstance(submission, str):
