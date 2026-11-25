@@ -18,6 +18,8 @@ from urllib.parse import urlsplit
 
 import streamlit as st
 
+from ui.signin_presentation import WORDMARK_HTML, signin_css
+
 logger = logging.getLogger(__name__)
 APP_URL = "https://dhet-n5-tutor-engine-rxogmong3h45cfoqv7t6sq.streamlit.app/"
 GOOGLE_METADATA_URL = "https://accounts.google.com/.well-known/openid-configuration"
@@ -275,11 +277,12 @@ def _entry_card(title, subtitle):
 
 
 def _render_login(ready, embedded, runtime_view=False, configuration_reference=""):
-    with st.container(horizontal_alignment="center"):
-        with st.container(width=500, border=True, key="student_entry", horizontal_alignment="center", gap="small"):
-            _entry_card("Trentox Tutor AI", "Build understanding, one step at a time.")
-            st.markdown("Your course. Your pace. **Tex by your side.**", text_alignment="center")
-            st.caption("Choose how to sign in", text_alignment="center")
+    st.html(signin_css())
+    with st.container(horizontal_alignment="center", key="student_entry_shell"):
+        with st.container(width=480, border=True, key="student_entry", horizontal_alignment="center", gap="small"):
+            st.html(WORDMARK_HTML, width="content")
+            st.title("Create your account", anchor=False, text_alignment="center")
+            st.markdown("Your course, your pace. Build understanding one step at a time.", text_alignment="center")
             if embedded:
                 st.info("Open Trentox directly to sign in securely.")
                 st.link_button("Open secure sign-in", APP_URL, type="primary", width="stretch")
@@ -295,12 +298,14 @@ def _render_login(ready, embedded, runtime_view=False, configuration_reference="
                                 "microsoft": additional_provider_ready(st.secrets, "microsoft"),
                                 "apple": additional_provider_ready(st.secrets, "apple")}
                 for provider, label in (("google", "Google"), ("microsoft", "Microsoft"), ("apple", "Apple")):
-                    with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+                    with st.container(horizontal=True, vertical_alignment="center", gap="small", key=f"student_{provider}_row"):
                         symbol = Path(__file__).resolve().parents[1] / "assets" / "signin" / f"{provider}.svg"
                         st.image(symbol, width=24, alt=label)
-                        clicked = st.button(f"Continue with {label}", width="stretch", type="secondary",
+                        clicked = st.button(f"Continue with {label}", width="stretch", type="primary" if provider == "google" else "secondary",
                             disabled=not availability[provider], key=f"student_{provider}_login",
                             help=None if availability[provider] else f"{label} sign-in is awaiting provider setup.")
+                        if provider != "google" and not availability[provider]:
+                            st.html('<span class="trentox-provider-soon">Coming soon</span>', width="content")
                     if clicked and availability[provider]:
                         try:
                             if provider == "google":
@@ -314,8 +319,9 @@ def _render_login(ready, embedded, runtime_view=False, configuration_reference="
                         st.stop()
                 pending = [name for key, name in (("microsoft", "Microsoft"), ("apple", "Apple")) if not availability[key]]
                 if pending:
-                    st.caption(" and ".join(pending) + " sign-in: provider setup pending.", text_alignment="center")
+                    st.caption(" and ".join(pending) + " sign-in: coming soon.", text_alignment="center")
             st.caption(":material/lock: Your password stays with your sign-in provider.", text_alignment="center")
+            st.link_button("Privacy policy and data requests", APP_URL + "?privacy=1", width="content")
 
 
 def require_student():

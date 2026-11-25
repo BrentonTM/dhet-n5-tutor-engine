@@ -56,13 +56,6 @@ if st.query_params.get("privacy") == "1":
             st.link_button("Back to Trentox", APP_URL)
     st.stop()
 
-if not getattr(st.user, "is_logged_in", False) or st.context.is_embedded:
-    with st.container(horizontal_alignment="center", gap="small"):
-        with st.container(width=560, horizontal_alignment="center", gap="small"):
-            st.image(Path(BASE_DIR) / "assets" / "trentox-cover.jpg", width="stretch",
-                     alt="Trentox Tutor AI cover with a turbine and circuit board")
-            st.link_button("Privacy policy and data requests", PRIVACY_URL)
-
 # Verify identity before loading learning modules, data or AI workspaces.
 student = require_student()
 student_name = student["display_name"]

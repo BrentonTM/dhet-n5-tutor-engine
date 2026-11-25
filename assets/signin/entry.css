@@ -1,0 +1,62 @@
+/* Scoped to the signed-out entry card. Native widgets retain their callbacks. */
+.stApp:has(.st-key-student_entry) {
+  background: #071120;
+  background-image: linear-gradient(90deg, #0711209c, #07112066 55%, #07112022),
+    linear-gradient(180deg, #07112055, transparent 45%, #071120c9),
+    url("__BACKGROUND_IMAGE__");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+.stApp:has(.st-key-student_entry) [data-testid="stAppViewContainer"],
+.stApp:has(.st-key-student_entry) [data-testid="stHeader"] { background: transparent; }
+.stApp:has(.st-key-student_entry) .block-container { padding-top: 3rem; padding-bottom: 2rem; }
+.st-key-student_entry_shell { min-height: calc(100svh - 7rem); justify-content: center; }
+.st-key-student_entry {
+  padding: 2.1rem 2rem 1.7rem;
+  border: 1px solid #9ab8d632;
+  border-radius: 22px;
+  background: linear-gradient(150deg, #0c182ae8, #061020df);
+  box-shadow: 0 28px 90px #0005;
+  backdrop-filter: blur(14px);
+  gap: 1rem;
+  color: #f2f5fa;
+}
+.trentox-entry-wordmark { font-size: .875rem; font-weight: 700; letter-spacing: .13em; color: #eef3fa; text-align: center; padding: .2rem 0 1rem; }
+.trentox-entry-wordmark span { color: #26d7df; margin-right: .4rem; }
+.st-key-student_entry h1 { color: #f2f5fa; font-size: clamp(1.7rem, 3vw, 2rem); letter-spacing: -.035em; line-height: 1.2; padding-top: 0; padding-bottom: .25rem; }
+.st-key-student_entry [data-testid="stMarkdownContainer"] p { color: #b5c2d3; font-size: 1rem; line-height: 1.65; }
+.st-key-student_entry [data-testid="stCaptionContainer"] p { color: #a6b6ca; font-size: .8125rem; line-height: 1.55; }
+.st-key-student_google_row, .st-key-student_microsoft_row, .st-key-student_apple_row {
+  border: 1px solid #92acc936;
+  border-radius: 11px;
+  background: #08122355;
+  padding: .3rem .8rem;
+  align-items: center;
+  min-height: 54px;
+}
+.st-key-student_google_row { background: #f2f5fa; border-color: #f2f5fa; margin-top: .5rem; }
+.st-key-student_entry [data-testid="stImage"] { margin: 0; }
+.st-key-student_google_login button, .st-key-student_google_login button:hover {
+  background: #f2f5fa; color: #101828; border: 0; box-shadow: none; min-height: 42px;
+}
+.st-key-student_google_login button p { color: #101828 !important; font-size: 1rem !important; font-weight: 600; }
+.st-key-student_google_row:hover { box-shadow: 0 0 0 3px #26d7df22; }
+.st-key-student_microsoft_login button, .st-key-student_apple_login button { background: transparent; border: 0; min-height: 42px; }
+.st-key-student_microsoft_login button p, .st-key-student_apple_login button p { color: #a9b6ca !important; font-size: .875rem !important; white-space: normal; text-align: left; }
+.trentox-provider-soon { display: inline-block; white-space: nowrap; padding: .25rem .45rem; color: #a9b8cc; background: #90a9c310; border-radius: 5px; font-size: .75rem; }
+.st-key-student_entry [data-testid="stLinkButton"] a { color: #b5c8dc; background: #05101e44; border-color: #8eadcd36; font-size: .8125rem; }
+.st-key-student_entry button:focus-visible, .st-key-student_entry a:focus-visible { outline: 2px solid #26d7df; outline-offset: 3px; }
+@media (max-width: 640px) {
+  .stApp:has(.st-key-student_entry) { background-position: 72% center; }
+  .stApp:has(.st-key-student_entry) .block-container { padding: 2rem 1rem; }
+  .st-key-student_entry { padding: 1.65rem 1.2rem 1.4rem; border-radius: 18px; }
+  .st-key-student_entry_shell { min-height: calc(100svh - 5rem); }
+}
+@media (max-width: 390px) {
+  .trentox-provider-soon { display: none; }
+  .st-key-student_entry { padding-inline: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .st-key-student_entry * { transition: none !important; }
+}

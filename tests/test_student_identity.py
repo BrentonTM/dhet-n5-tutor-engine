@@ -54,7 +54,7 @@ def ui_stub(claims=None, state=None):
     )
     for command in ("container", "form", "popover"):
         setattr(ui, command, MagicMock())
-    for command in ("title", "badge", "caption", "markdown", "info", "error", "link_button", "login", "logout", "image"):
+    for command in ("title", "badge", "caption", "markdown", "html", "info", "error", "link_button", "login", "logout", "image"):
         setattr(ui, command, Mock())
     ui.button = Mock(return_value=False)
     ui.text_input = Mock(return_value="")
@@ -380,8 +380,8 @@ class StudentIdentityTests(unittest.TestCase):
         ui.context = SimpleNamespace(url=identity.APP_URL, is_embedded=True)
         with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
             identity.require_student()
-        ui.link_button.assert_called_once()
-        self.assertEqual(ui.link_button.call_args.args[1], identity.APP_URL)
+        self.assertEqual([call.args[1] for call in ui.link_button.call_args_list],
+                         [identity.APP_URL, identity.APP_URL + "?privacy=1"])
         ui.login.assert_not_called()
 
     def test_runtime_path_is_not_an_embedding_or_authentication_signal(self):
@@ -399,7 +399,8 @@ class StudentIdentityTests(unittest.TestCase):
         ui.context.url = identity.APP_URL + "~/+/"
         with patch.object(identity, "st", ui), self.assertRaises(StopExecution):
             identity.require_student()
-        ui.link_button.assert_called_once()
+        self.assertEqual([call.args[1] for call in ui.link_button.call_args_list],
+                         [identity.APP_URL, identity.APP_URL + "?privacy=1"])
         google = next(call for call in ui.button.call_args_list if call.kwargs["key"] == "student_google_login")
         self.assertFalse(google.kwargs["disabled"])
 
@@ -422,7 +423,7 @@ class StudentIdentityTests(unittest.TestCase):
         script = "from ui.student_identity import require_student\nimport streamlit as st\nrequire_student()\nst.markdown('PROTECTED WORKSPACE')"
         result = AppTest.from_string(script).run(timeout=10)
         self.assertEqual(len(result.exception), 0)
-        self.assertEqual(result.title[0].value, "Trentox Tutor AI")
+        self.assertEqual(result.title[0].value, "Create your account")
         self.assertTrue(result.button(key="student_google_login").disabled)
         self.assertFalse(any(element.value == "PROTECTED WORKSPACE" for element in result.markdown))
 
