@@ -162,6 +162,7 @@ from ui.gemini_client import (
 from ui.tex_partner import MODES, STARTER_PROMPTS, conversation_context, partner_instruction, recent_turns
 from ui.interactive_lesson import render_interactive_lesson
 from ui.puter_voice import render_puter_voice
+from ui.voice_capture import decode_voice_recording
 from ui.tex_app_control import FEATURES, action_requested, assistance_instruction, decode_action, direct_navigation, validate_action
 from ui.lab_workspace import BASE_LAB_PROFILES
 from ui.rubik_cube import render_rubik_cube
@@ -524,6 +525,14 @@ def render_ai_tutor_chat(
 
     def voice_controls():
         voice_result = render_puter_voice(latest_reply, key=f"{widget_prefix}_puter_{subject}")
+        recording = getattr(voice_result, "recording", None)
+        if isinstance(recording, dict) and recording.get("id") != st.session_state.get("tex_recording_seen"):
+            st.session_state["tex_recording_seen"] = recording.get("id")
+            audio, capture_error = decode_voice_recording(recording)
+            if capture_error:
+                st.warning(capture_error)
+            else:
+                _submit_tutor_message(audio=audio, subject=subject)
         voice_turn = getattr(voice_result, "utterance", None)
         if isinstance(voice_turn, dict) and voice_turn.get("id") != st.session_state.get("tex_voice_seen"):
             st.session_state["tex_voice_seen"] = voice_turn.get("id")

@@ -1,6 +1,7 @@
 """Keyless ElevenLabs speech through each learner's Puter account, opt-in only."""
 
 import hashlib
+from pathlib import Path
 import streamlit as st
 from ui.tex_voice import VOICE_ID, VOICE_NAME
 from ui.tex_app_control import decode_action
@@ -12,24 +13,31 @@ _HTML = """
   <p class="tagline">Learn out loud.</p>
   <p id="status" class="status" role="status" aria-live="polite">Connecting the voice controls…</p>
   <div class="main-controls">
-    <button id="connect" disabled>Enable voice</button>
+    <button id="connect" disabled>Enable playback</button>
     <button id="listen" class="primary" title="Interrupt Tex and speak your answer">Talk to Tex</button>
     <button id="stop" title="Stop playback and turn off the microphone">Stop</button>
   </div>
-  <button id="speak" class="play-reply" disabled>Play reply <span aria-hidden="true">↗</span></button>
+  <div id="capture" class="capture-feedback" hidden>
+    <label class="level-label">Microphone input <meter id="input-level" min="0" max="1" value="0" aria-label="Microphone input level"></meter></label>
+    <p class="capture-note">Speak, then choose Finish recording. Up to 60 seconds.</p>
+  </div>
+  <div id="review" class="recording-review" hidden>
+    <audio id="preview" controls aria-label="Your recorded message"></audio>
+    <div class="review-controls"><button id="send-recording" class="primary">Send recording</button><button id="retry-recording">Record again</button></div>
+  </div>
+  <button id="speak" class="play-reply" disabled>Play reply</button>
   <p class="meta">ElevenLabs via Puter · account limits apply</p>
   <details class="settings"><summary>Settings</summary>
     <div class="playback"><button id="pause">Pause audio</button><button id="resume">Resume audio</button></div>
     <label class="check"><input id="auto" type="checkbox"> Read new replies automatically</label>
-    <label class="check"><input id="handsfree" type="checkbox"> Listen after each reply</label>
+    <label class="check"><input id="handsfree" type="checkbox"> Record after each reply</label>
     <label class="field">Voice <select id="voice"></select></label>
-    <label class="field">Speech language <select id="lang"><option value="en-ZA">English (South Africa)</option>
-    <option value="af-ZA">Afrikaans</option><option value="zu-ZA">isiZulu</option>
-    <option value="xh-ZA">isiXhosa</option><option value="st-ZA">Sesotho</option></select></label>
+    <label class="field">Microphone <select id="microphone"><option value="">Default microphone</option></select></label>
     <p class="privacy">ElevenLabs voice through Puter. Puter sign-in, account credits and limits apply.
-    Spoken replies go to Puter/ElevenLabs. Live speech uses your browser’s transcription service,
-    then sends the transcript to Gemini. Headphones are recommended for automatic listening.
-    You can always type or use the answer recorder instead.</p>
+    Puter is only needed for spoken replies. Recording does not need a Puter account.
+    Your recording stays in this browser until you choose Send recording; it then goes to Google Gemini.
+    If the input meter stays empty, choose another microphone here. Headphones are recommended.
+    You can also use the microphone in the message box or type.</p>
     <button id="signout" class="signout" disabled>Sign out of Puter</button>
   </details>
 </section>
@@ -61,6 +69,10 @@ button:disabled {opacity:.35;cursor:default;}
 .primary:hover:not(:disabled) {background:#96f3eb;}
 .play-reply {width:100%;margin-top:5px;border:0;min-height:30px;padding:6px;opacity:.75;}
 .play-reply span{padding-left:8px;color:var(--tex-accent);}
+.capture-feedback,.recording-review{margin-top:14px;}.capture-note{font-size:12px;line-height:1.5;opacity:.75;}
+.level-label{display:flex;align-items:center;gap:10px;font-size:12px;}.level-label meter{flex:1;min-width:0;height:12px;}
+.recording-review audio{width:100%;height:40px;}.review-controls{display:flex;gap:8px;margin-top:10px;}.review-controls button{flex:1;}
+[hidden]{display:none!important;}
 .meta{text-align:center;font-size:10px;opacity:.5;margin:5px 0 0;}
 .settings {margin:0;padding:0;border:0;}
 .settings[open] {margin-top:10px;border-top:1px solid var(--st-border-color,#28384c);padding-top:10px;}
@@ -81,101 +93,7 @@ summary {position:absolute;top:14px;right:14px;cursor:pointer;font-size:11px;opa
 @media(max-width:300px){.tex-console{padding:14px}.main-controls{grid-template-columns:1fr 1fr}.main-controls #stop{grid-column:1/-1;min-height:32px;padding:7px;}.orb-stage{height:118px;}}
 """
 
-_JS = r"""
-const instances = new WeakMap();
-let sdk;
-function loadPuter() {
-  if (window.puter) return Promise.resolve(window.puter);
-  if (!sdk) sdk = new Promise((resolve,reject) => {
-    const script = document.createElement('script'); script.src='https://js.puter.com/v2/';
-    script.onload=()=>resolve(window.puter); script.onerror=()=>{sdk=null; reject(new Error('sdk'));};
-    document.head.appendChild(script);
-  });
-  return sdk;
-}
-export default function({parentElement, data, setTriggerValue}) {
-  let s = instances.get(parentElement);
-  if (!s) {s={audio:null, recognition:null, enabled:false, generation:0, last:null, busy:false, disposed:false}; instances.set(parentElement,s);}
-  s.data=data; s.emit=setTriggerValue;
-  const el=id=>parentElement.querySelector('#'+id);
-  const status=text=>{
-    if(s.disposed)return;
-    el('status').textContent=text;
-    const mode=/speaking/i.test(text)?'speaking':/^Listening/i.test(text)?'listening':/generating|thinking|checking|loading|connecting/i.test(text)?'thinking':/could not|couldn't|unavailable|cancelled|blocked|not understood/i.test(text)?'error':/paused/i.test(text)?'paused':/enabled|Ready for/i.test(text)?'ready':'off';
-    const shell=parentElement.querySelector('.tex-console');shell.dataset.mode=mode;
-    el('phase').textContent={speaking:'SPEAKING',listening:'LISTENING',thinking:'THINKING',error:'TRY AGAIN',paused:'PAUSED',ready:'READY',off:'VOICE OFF'}[mode];
-  };
-  const abort=()=>{s.generation++; if(s.settle){s.settle();s.settle=null;} if(s.audio){s.audio.pause();s.audio.removeAttribute('src');s.audio.load();s.audio=null;}
-    if(s.recognition){s.recognition.onend=null;s.recognition.abort();s.recognition=null;} s.busy=false;};
-  const listen=()=>{
-    if(!s.enabled) {status('Enable Tex voice first, or use the recorded-answer input.');return;}
-    abort();
-    const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!Recognition){status('Live speech recognition is unavailable in this browser. Use the recorded-answer or typed input below.');return;}
-    const recognition=new Recognition(); s.recognition=recognition;
-    recognition.lang=el('lang').value; recognition.interimResults=false; recognition.continuous=false;
-    let words='';
-    recognition.onresult=event=>{for(let i=event.resultIndex;i<event.results.length;i++)if(event.results[i].isFinal)words+=event.results[i][0].transcript+' ';};
-    recognition.onerror=()=>{status('Microphone unavailable or speech not understood. Try again or record below.');};
-    recognition.onend=()=>{s.recognition=null;if(words.trim() && !s.disposed){status('Tex is thinking…');s.emit('utterance',{id:crypto.randomUUID(),text:words.trim().slice(0,6000)});}else if(!s.disposed)status('No speech captured. Try again.');};
-    try {recognition.start();status('Listening. Your transcript will be sent to Tex when you finish speaking.');}
-    catch {status('Could not start the microphone. Use the recorder below.');}
-  };
-  const speak=async()=>{
-    if(!s.enabled||!s.data.text||s.busy)return;
-    abort();const generation=s.generation; s.busy=true;s.last=s.data.reply_id;
-    try {
-      const puter=await loadPuter();
-      let remaining=s.data.text;
-      while(remaining && generation===s.generation && !s.disposed) {
-        let length=Math.min(2800,remaining.length);if(length<remaining.length){const boundary=remaining.lastIndexOf(' ',length);if(boundary>1400)length=boundary;}
-        const chunk=remaining.slice(0,length);remaining=remaining.slice(length).trimStart();
-        status('Generating ElevenLabs speech…');
-        const audio=await puter.ai.txt2speech(chunk,{provider:'elevenlabs',voice:el('voice').value||data.voice_id,model:'eleven_flash_v2_5',output_format:'mp3_44100_128'});
-        if(generation!==s.generation||s.disposed){audio.pause();audio.removeAttribute('src');audio.load();return;}
-        s.audio=audio;
-        await new Promise((resolve,reject)=>{s.settle=resolve;audio.onended=()=>{s.settle=null;resolve();};audio.onerror=()=>{s.settle=null;reject();};audio.play().then(()=>status('Tex is speaking. You can pause or interrupt.')).catch(reject);});
-      }
-      s.busy=false;
-      if(generation===s.generation&&!s.disposed){status('Ready for your answer.');if(el('handsfree').checked)listen();}
-    } catch {s.busy=false;if(generation===s.generation)status('Voice could not play. Check Puter sign-in, credits, voice access or browser audio permissions. Your written answer is still available.');}
-  };
-  if(!s.initialized){
-    s.initialized=true;
-    const option=document.createElement('option');option.value=data.voice_id;option.textContent=data.voice_name;el('voice').appendChild(option);
-    loadPuter().then(()=>{if(!s.disposed){el('connect').disabled=false;el('signout').disabled=false;status('Ready when you are. Enable voice to connect through Puter.');}}).catch(()=>status('Puter could not load. Typed and recorded lessons still work.'));
-  }
-  el('connect').onclick=async()=>{
-    try {
-      const puter=window.puter;
-      if(!puter){status('Voice is still loading. Try again shortly.');return;}
-      if(!puter.auth.isSignedIn())await puter.auth.signIn();
-      s.enabled=true;el('speak').disabled=true;status('Checking available teaching voices…');
-      try {
-        const result=await puter.ai.txt2speech.listVoices({provider:'elevenlabs'});
-        const voices=Array.isArray(result)?result:result.voices;
-        if(Array.isArray(voices)&&voices.length){
-          const candidates=voices.map(v=>({id:v.id||v.voice_id||v.voice,name:v.name||v.voice_id||v.id})).filter(v=>v.id&&v.name);
-          const valid=candidates.filter(v=>v.id===data.voice_id||/professional british male|clear, engaging educator|warm, captivating storyteller|informative, educational|complex concept explainer/i.test(v.name)).slice(0,8);
-          if(valid.length){el('voice').replaceChildren();for(const v of valid){const opt=document.createElement('option');opt.value=v.id;opt.textContent=v.name;el('voice').appendChild(opt);}
-          const preferred=valid.find(v=>v.id===data.voice_id)||valid.find(v=>/professional british male/i.test(v.name));
-          if(preferred)el('voice').value=preferred.id;else status('Preferred voice is unavailable through Puter. Choose an available teaching voice.');}
-        }
-      }catch{status('Voice enabled; the voice list could not load. Try the selected voice.');}
-      el('speak').disabled=!s.data.text;status('Voice enabled. Talk to Tex, or play the latest reply.');
-    }catch{status('Puter sign-in was cancelled or blocked. Allow its sign-in popup and try again.');}
-  };
-  el('speak').onclick=speak;
-  el('pause').onclick=()=>{if(s.audio){s.audio.pause();status('Audio paused.');}if(s.recognition){s.recognition.onend=null;s.recognition.abort();s.recognition=null;}};
-  el('resume').onclick=()=>{if(s.audio)s.audio.play().then(()=>status('Tex is speaking.')).catch(()=>status('Press Read response to restart playback.'));};
-  el('listen').onclick=listen;
-  el('stop').onclick=()=>{abort();s.enabled=false;el('auto').checked=false;el('handsfree').checked=false;el('speak').disabled=true;status('Voice stopped. Microphone is off.');};
-  el('signout').onclick=async()=>{el('stop').onclick();try{await window.puter.auth.signOut();status('Signed out of Puter. Voice and microphone are off.');}catch{status('Voice stopped. Puter sign-out could not complete; try again.');}};
-  if(s.enabled)el('speak').disabled=!data.text;
-  if(s.enabled&&data.text&&data.reply_id!==s.last&&el('auto').checked)speak();
-  return ()=>{s.disposed=true;abort();instances.delete(parentElement);};
-}
-"""
+_JS = (Path(__file__).with_name("components") / "puter_voice.js").read_text(encoding="utf-8")
 
 _VOICE = st.components.v2.component("tex_puter_voice", html=_HTML, css=_CSS, js=_JS)
 
@@ -184,4 +102,4 @@ def render_puter_voice(text, *, key):
     text = decode_action(text)[0]
     return _VOICE(data={"text": text, "reply_id": hashlib.sha256(text.encode()).hexdigest(),
                         "voice_id": VOICE_ID, "voice_name": VOICE_NAME},
-                  key=key, on_utterance_change=lambda: None)
+                  key=key, on_utterance_change=lambda: None, on_recording_change=lambda: None)

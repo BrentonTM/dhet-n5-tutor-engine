@@ -54,7 +54,8 @@ class TexAppControlTests(unittest.TestCase):
         prompt = assistance_instruction(self.catalog, {"name": "Instruments"}, programme_id="electrical_instrumentation",
                                          level="N5", subject_id="industrial_instruments", workspace="Home")
         self.assertIn("practice", prompt)
-        self.assertIn("browser-dependent", prompt)
+        self.assertIn("without Puter", prompt)
+        self.assertIn("Finish recording", prompt)
         self.assertIn("Do not claim to adjust a 3D slider", prompt)
         self.assertIn("Actions allowed for this turn: False", prompt)
         for instruction in (partner_instruction("Sam", "INST-N5"), lesson_instruction("INST-N5", "Flow", "notes")):

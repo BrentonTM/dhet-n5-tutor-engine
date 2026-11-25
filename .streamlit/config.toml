@@ -12,8 +12,6 @@ showWidgetBorder = true
 headingFont = "sans-serif"
 headingFontSizes = ["2.3rem", "1.8rem", "1.35rem", "1.1rem", "1rem", "0.9rem"]
 headingFontWeights = [700, 650, 650, 600, 600, 600]
-paddingTop = "1rem"
-paddingBottom = "2rem"
 
 [theme.sidebar]
 backgroundColor = "#0f192c"
